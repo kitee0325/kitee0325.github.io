@@ -4,6 +4,20 @@ title: ECharts Morph Transition
 tags: [dataviz, ECharts]
 ---
 
+This article explores how ECharts implements morphing transitions between different shapes. We'll examine the core implementation in the source code, breaking down the process into key steps including path conversion, structure alignment, and optimal rotation calculation. Through this analysis, we'll understand how ECharts achieves smooth shape transformations while maintaining visual continuity.
+
+<iframe
+  width="560"
+  height="315"
+  src="https://www.youtube.com/embed/aVwxzDHniEw?si=Sb_-g0Ug6lM8m-NR"
+  title="YouTube video player"
+  frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+  referrerpolicy="strict-origin-when-cross-origin"
+  allowfullscreen
+></iframe>
+{/* truncate */}
+
 The concept of morphing transition is a common animation effect used to smoothly transform between different shapes, providing a gentle visual guide for users without appearing abrupt. ECharts also has this effect built-in, and while it might have some shortcomings compared to the transition effects in [GSAP](https://gsap.com/docs/v3/Plugins/MorphSVGPlugin/#morph-into-multiple-shapes), it can meet the animation needs for most scenarios.
 
 The following content requires a basic understanding of Bézier curves. If you are not familiar with Bézier curves, I strongly recommend watching the excellent Bézier curve tutorial videos below.
