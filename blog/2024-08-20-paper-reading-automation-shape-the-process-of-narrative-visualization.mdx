@@ -1,0 +1,169 @@
+---
+slug: paper-reading-automation-shape-the-process-of-narrative-visualization
+title: Paper Reading Automation Shape the Process of Narrative Visualization
+tags: [dataviz, papar, AI, automatic]
+---
+
+The study investigates the involvement of automation in narrative visualization tools, summarizing six genres: **annotated charts, infographics, timelines & storylines, data comics, scrollytelling & slideshow, and data videos**. It categorizes four types of tools:**design spaces, authoring tools, ML/AI-supported tools, and ML/AI-generator tools** according to their intelligence and automation levels. By surveying 105 papers and tools, the study explores how automation can progressively engage in visualization design and narrative processes to aid users in creating narrative visualizations. It aims to provide an overview of current research and development, identifies key research problems in each category, and suggests opportunities for further investigation in this domain.
+
+{/* truncate */}
+
+## Paper
+
+<object
+  data="/paper/How Does Automation Shape the Process of Narrative Visualization A Survey of Tools.pdf"
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href="/paper/How Does Automation Shape the Process of Narrative Visualization A Survey of Tools.pdf">
+    Download PDF
+  </a>
+  .
+</object>
+
+## Notes
+
+|                                   | Design<br/>Space                                  | Authoring<br/>Tool                      | ML/AI<br/>supportedTool                      | ML/AI<br/>generatorTool | SUM |
+| :-------------------------------: | ------------------------------------------------- | --------------------------------------- | -------------------------------------------- | ----------------------- | --- |
+|        **Annotated Chart**        | [7] [8] [9]                                       | [10]                                    | [11] [12] [13] [14] [15] [16] [17] [18] [19] | [20] [21]               | 15  |
+|          **Infographic**          | [22] [23] [24] [25] [26] [27]                     | [28] [29] [30] [31] [32] [33] [34] [35] | [36] [37] [38]                               | [39] [40] [41]          | 20  |
+|    **Timeline&<br/>Storyline**    | [42] [43] [44] [45] [46] [47]                     | [48] [49]                               | [50] [51] [52] [53] [54] [55]                |                         | 14  |
+|          **Data Comics**          | [56] [57] [58] [59] [60] [61] [62] [63]           | [64] [65] [66] [67]                     | [68]                                         | [69] [70]               | 15  |
+| **Scrollytelling&<br/>Slideshow** | [71] [72] [73] [74] [75]                          | [76] [77]                               | [78]                                         | [79]                    | 9   |
+|          **Data Video**           | [80] [81] [82] [83] [84] [85] [86] [87] [88] [89] | [90] [91] [92]                          | [93] [94] [95] [96]                          | [97]                    | 18  |
+|              **SUM**              | 38                                                | 20                                      | 24                                           | 9                       | 91  |
+
+[Narrative Visualization Tools Browser](http://autovis.idvxlab.com/)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411251506331.png?imageSlim)
+Authors collected 91 design spaces and tools covering the six genres of narrative visualization and classified them into four automation levels, allowing us to describe how automatic techniques could be progressively used in visualization design and visual narrative, further allowing users to create data visualization.
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411251507528.png?imageSlim)
+
+### Taxonomy
+
+Authors categorizes the visualization tools into four groups based on their automation and intelligence.
+
+#### <img src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411251436793.png?imageSlim" width="28" height="28" style={{display:'inline-block', margin:'0px',marginRight:'8px',verticalAlign: 'middle'}}/>Design Space
+
+Design space is a conceptual set of possibilities rather than a software tool. Design
+space stresses the ability to choose from a variety of possibilities and investigate
+alternatives. The design space is a description of all potential design options throughout
+the design process. Utilizing basic design principles from current visualization
+techniques is the most preferred method for building a design space. Moreover, visual
+design spaces allow us to capture some implicit knowledge of graphic designers.
+
+#### <img src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411251436441.png?imageSlim" width="28" height="28" style={{display:'inline-block', margin:'0px',marginRight:'8px',verticalAlign: 'middle'}}/>Authoring Tools
+
+Authoring tools are applications designed for specific visualization creation purposes.
+They encapsulate key software functionalities and features that allow users to create
+visualizations freely with interactive features. These tools typically require designers
+to start from scratch, giving them major control over the creation process. Users
+can understand the creation framework upfront and interact with the system.
+
+#### <img src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411251436636.png?imageSlim" width="28" height="28" style={{display:'inline-block', margin:'0px',marginRight:'8px',verticalAlign: 'middle'}}/>ML/AI-Supported Tools
+
+ML/AI-supported tools use intelligent algorithms to help create visualizations. They
+automate certain steps while still giving users control over key decisions in the
+creation process. These tools can automatically generate some visualization elements
+and provide recommended solutions for specific parts. Users maintain control over
+organizing and finalizing the visualization design.
+
+#### <img src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411251436554.png?imageSlim" width="28" height="28" style={{display:'inline-block', margin:'0px',marginRight:'8px',verticalAlign: 'middle'}}/>ML/AI-Generator Tools
+
+ML/AI-generator tools are the most automated and intelligent option. Users don't
+need to participate in decision making during the authoring process. These tools
+are designed to reduce barriers for amateurs by enabling automatic visualization
+creation, while also making it easier for experts to explore options without manually
+specifying every element. When users upload data, these tools automatically process
+and analyze it to generate complete visual design solutions without requiring user
+intervention.
+
+### Visual Classification
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411251516872.png?imageSlim)
+In the original paper, the author provides a detailed introduction to various papers and outputs under six content categories with four levels of intelligence. Here, only the representative content from the illustrations is excerpted, without delving into the specific details.
+
+#### <img src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411251512214.png?imageSlim" width="28" height="28" style={{display:'inline-block', margin:'0px',marginRight:'8px',verticalAlign: 'middle'}}/>Annotated Charts
+
+Annotated charts use graphics (arrows or trend lines) or text (data values or commentary) to supplement information, adding contextual information to a visualization to supplement or introduce the meaning of the data. Annotations allow audiences to focus on specific content or critical information while retaining complete details of the contextual data.
+
+Selected examples of annotated charts' design spaces and tools:
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411251537694.png?imageSlim)
+
+1. Design space: An experiment on visualizations' recognition and recall shows that adding captions and annotating text improves user attention and recall.
+2. Authoring tool: ChartAccent allows users to manually and interactively generate data annotations.
+3. ML/AI-supported tool: Kori's Tools viewport automatically prompts for potential references (shown as gray underlining) as users enter text. Simple interactions to manually create links are also supported.
+4. ML/AI-generator tool: Contextifier can automatically generate annotations.
+
+#### <img src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411251512331.png?imageSlim" width="28" height="28" style={{display:'inline-block', margin:'0px',marginRight:'8px',verticalAlign: 'middle'}}/>Infographics
+
+Infographics (informational graphics) is a type of visualization that focuses on using graphically designed icons, images, colors, and other elements to illustrate data and textual information. It aims to convey specific information to target audiences by transforming complex and abstract concepts into visual components.
+
+Selected examples of infographic's design spaces and tools:
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411251541391.png?imageSlim)
+
+1. Design space: Different types of infographics have different levels of appeal to users, with scores based on means and standard deviations from user experiments using 9-point Likert scale.
+2. Authoring tool: DDG vector drawing tool which can be used to bind vector graphics to data.
+3. ML/AI-supported tool: Utilizes a deep neural network using manually labeled infographics as training data to find visual data items while ignoring creative aspects.
+4. ML/AI-generator tool: Infographics are automatically generated by simulating online examples in two main steps: retrieval (indexing of online instances based on visual elements) and matching (replacement with personal user data).
+
+#### <img src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411251512727.png?imageSlim" width="28" height="28" style={{display:'inline-block', margin:'0px',marginRight:'8px',verticalAlign: 'middle'}}/>Timelines & Storylines
+
+Timeline and Storyline describe sequences of events. The most typical timeline has
+events arranged horizontally according to their timestamps and a horizontal axis
+used to represent time progression from left to right. In a storyline visualization,
+the narrative unfolds from left to right; each person is represented as a line. When
+two people interact at the exact moment, their two lines intersect. As their presentations
+share many resemblances, timelines and storylines are jointly discussed in this section
+
+Selected examples of timeline's design spaces and tools:
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411251543670.png?imageSlim)
+
+1. Design space: Storytelling with a timeline encompasses three levels of design space: representation, scale, and layout.
+
+2. Authoring tool: Timeline Storyteller provides a working viewport where the timeline canvas spans the entire browser window.
+
+3. ML/AI-supported tools:
+   - TimeLineCurator is a browser-based authoring tool that creates chronological visualizations, using different colors to represent different categories
+   - PlotThread creates storyline visualizations with layouts developed collaboratively by AI agents and designers, while styles and visual labels can be manually modified to enhance the narrative
+
+#### <img src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411251512275.png?imageSlim" width="28" height="28" style={{display:'inline-block', margin:'0px',marginRight:'8px',verticalAlign: 'middle'}}/>Data Comics
+
+Data comics are an emerging form of narrative visualization that focuses on the variation of data information and the visual presentation of data sequences.
+Different from traditional comics, data comics must contain data-driven content, allowing multiple visualizations to be juxtaposed in a single panel in a comic strip layout, with annotations and visual decorations. Data comics complement the linearity of narratives that are inherently imposed by movies and live presentations while offering the flexibility of two-dimensional spatial arrangements in infographics and annotated charts.
+
+Selected examples of data comics' design spaces and tools:
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411251606824.png?imageSlim)
+
+1. Design space: Data comics design patterns and illustrations of some examples in data comics.
+2. Authoring tool: DataToon's working viewport, which can create dynamic web data cartoons through pen-touch interaction.
+3. ML/AI-supported tool: Chartstory's working viewport, which automates the analysis, layout, and creation of captions for data comics that tell tales using data.
+4. ML/AI-generator tool: Calliope automatically generates visual data tales from spreadsheets and includes a story generator and editor.
+
+#### <img src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411251513119.png?imageSlim" width="28" height="28" style={{display:'inline-block', margin:'0px',marginRight:'8px',verticalAlign: 'middle'}}/>Scrollytelling & Slideshow
+
+The term "scrollytelling" combines "storytelling" and "scrolling." It is a scrolling-based visual narrative form widely used in data-driven articles. Scrollytelling articles usually start with a full-screen photo or video and progress as the user scrolls through the content.
+
+A similar form of visual narrative is the slideshow. Many recent websites integrate buttons and sliders, where the distinction between stepper and scroller depends on whether the user clicks through steps or scrolls continuously. In terms of story layout, pages often appear as slideshows or hybrids that combine features of both formats, with different animations and scrolling behaviors. Since slideshow and hybrid forms can be interconverted, they are typically studied together with scrollytelling.
+
+Selected examples of scrollytelling design spaces and tools:
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411251607754.png?imageSlim)
+
+1. Design space: Outlines how to use automatic sequencing in design systems to guide non-designers in making structured decisions when creating narrative visualizations.
+2. Authoring tool: Uses text-chart links to transform static data-driven articles containing text and charts into dynamic content.
+3. ML/AI-supported tool: Tedric system workflow, which can be used to train presentation skills, reduce barriers to impromptu speaking and generate slideshow based on audience suggestions.
+4. ML/AI-generator tool: A method for automatically generating scrollytelling visualizations.
+
+#### <img src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411251513311.png?imageSlim" width="28" height="28" style={{display:'inline-block', margin:'0px',marginRight:'8px',verticalAlign: 'middle'}}/>Data Videos
+
+Data video is a narrative visualization type that combines data visualization with motion graphics and tells data-driven stories. Data videos can present viewers with diverse visual information in a short period, and therefore, they are widely used in disseminating data information
+
+Selected examples of data video's design spaces and tools:
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411251609112.png?imageSlim)
+
+1. Design space: E+I+PR+ is considered the most balanced narrative structure in data videos
+2. Authoring tool: DataClip can generate data-driven videos for financial analysis
+3. ML/AI-supported tool: Data Animator provides storyboard editing with keyframe stacking and timeline controls for complex animations
+4. ML/AI-generator tool: Autoclips automatically generates keyframes for data videos from data facts

@@ -1,0 +1,93 @@
+---
+slug: stanford-cs448b-03-visdesigns
+title: Stanford CS448B 03 Visdesigns
+tags: [dataviz, stanford, class, cs448b]
+---
+
+This article contains my notes from Stanford's CS448B (Data Visualization) course, specifically focusing on the third lecture about visualization designs. I'll discuss the principles of effective data visualization, including the importance of guides, expressiveness, effectiveness, support for comparison and pattern perception, grouping and sorting data, transforming data, reducing cognitive overhead, and consistency. I'll also cover various chart types, such as line charts, bar charts, stacked area charts, and others, providing examples and discussing their design considerations.
+{/* truncate */}
+
+## Original
+
+<object
+  data="/stanford-cs448b/Lec03-visdesigns.pdf"
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href="/stanford-cs448b/Lec03-visdesigns.pdf">Download PDF</a>.
+</object>
+
+## Notes
+
+### Forward-Thinking
+
+- When can data visualizations be the wrong solution? (When should we opt for text over a
+  graphic?)
+- How have data viz design principles changed over time, and why, especially as it seems like
+  accessibility is more highly prioritized today? (e.g. Minard's chart is very info-dense, vs.
+  simplercharts seen more often on outlets today)
+- What are some safeguards to reduce / prevent misleading visualizations, and / or ensure
+  that a visualization is unbiased (or as Tufte says, "fail to tell the truth")?
+
+### Design Considerations
+
+- **Guides**: Title, labels, legend, captions, source!
+- **Expressiveness and Effectiveness**
+  - Express the facts and only the facts
+  - Avoid unexpressive marks (lines? gradients?)
+  - Use perceptually effective encodings that match data type
+  - Don’t distract: faint gridlines, pastel highlights/fills
+  - The “elimination diet” approach – start minimal
+- **Support comparison and pattern perception**
+  - Between elements, to a reference line, or to counts
+  - Use reader-friendly units and labels
+- **Group / sort data** by meaningful dimensions
+- **Transform data** (e.g., filter, log, normalize)
+  - Are model choices (regression lines) appropriate?
+- **Reduce cognitive overhead**
+  - Minimize visual search, minimize ambiguity
+  - Appropriate size, aspect ratio, legible text
+  - Avoid legend lookups if direct labeling works
+  - Avoid color mappings with indiscernible colors
+- **Be consistent!**
+  - Visual inferences should consistently
+  - support data inferences
+
+:::info Notes
+The rest are chart case.
+:::
+
+### Line Charts
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409231705412.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409231705666.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409231705312.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409231706308.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409231706259.png?imageSlim)
+
+### Bar Charts
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409231707027.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409231707930.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409231707513.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409231708518.png?imageSlim)
+
+### Stacked Area Charts
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409231708520.png?imageSlim)
+
+### Other Chart Types
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409231709558.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409231709966.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409231710306.png?imageSlim)

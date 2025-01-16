@@ -1,0 +1,197 @@
+---
+slug: ECharts-overview
+title: ECharts Overview
+tags: [dataviz, ECharts]
+---
+
+In the past two years, my work has involved building chart components based on ECharts. This experience has given me a fundamental understanding of visualization component libraries. This article primarily introduces ECharts from the perspectives of timeline, feature and architecture.
+
+{/* truncate */}
+
+## Timeline
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281457826.png?imageSlim)
+
+## Features
+
+### Abundant Chart Types
+
+ECharts supports line series, bar series, scatter series, pie charts, candle-stick series, boxplot series for statistics, map series, heatmap series, lines series for directional information, graph series for relationships, treemap series, sunburst series, parallel series for multi-dimensional data, funnel series and gauge series. It's easy to create combinations of these visualization types with ECharts.
+
+Besides the built-in chart types, ECharts also provides a custom series for users to create more specific chart types. To use it, just pass the renderItem callback function and return any graphic elements you wish to draw, according to the data. ECharts supports native interactivity and so there is no need for further configuration.
+
+### Multiple Data Format Ready-To-Use
+
+The built-in dataset attribute from ECharts v4.0 supports different data formats, including two-dimensional tables, key-value objects, and more. Data mapping structures can easily be modified with the encode attribute. This makes developing charts much more intuitive, saving time normally spent writing data conversion algorithms. It also saves memory as different components can rely on one dataset rather than multiple copies.
+
+> ECharts supports TypedArray, which uses less memory than a standard array and works better with garbage collection. For larger data visualization, TypedArray significantly improves performance.
+
+### Large-Scale Data Visualizations
+
+EChart v4.0's incremental rendering technique and other optimizations allows it to visualize millions of data points. Interactions like scaling and panning continue to work well even with these large-scale visualizations.
+
+Using this many data points is usually very memory intensive. ECharts supports streaming data since v4.0, allowing you to render as much data as possible using WebSocket. Data can be rendered even when the complete dataset has not yet loaded.
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411261530671.png?imageSlim)
+
+<iframe
+  width="560"
+  height="315"
+  src="https://www.youtube.com/embed/oVo2qvBZsws?si=aTcKTo3mun84vdXp"
+  title="YouTube video player"
+  frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+  referrerpolicy="strict-origin-when-cross-origin"
+  allowfullscreen
+></iframe>
+
+### Mobile Optimization
+
+ECharts has been carefully optimized for mobile interaction, such as zooming and panning on small screens. PC users can still use the mouse wheel to perform the same interactions.
+
+The packaging utility allows ECharts to have a small package size on mobile, with the optional SVG rendering engine further reducing memory usage.
+
+### Multiple Rendering Methods and Cross-Platform Support
+
+ECharts supports rendering with Canvas, SVG (v4.0+), and VML elements. VML is compatible with older versions of IE; SVG reduces the memory cost on mobiles; and Canvas can easily handle large data visualization and special rendering effects.
+
+### Interactive Data Exploration
+
+Interaction is key to understanding data. On initial view, ECharts provides an overview that can be zoomed, panned and filtered to provide more granular information.
+
+Optional elements can be enabled to further interactivity. The legend, visualMap, dataZoom, tooltip, brush and other ready-to-use components allow users to interact with data in multiple dimensions.
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411261541143.png?imageSlim)
+
+### Multi-Dimensional Data Support
+
+ECharts 3 strengthened support for multi-dimensional data. In addition to common multi-dimensional data visualization elements, such as parallel coordinates for traditional scatter plots, the input data can also be rendered in multiple dimensions. With the intuitive functions provided by the visual mapping component visualMap, different dimensions can be mapped to color, size, transparency, shading and more.
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411261542181.png?imageSlim)
+
+### Dynamic Data
+
+Changes in the underlying dataset will be reflected in real time on charts. Implementing dynamic data is simple, just import the data as normal and ECharts will automatically find the difference between the two sets of data and then use the appropriate animation to represent the data changes. The timeline component can present data in other time dimensions as well.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411261543609.png?imageSlim)
+
+### Special Effects
+
+ECharts provides eye-catching effects for the visualization of all data types, whether point, line or geographic.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411261544041.png?imageSlim)
+
+## Architecture
+
+ECharts is a long-term, complex, and large-scale visualization chart project based on the rendering engine ZRender. In reality, the developers maintaining both libraries are almost the same. Although the developers intentionally separated the two, with ZRender handling lower-level tasks like rendering, animation, and cross-platform functions, ECharts encapsulates components, charts, themes, and other functions related to visualization. However, parts of ZRender's code are specifically adapted for ECharts.
+
+ECharts is a highly complex project, requiring a significant learning curve to fully understand and utilize it:
+
+1. Given its early inception, it includes code addressing older browser issues, like manually implementing many early JavaScript polyfills.
+2. The development team is diverse, comprising both official developers and community members. Each chart and component offers numerous features. Although the component interfaces are unified, each developer's design approach for individual components may vary, leading to differences in compatibility for similar-seeming components.
+3. Visualization usage scenarios are extremely intricate, involving chart stacking, adding or removing components, and function coupling. It's impossible to fully accommodate every potential scenario. ECharts has effectively supported most, but there are still some contexts it cannot cater to entirely.
+
+<object
+  data="/paper/ECharts A declarative framework for rapid construction of web-based visualization.pdf"
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href="/paper/ECharts A declarative framework for rapid construction of web-based visualization.pdf">
+    Download PDF
+  </a>
+  .
+</object>
+**ECharts Workflow diagram** ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281458431.png?imageSlim)
+**Basic architecture diagram** ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281458416.png?imageSlim)
+**Zrender MVC architecture diagram** ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281459739.png?imageSlim)
+
+## Design philosophy
+
+### Zrender
+
+Let's illustrate how ZRender addresses rendering issues through an example of a pie chart.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281507290.png?imageSlim)
+
+If draw directly using canvas(Partial code):
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281508657.png?imageSlim)
+
+If draw directly using SVG(Partial code):
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281509443.png?imageSlim)
+
+So you've realized that even for fairly skilled JS developers, drawing graphics from the ground up can be very time-consuming. This is why it's necessary to abstract the graphics. In fact, many 2D rendering engines share the same idea.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281512492.png?imageSlim)
+
+You can see the origin code in Zrender that how to draw a sector.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281513813.png?imageSlim)
+And how it is integrated into the pie chart in ECharts.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281514369.png?imageSlim)
+
+Additionally, ZRender manages cross-device interaction issues. It encapsulates interactions on different devices into a unified API, allowing developers at the higher level to avoid dealing with low-level event problems.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281517994.png?imageSlim)
+
+- Isolation of rendering engine (Canvas/SVG/VML /...)
+- Graphical Element abstraction & State maintenance (Element/Group/Layer /..)
+- Encapsulation of user interaction (mouse event/touch/gesture/drag /...)
+- Animation (frame management/easing /...)
+- The coordinate system transformation of the graph (transform), including judgments, curves
+- Other basic tools (eventful/color/array diff/SVG path converter /...)
+
+### ECharts
+
+<iframe
+  width="800px"
+  height="450px"
+  src="//player.bilibili.com/player.html?isOutside=true&aid=80709923&bvid=BV1TJ411s7pj&cid=138131018&p=1"
+  scrolling="no"
+  border="0"
+  frameborder="no"
+  framespacing="0"
+  allowfullscreen="true"
+></iframe>
+From the above, we know that ZRender has already handled the basics of graphics
+rendering, cross-platform event management, animations, and other related tasks.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281616066.png?imageSlim)
+However, visualization scenarios are often complex, and simple graphic
+abstractions may not meet everyday visualization needs. For example, in the
+image below, you can see many graphical elements that, even when developed based
+on ZRender, still require a significant amount of effort.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281620167.png?imageSlim)
+Therefore, we still need higher-level abstractions. In ECharts, common
+combinations of graphical elements are further abstracted into two major
+categories: Chart and Component.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281624564.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281638389.png?imageSlim)
+In ECharts, charts are drawn using configurations called "options." Users can
+modify these options and update the chart by calling setOption again. Each time
+setOption is called, the new options are merged with the previous ones by
+default. ECharts also provides some default events, such as clicking on the
+legend. With the introduction of events, it becomes necessary to manage the
+state of the chart. When a user clicks a legend, a default legend event is
+triggered first, and if the user then hovers over chart elements, custom user
+events might be triggered. In this case, the effect of the legend event should
+be preserved. Therefore, ECharts also introduces the concepts of Model and View.
+The Model is used to store state and data, while the View is responsible for
+rendering.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281645888.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281646130.png?imageSlim)
+
+For example, how to implement a feature where clicking and popping out on a pie chart sector?  
+The most straightforward approach is to listen for click events and then update the position of the graphical elements.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281649363.png?imageSlim)
+However, this approach can cause some issues. The user is only updating the content in the view, without making any changes to the state in the model. As a result, if the user calls setOption to update content next time, the re-rendering will cause the pop-out effect to disappear.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281655145.png?imageSlim)
+
+Another example is implementing a feature where clicking on a legend item updates both the legend and the pie chart sector, causing the legend item to blur and the pie chart sector to disappear?  
+This means that, when handling legend events, you must be aware that the ECharts instance currently contains a pie chart and that it is linked to the legend.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281658031.png?imageSlim)
+In ECharts version 2.0 and earlier, ECharts handled these interactions by registering a message center. This approach helped to avoid coupling between each chart and component.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281703687.png?imageSlim)
+In ECharts version 2.0 and earlier, ECharts handled interactions by registering a message center. However, this still did not eliminate the need for each chart to listen for legend events. Since ECharts is an easily expandable component library, more generic components may be introduced in the future, which could lead to additional redundant development work.
+
+Another example, again.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281709721.png?imageSlim)
+In a complex web-like event flow as shown in the diagram, relying solely on registered events requires considerable effort to untangle the stacking relationships between interactions. This is a quite complex task and prone to human error.
+
+Therefore, starting from ECharts 3.0, a unidirectional flow processing approach is used to address this issue. It utilizes a "complete execution workflow" combined with "consideration for all series and components" to manage the interactions effectively.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281713630.png?imageSlim)
+Returning to the first example of a pie chart sector popping out upon clicking, the above processing workflow consolidates all complex interactions into a relatively unified model. This ensures consistency in handling.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281714613.png?imageSlim)

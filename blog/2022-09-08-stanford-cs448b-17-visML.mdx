@@ -1,0 +1,234 @@
+---
+slug: stanford-cs448b-17-visML
+title: Stanford CS448B 17 VisML
+tags: [dataviz, stanford, class, cs448b]
+---
+
+import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
+
+This article contains my notes from Stanford's CS448B (Data Visualization) course, specifically focusing on the seventeenth lecture about visualization and machine learning. I'll discuss the importance of understanding data, model training, model evaluation, and the different types of visualizations for machine learning tasks.
+
+{/* truncate */}
+
+## Original
+
+<object
+  data="/stanford-cs448b/Lec17-visML.pdf"
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href="/stanford-cs448b/Lec17-visML.pdf">Download PDF</a>.
+</object>
+
+## Notes
+
+![](https://imgs.xkcd.com/comics/machine_learning.png)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141521326.png?imageSlim)
+
+**In what ways can visualizations support machine learning tasks?**
+
+| Understanding Data                                        | Model Training                                                     | Model Evaluation                    |
+| --------------------------------------------------------- | ------------------------------------------------------------------ | ----------------------------------- |
+| What is the quality of the data?                          | What is the structure of the model?                                | How accurate is the model output?   |
+| Is the data representative?                               | How can I refine the model?                                        | How can I explain the model output? |
+| What features are available in the dataset?               | Is this the best technique for modeling the learning task?         | Is the model fair?                  |
+| Is the test set representative of the dataset as a whole? | How does the model output change with changes in model parameters? |                                     |
+| Is the data labeled correctly?                            | Why is the model behaving the way it is?                           |                                     |
+
+### Visualizations for Understanding ML Datasets
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141525394.png?imageSlim)
+
+- Understanding Data Characteristics before Modeling
+- Selecting Features for Modeling
+- Debugging Data based on Model Outputs
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141534530.png?imageSlim)
+https://pair-code.github.io/facets/
+
+<hr />
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141535384.png?imageSlim)
+http://archive.ics.uci.edu/ml/datasets/Census+Income
+
+• 1994 Census dataset
+• ~50k rows
+• 14 Attributes (Categorical and Integer)
+
+Prediction task is to determine whether a person makes over 50K a year.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141536613.png?imageSlim)
+
+<hr />
+https://qz.com/994486/the-way-you-draw-circles-says-a-lot-about-you
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141538221.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141539649.png?imageSlim)
+
+<hr />
+
+https://medium.com/analytics-vidhya/analyzing-sketches-around-the-world-with-sketch-rnn-c6cbe9b5ac80
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141540597.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141541503.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141541400.png?imageSlim)
+
+<hr />
+**INFUSE (INteractive FeatUre SElection)**
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141542048.png?imageSlim)
+
+Domain Task: Predict if a patient is at risk of developing diabetes.
+
+- ML Task 1: Comparison of feature selection algorithms. (4 Algorithms )
+- ML Task 2: Comparison of classification algorithms. (4 classifiers)
+- ML Task 3: Manual selection and testing of feature sets
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141544256.png?imageSlim)
+
+How expressive/effective is this visualization?
+
+<hr />
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141544950.png?imageSlim)
+
+- Clothes Image Dataset
+- 37,000 Instances
+- 14 Categories
+
+ML Task: Classify article of clothing based on image
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141545604.png?imageSlim)
+
+Dimensionality Reduction
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141546552.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141546483.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141546311.png?imageSlim)
+
+<hr />
+
+https://github.com/uwdata/errudite
+
+Error Analysis by:
+
+1.  Expressive grouping of error instance
+2.  Counterfactual evaluation
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141549246.png?imageSlim)
+
+How does this approach compare to conventional GUI input elements ?
+
+### Visualizations for Modeling
+
+**RuleMatrix**
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141550609.png?imageSlim)
+
+**Domain Questions:**
+
+- What knowledge has the model learned?
+- How certain is the model for each piece of knowledge?
+- What knowledge does the model utilize to make a prediction?
+- When and where is the model likely to fail?
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141551471.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141552895.png?imageSlim)
+
+<hr />
+
+**SMILY(Similar Medical Images Like Yours )**
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141553543.png?imageSlim)
+
+Domain Task:  
+Pathologists need to retrieve visually similar medical images
+from past patients (e.g. tissue from biopsies) to reference when
+making a medical decision with a new patient.
+
+Control which types of similarity matter
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141554827.png?imageSlim)
+
+### Visualizations for Model Evaluation
+
+**Confusion Wheel**
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141556052.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141558809.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141558499.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141559112.png?imageSlim)
+
+In what other ways can we visualize this data?
+
+<hr />
+
+**The What-If Tool**
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141600017.png?imageSlim)
+
+<hr />
+
+**FairSight**
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141600290.png?imageSlim)
+
+https://research.google.com/bigpicture/attacking-discrimination-in-ml/
+
+What is different/unique about visualizing ML data?
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141601671.png?imageSlim)
+
+### Some Guidelines for ML Visualizations
+
+1. Visualizations should align with user expertise
+   - Model Developers and Builders
+   - Model Users
+   - Domain Experts
+   - Non-Experts
+   - Learners/Students
+     ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141602710.png?imageSlim)
+2. Provide effective data representations for the task
+   - Debugging and Improving Models
+   - Comparing and Selecting Models
+   - Interpretability and Explainability
+   - Teaching ML Concepts
+     ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141602972.png?imageSlim)
+3. Support understanding of model uncertainty  
+   Uncertainty is an inevitable feature of data-driven models in most real-world applications.
+   ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141603398.png?imageSlim)
+4. Exploit interactivity and promote rich interactions
+   - Editing data points
+   - Evaluating Hypotheses
+   - Constructing Explanations
+     ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141603440.png?imageSlim)
+5. Support expressive inputs
+   - Direct Manipulation
+   - Query-by-demonstration
+     ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141604339.png?imageSlim)
+
+### Additional Resources
+
+- A visual introduction to machine learning  
+  http://www.r2d3.us/visual-intro-to-machine-learning-part-1
+
+- How to Use t-SNE Effectively  
+  https://distill.pub/2016/misread-tsne/
+
+- The Building Blocks of Interpretability  
+  https://distill.pub/2018/building-blocks/
+
+- But what is a Neural Network？  
+  https://www.3blue1brown.com/topics/neural-networks
+
+- Visual Analytics in Deep Learning: An Interrogative Survey for the Next Frontiers  
+  Hohman, F., Kahng, M., Pienta, R., & Chau, D. H. (2018).  
+  Visual analytics in deep learning: An interrogative survey for the next frontiers. IEEE transactions on visualization and computer graphics, 25(8), 2674-2693.

@@ -1,0 +1,382 @@
+---
+slug: stanford-cs448b-13-networkLayout
+title: Stanford CS448B 13 Network Layout
+tags: [dataviz, stanford, class, cs448b]
+---
+
+import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
+
+This article contains my notes from Stanford's CS448B (Data Visualization) course, specifically focusing on the thirteenth lecture about network layout. I'll discuss the importance of tree layout, node-link graph layout, spanning tree layout, Sugiyama-style graph layout, hierarchical edge bundles, force-directed layout, alternative layouts, attribute-driven layout, and summary.
+
+{/* truncate */}
+
+## Original
+
+<object
+  data="/stanford-cs448b/Lec13-networkLayout.pdf"
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href="/stanford-cs448b/Lec13-networkLayout.pdf">Download PDF</a>.
+</object>
+
+## Notes
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091456512.png?imageSlim)
+
+### Tree Layout
+
+Graphs with hierarchical structure  
+Connected graph with N-1 edges  
+Nodes as parents and children
+
+#### indentation
+
+Linear list, indentation encodes depth
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091507365.png?imageSlim)
+
+- Items along vertically spaced rows
+- Indentation shows parent/child relationships
+- Often used in interfaces
+- Breadth/depth contend for space
+- Often requires scrolling
+
+<hr />
+
+- Visualizing Large Hierarchies:
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091514761.png?imageSlim)
+- Single-Focus (Accordion) List:  
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091515827.png?imageSlim)
+  Separate breadth & depth in 2D
+  Focus on single path at a time
+
+#### Node-Link diagrams
+
+Nodes connected by lines/curves
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091509155.png?imageSlim)
+
+- Nodes distributed in space, connected by lines
+- Use 2D space to break apart breadth and depth
+- Space used to communicate hierarchical orientation
+- Typically towards authority or generality
+
+<hr />
+
+- Basic Recursive Approach
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091519431.png?imageSlim)
+  Repeatedly divide space for subtrees by leaf count  
+  Breadth of tree along one dimension  
+  Depth along the other dimension  
+  **Problem: Exponential growth of breadth**
+- Reingold & Tilford’s Tidier Layout
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091520850.png?imageSlim)
+  Goal: maximize density and symmetry.  
+   Originally for binary trees, extended by Walker to cover general case.  
+   This extension was corrected by Buchheim et al. to achieve a linear time algorithm
+
+  Design concerns:
+
+  - Clearly encode depth level
+  - No edge crossings
+  - Isomorphic subtrees drawn identically
+  - Ordering and symmetry preserved
+  - Compact layout (don’t waste space)
+
+  Algorithm:
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091524993.png?imageSlim)
+
+  - Initial bottom-up (postorder) tree traversal
+
+    1. Set y-coordinate based on depth
+    2. Initialize x-coordinate to zero
+
+  - At each parent node, merge left and right subtrees
+
+    1. Shift right subtree as close as possible to left
+    2. Computed efficiently by maintaining subtree contours
+    3. Center parent nodes above children
+    4. Record “Shift”in position offset for right subtree
+
+  - Final top-down (preorder) traversal to set x-coordinates
+
+    1. Sum aggregated shift
+
+<hr />
+
+**Radial Layout**
+
+- Node-link diagram in polar coords
+- Radius encodes depth root at center
+- Angular sectors assigned to subtrees (recursive approach)
+- Reingold-Tilford approach can also be applied here
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091619893.png?imageSlim)
+
+Problems with Node-Link Diagrams:  
+Scale
+
+1. Tree breadth often grows exponentially
+2. Even with tidier layout, quickly run out of space
+
+Possible solutions
+
+1. Filtering
+2. Focus+Context
+3. Scrolling or Panning
+4. Zooming
+5. Aggregation
+
+<hr />
+
+**Hyperbolic Layout**
+
+Layout in hyperbolic space, then project on to Euclidean plane  
+Why? Like tree breadth, the hyperbolic plane expands exponentially  
+Also computable in 3D, projected into a sphere
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091626413.png?imageSlim)
+
+**Degree-of-Interest Trees**
+
+Space-constrained, multi-focal tree layout
+
+<video width="100%" height="auto" controls>
+  <source
+    src="/stanford-cs448b/Degree-of-Interest Tree with extras.mp4"
+    type="video/mp4"
+  />
+  Your browser does not support the video tag.
+</video>
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091641597.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091641505.png?imageSlim)
+Cull “un-interesting”nodes on a per block basis until all blocks on a level fit within
+bounds Center child blocks under parents
+
+#### Enclosure diagrams
+
+Represent hierarchy by enclosure
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091510234.png?imageSlim)
+
+Encode structure using spatial enclosure  
+Popularly known as TreeMaps  
+Benefits
+
+- Provides a single view of an entire tree
+- Easier to spot large/small nodes
+
+Problems
+
+- Difficult to accurately read depth
+
+<hr />
+
+**Circle Packing Layout**
+
+Nodes represented as sized circles
+Nesting to show parent-child relationships  
+Problems:
+
+- Inefficient use of space
+- Parent size misleading
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091638845.png?imageSlim)
+
+<hr />
+
+**Treemaps**
+
+Hierarchy visualization that emphasizes values of nodes via area encoding  
+Partition 2D space such that leaf nodes have sizes proportional to data values  
+First layout algorithms proposed by Shneiderman et al. in 1990, with focus on showing file sizes on a hard drive
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091646281.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091646422.png?imageSlim)
+
+<hr />
+
+**Squarified Treemaps**
+
+Greedy optimization for objective of square rectangles
+Slice/dice within siblings; alternate whenever ratio worsens
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091648018.png?imageSlim)
+https://vega.github.io/vega/examples/treemap/
+
+Why Squares?
+Posited Benefits of 1:1 Aspect Ratios
+
+1. Minimize perimeter, reducing border ink.
+2. Easier to select with a mouse cursor.  
+   Validated by empirical research & Fitt’s Law!
+3. Similar aspect ratios are easier to compare.  
+   ~~Seems intuitive, but is this true?~~  
+   Extreme ratios & squares-only more inaccurate.  
+   Balanced ratios better? Target golden ratio?
+
+:::info Notes
+People's perception of area size is not very sensitive, making it difficult to obtain detailed ratios; they can only roughly distinguish big or small. If the aspect ratio is random, it may occasionally lead to misjudgment.
+:::
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091652543.png?imageSlim)
+
+1. Comparison of squares has higher error!
+2. Squarify works because it fails to meet its objective?
+
+<hr />
+
+**Voronoi Treemaps**
+
+Treemaps with arbitrary polygonal shape and boundary  
+Uses iterative, weighted  
+Voronoi tessellations to achieve cells with value-proportional areas
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091655059.png?imageSlim)
+
+#### Layering
+
+Layering and alignment
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091511784.png?imageSlim)
+
+Tree layout is fast: O(n) or O(n log n),enabling real-time layout for interaction
+
+### Node-Link Graph Layout
+
+#### Spanning Tree Layout
+
+- Many graphs are tree-like or have useful spanning trees
+  > Websites, Social Networks
+- Use tree layout on spanning tree of graph
+  > Trees created by BFS / DFS  
+  > Min/max spanning trees
+- Fast tree layouts allow graph layouts to be recalculated at interactive rates
+- Heuristics may further improve layout
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101705499.png?imageSlim)
+
+#### Sugiyama-style graph layout
+
+Evolution of the UNIX  
+operating system  
+Hierarchical layering  
+based on descent
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101707939.png?imageSlim)
+
+Reverse some edges to remove cycles  
+Assign nodes in hierarchy layers -> Longest path layering
+
+> Create dummy nodes to “fill in”missing layers
+
+Arrange nodes within layer, minimize edge crossings
+
+> Route edges – layout splines if needed
+
+#### Produces hierarchical layout
+
+Sugiyama-style layout emphasizes hierarchy
+However, cycles in the graph may mislead.
+Long edges can impede perception of proximity.
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101709751.png?imageSlim)
+
+### Hierarchical Edge Bundles
+
+#### Trees with Adjacency Relations
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101710342.png?imageSlim)
+
+Use radial tree layout for inner circle  
+Mirror to outside  
+Replace inner tree with hierarchical edge bundles
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101711627.png?imageSlim)
+
+**Bundle Edges along Hierarchy**
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101711386.png?imageSlim)
+
+Increasing Edge Tension
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101712217.png?imageSlim)
+
+### Force-Directed Layout
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101712053.png?imageSlim)
+
+Nodes = charged particles with air resistance
+
+Edges = springs
+
+<BlockMath math="F=q_i*q_j / d_{ij}^2" />
+<BlockMath math="F=-b*v_i" />
+<BlockMath math="F=k*(L-d_{ij})" />
+
+D3’s force layout uses velocity Verlet integration
+Assume uniform mass m and timestep Δt:
+
+<BlockMath math="F = ma → F = a → F = Δv / Δt → F = Δv " />
+
+> Forces simplify to velocity offsets!
+
+Repeatedly calculate forces, update node positions  
+Naïve approach O(<InlineMath math="N^2"/>)  
+Speed up to O(<InlineMath math="NlogN"/>) using quadtree or k-d tree  
+Numerical integration of forces at each time step
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101725946.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101725228.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101726558.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101726986.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101726613.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101726174.png?imageSlim)
+
+### Alternative Layouts
+
+Linear node layout, circular arcs show connections.  
+Layout quality sensitive to node ordering!
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101727829.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101728646.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101728708.png?imageSlim)
+
+### Attribute-Driven Layout
+
+Large node-link diagrams get messy!  
+Is there additional structure we can exploit?  
+Idea: Use data attributes to perform layout
+
+> e.g., scatter plot based on node values
+
+Dynamic queries and/or brushing can be used to explore connectivity
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101729839.png?imageSlim)
+
+The “Skitter”Layout
+
+- Internet Connectivity
+- Radial Scatterplot
+
+Angle = Longitude
+
+- Geography
+
+adius = Degree
+
+- \# of connections
+- (a statistic of the nodes)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101731358.png?imageSlim)
+
+### Summary
+
+- Tree Layout
+  - Indented / Node-Link / Enclosure / Layers
+  - How to address issues of scale?
+    > Filtering and Focus + Context techniques
+- Graph Layout
+  - Tree layout over spanning tree
+  - Hierarchical “Sugiyama”Layout
+  - Optimization (Force-Directed Layout)
+  - Attribute-Driven Layout

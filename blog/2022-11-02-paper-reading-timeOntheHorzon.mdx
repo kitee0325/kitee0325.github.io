@@ -1,0 +1,41 @@
+---
+slug: paper-reading-TimeOntheHorzon
+title: Paper Reading TimeOntheHorzon
+tags: [dataviz, papar, datav design]
+---
+
+import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
+
+This article contains my notes from the paper "Time on the Horizon: A New Visual Design for Time-Series Data". I'll discuss the problem statement, the evaluation criteria, the authors' approach, and the case study.
+
+{/* truncate */}
+
+## Paper
+
+<object
+  data="/paper/Time on the Horizon.pdf"
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href="/paper/Time on the Horizon.pdf">Download PDF</a>.
+</object>
+
+## Notes
+
+This paper presents an excellent visual design: Horizon graph. This design solves the problem that the aspect ratio of single dimension is too high when multiple single dimension flow graphs are displayed side by side.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411131557313.png?imageSlim)
+
+Approach:
+
+1. Use a conspicuous ladder color split the value
+   ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411131605403.png?imageSlim)
+2. Positive and negative values share vertical space(1/2 height saved)
+   ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411131605182.png?imageSlim)
+3. Collapse the color bands (1/3 height saved)
+   ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411131606017.png?imageSlim)
+
+**total use 1/6 height of original**
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411131606372.png?imageSlim)

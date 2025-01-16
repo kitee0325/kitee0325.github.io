@@ -1,0 +1,72 @@
+---
+slug: paper-reading-DMap
+title: Paper Reading DMap
+tags: [dataviz, papar, datav design]
+---
+
+import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
+
+This article contains my notes from the paper "DMap: A Visualization Method for Time-Series Data". I'll discuss the problem statement, the evaluation criteria, the authors' approach, and the case study.
+
+{/* truncate */}
+
+## Paper
+
+<object
+  data="/paper/D-Map Visual Analysis of Ego-centric Information Diffusion Patterns in Social Media.pdf"
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href="/paper/D-Map Visual Analysis of Ego-centric Information Diffusion Patterns in Social Media.pdf">
+    Download PDF
+  </a>
+  .
+</object>
+
+## Notes
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202501131545361.png?imageSlim)
+The paper proposes a visualization analysis system designed to analyze how information is propagated and disseminated on Weibo. I am only noting the part I am interested in, which is the D-Map layout algorithm, focusing on the transformation from a force-directed graph to a honeycomb diagram.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202501131545266.png?imageSlim)
+**pseudocode:**
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202501131546289.png?imageSlim)
+
+## Case
+
+The diffusion structure of content (such as on Instagram or Twitter) should resemble the diagram, spreading over time among different groups and being more intensely disseminated within corresponding community types (such as travel, photography, anime, gaming). Overall, it forms a tree-like data structure.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202501151459821.png?imageSlim)
+To ensure that nodes within the same community type are as close as possible, the author mentioned in the original text that he added new links to nodes that repost the same content. This means that the child nodes of any given tree node are interconnected. However, to avoid the formation of cycles, links are added according to the chronological order of reposting.
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202501151510287.png?imageSlim)
+
+Assume we have a total of 500 points, of which 90% (450) conform to the community type rule, meaning the community type of the child nodes should be consistent with that of the parent nodes. The same community ensures the same interests. Then, 10% (50) random points are added, representing some random behaviors within the community. Based on the above data, attempt the layout algorithm described in the paper.
+
+:::note
+Note that the above data is severely distorted and is only for the purpose of reproducing the layout.
+:::
+
+- Use a half-normal distribution to model the reposting behavior of each child node, meaning that most posts should have zero reposts, with only a few posts going viral.
+- Randomly generate timestamps within a 3-day timeframe to simulate the timing of user reposts.
+
+I attempted the layout method described in the original paper, but due to the excessive scene-specific processing and my persistent inability to understand how to assign values to the M variable in the fourth line of the algorithm's output, I faced difficulties.
+
+In fact, I only need an algorithm that can convert a relational graph into a honeycomb graph while preserving the temporal structure.
+
+Based on this requirement, I have re-implemented the following case:
+
+<iframe
+  id="DMap-demo"
+  src="/demo/DMap/index.html"
+  width="100%"
+  style={{ border: 'none', height: '100vh' }}
+  onLoad={(e) => {
+    // Adjust iframe height to match content
+    const iframe = e.target;
+    iframe.style.height =
+      iframe.contentWindow.document.documentElement.scrollHeight + 'px';
+  }}
+/>
+
+It works well for me.It looks quite convincing, but I still need real social data to verify whether it is effective for me. Until then, it is merely a layout algorithm.

@@ -1,0 +1,250 @@
+---
+slug: stanford-cs448b-05-space2D
+title: Stanford CS448B 05 Space2D
+tags: [dataviz, stanford, class, cs448b]
+---
+
+import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
+
+This article contains my notes from Stanford's CS448B (Data Visualization) course, specifically focusing on the fifth lecture about space in 2D. I'll discuss the importance of space in data visualization, the principles behind it, and explore various techniques for visualizing data, including the use of guides, expressiveness, effectiveness, support for comparison and pattern perception, grouping and sorting data, transforming data, reducing cognitive overhead, and consistency. I'll also cover various chart types, such as line charts, bar charts, stacked area charts, and others, providing examples and discussing their design considerations.
+{/* truncate */}
+
+## Original
+
+<object
+  data="/stanford-cs448b/Lec05-space2D.pdf"
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href="/stanford-cs448b/Lec05-space2D.pdf">Download PDF</a>.
+</object>
+
+## Notes
+
+### Forward-Thinking
+
+- How do we know which type of visualization to use? Are there some general principals that lead us to choose a bar chart over a pie chart? What is the psychology of different mark types and visual encodings?
+- Is there a standard/scientific method of sorts by which graphic designers are supposed to explore, iterate, and finalize their designs?
+- In reference to the social network graph from Wednesday lecture with the node-link, linkage-sorted matrix, and non-sorted matrix views, "Are there other algorithms that can help bring out specific patterns in your data?”
+- In reference to public (Twitter) vs. private (academic) data visualization critiques and how people have paid more attention to data visualizations during the COVID-19 pandemic: "Do readers’ goals align with designers’ goals and if they don’t how does that impact the insights that users walk away with as well as the redesign process?  
+  Is it fair to leave it solely up to the experts? Furthermore, how do author communicate their goals to users?
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409241537904.png?imageSlim)
+
+### Graph And Lines
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/ObsidianPasted%20image%2020230828195314.png)
+
+#### File space
+
+Show data with as much resolution as possible  
+Don’t worry about showing zero
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409241540743.png?imageSlim)
+
+#### Include zero in the axis scale?
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian20230828195850.png)
+
+#### Axis tick mark selection
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian20230828195934.png)
+
+- Simplicity - numbers are multiples of 10, 5, 2
+- Coverage - ticks near the ends of the data
+- Density - not too many, nor too few
+- Legibility - whitespace, horizontal text, size
+
+#### How to scale the axis?
+
+Extreme value solutions
+
+**Original:**
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409241545057.png?imageSlim)
+
+**Solution1:Clip Outliers**
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409241546813.png?imageSlim)
+
+Notice that the biggest outlier is not shown  
+In a real task, outliers maybe marked in other conspicuous ways.
+
+**Solution2:Clearly Mark Scale Breaks**
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409241549664.png?imageSlim)
+
+**Solution3:Logarithmic Scale**
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409241550420.png?imageSlim)
+
+:::info Notes
+In my opinion, logarithmic scale is an option that needs to be chosen carefully to resolve the extreme value problem because it reduces the differences between data points, leading to a decreased sensitivity to the data for users.
+:::
+
+Both increase visual resolution
+
+- Log scale - easy comparisons of all data
+- Scale break – more difficult to compare across break
+
+#### Linear Scale vs. Log Scale
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian20230828201314.png)
+
+#### Log Scales
+
+Logarithms turn multiplication into addition  
+`log(xy) = log(x) + log(y)`  
+Equal steps on a log scale correspond to equal changes to a multiplicative scale factor
+
+#### When to apply log scales?
+
+- Address data skew (e.g., long tails, outliers)
+- Enables comparison across multiple orders of magnitude
+- Focus on multiplicative factors (not additive)
+- Recall that the logarithm transforms ×to + !
+- Percentage change, not linear difference.
+
+- <span style={{ color: 'red' }}>Constraint</span>: positive, non-zero values
+- <span style={{ color: 'red' }}>Constraint</span>: audience familiarity?
+
+#### Semilog Graph
+
+Exponential functions <InlineMath math="y = ka^{mx}" /> transform into lines
+
+<InlineMath math="log(y) = log(k) + log(a)mx" />
+<br />
+
+Intercept: <InlineMath math="log(k)" /><br />
+Slope: <InlineMath math="log(a)m" />
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409241610764.png?imageSlim)
+
+<InlineMath math="y=6^0.5x" />, slope in semilog space: <InlineMath math="log(6)*0.5 = 0.3891" />
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409241610702.png?imageSlim)
+
+<InlineMath math="y=0.5^2x" />, slope in semilog space: <InlineMath math="log(0.5)*2 = -0.602" />
+
+### Selecting Aspect Ratio
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409241622482.png?imageSlim)
+Same data with different aspect ratios
+
+#### Banking to 45°[Cleveland]
+
+To facilitate perception of trends, maximize the discriminability of line segment orientations
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409241626018.png?imageSlim)
+
+Two line segments are maximally discriminable when the absolute angle between them is 45°  
+**Method**: Optimize the aspect ratio such that the average absolute angle between all segments is 45°
+
+#### Minimize arc length (hold area constant)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409241627166.png?imageSlim)
+
+#### Good Compromise
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409241627823.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409241628437.png?imageSlim)
+
+`Arc-length` banking produces aspect ratios in-between those produced by other methods.
+
+### Fitting Data
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409241631829.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409241631863.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409241632086.png?imageSlim)
+
+### Transforming Data
+
+How well does curve fit data?
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409241646949.png?imageSlim)
+
+Residual graph
+
+- Plot vertical distance from best fit curve
+- Residual graph shows accuracy of fit
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409241646135.png?imageSlim)
+
+### Sorting
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202312181109807.png?imageSlim)
+
+Analyze the characteristics of the variables  
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409241648354.png?imageSlim)
+
+Ordering  
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202312181110073.png?imageSlim)
+
+Result  
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409241651763.png?imageSlim)
+
+### Cartographic Distortion
+
+#### [Election 2016 map](https://public.websites.umich.edu/~mejn/election/2016/)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251436146.png?imageSlim)
+
+The states are colored red or blue to indicate whether a majority of their voters voted for the Republican candidate, Donald Trump, or the Democratic candidate, Hillary Clinton, respectively. There is significantly more red on this map than blue, but that is misleading: the election was much closer than it seems from the colors, and Clinton actually won slightly more votes overall. The map fails to account for population distribution, with red states having a lower average population than blue ones. The blue states may be smaller in area, but they represent a larger number of voters, which is crucial in an election.
+
+We can correct this by using a cartogram, a map where state sizes are rescaled according to their population. States are drawn with size proportional to their number of inhabitants, not their acreage. For example, Rhode Island, with 1.1 million people, would appear about twice the size of Wyoming, which has half a million, despite Wyoming having 60 times the acreage.
+
+Here are the 2016 presidential election results on a population cartogram of this type:
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251436825.png?imageSlim)
+
+However, this map is still somewhat misleading because we have colored every county either red or blue, as if every voter voted the same way. This is of course not realistic: all counties contain both Republican and Democratic supporters and in using just the two colors on our map we lose any information about the balance between them. There is no way to tell whether a particular county went strongly for one candidate or the other or whether it was relatively evenly split.
+
+One way to reveal more nuance in the vote is to use not just two colors, red and blue, but to use red, blue, and shades of purple in between to indicate percentages of votes. Here is what the normal map looks like if you do this:
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251434105.png?imageSlim)
+
+- Statistical map with shading
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251449947.png?imageSlim)
+
+- Framed rectangle chart
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251450346.png?imageSlim)
+
+- Distort areas
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251451331.png?imageSlim)
+
+- Rectangular cartogram
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251451516.png?imageSlim)
+
+- NYT Election 2004
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251452838.png?imageSlim)
+
+- [NYT Election 2016](https://www.nytimes.com/interactive/2018/upshot/election-2016-voting-precinct-maps.html)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251452396.png?imageSlim)
+
+- Dorling cartogram
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251453519.png?imageSlim)
+
+- Distorting distances
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251453190.png?imageSlim)
+
+- London underground
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251454143.png?imageSlim)
+
+- LineDrive [Agrawala & Stolte 2001]
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251455461.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251456215.png?imageSlim)
+
+### Summary
+
+- Space is the most important visual encoding
+- Show data with as much resolution as possible
+- Geometric properties of spatial transforms support geometric reasoning
+- Use distortions to emphasize important information

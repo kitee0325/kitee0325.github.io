@@ -1,0 +1,130 @@
+---
+slug: stanford-cs448b-06-interaction
+title: Stanford CS448B 06 Interaction
+tags: [dataviz, stanford, class, cs448b]
+---
+
+import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
+
+This article contains my notes from Stanford's CS448B (Data Visualization) course, specifically focusing on the sixth lecture about interaction. I'll discuss the importance of interaction in data visualization, the principles behind it, and explore various techniques for visualizing data, including the use of guides, expressiveness, effectiveness, support for comparison and pattern perception, grouping and sorting data, transforming data, reducing cognitive overhead, and consistency. I'll also cover various chart types, such as line charts, bar charts, stacked area charts, and others, providing examples and discussing their design considerations.
+
+{/* truncate */}
+
+## Original
+
+<object
+  data="/stanford-cs448b/Lec06-interaction.pdf"
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href="/stanford-cs448b/Lec06-interaction.pdf">Download PDF</a>.
+</object>
+
+## Notes
+
+### Forward Thinking
+
+- How do you balance details with overarching views? How to decide when there is too much vs. too little data in a view?
+- In the VDQI reading, it was stated that we can increase data density in two ways: increasing the number of data points or decreasing the size of the graph... When it is advisable to reduce the size of our graph to increase the density? ... Are there any quantitative metrics to assess visualization interpretability?
+- From an accessibility standpoint, I wonder if there are ways to facilitate micro-macro reading through haptic and audio means?
+- And more generally, what are instances where poor design choices on the micro level can obscure the types of insights gained at the macro level?
+- When is it appropriate to exclude outlying data points? For datasets of the Challenger launch tests, the outliers were everything. All data is prone to some degree of variation, so how much significance should we place on outliers?
+
+Interaction between people and machines requires `mutual intelligibility` or `shared understanding`
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/ObsidianPasted%20image%2020230811135835.png)
+
+### Gulf of evaluation
+
+The difference between the user’s intentions and the allowable actions.
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251514138.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251513837.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251513723.png?imageSlim)
+
+### Gulf of execution
+
+The amount of effort that the person must exert to interpret the state of the system and to determine how well the expectations and intentions have been met.
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251515377.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251515186.png?imageSlim)
+
+### Early Systems
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251518982.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251518322.png?imageSlim)
+
+Group similar rows and columns:
+
+- Choose a row with a particular visual aspect. Move to extremity of matrix
+- Move similar rows close, opposite rows to bottom. (Creates two opposing groups and a middle group)
+- Repeat for columns (only in some cases)
+- Iterate
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251520948.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251524066.png?imageSlim)
+[BERTIFIER](https://www.aviz.fr/bertifier_app/help.html)
+
+### Pointing
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251529639.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251529537.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251529361.png?imageSlim)
+Voronoi diagram
+
+### Highlighting
+
+Focus user attention on a subset of the data within one graph [from Wills 95]
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251533880.png?imageSlim)
+
+### Brushing and Linking
+
+Select (“brush”) a subset of data  
+See selected data in other views  
+The views must be linked by tuple (matching data points), or by query (matching range or values)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251534023.png?imageSlim)
+
+### Baseball statistics
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251535986.png?imageSlim)
+
+### CrossFiltering
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251535439.png?imageSlim)
+
+### Dynamic Queries
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251538963.png?imageSlim)
+
+3D Dynamic Queries
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251540596.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251540607.png?imageSlim)
+
+### Pros And Cons
+
+Pros
+
+- Controls useful for both novices and experts
+- Quick way to explore data
+
+Cons
+
+- Simple queries
+- Lots of controls
+- Amount of data shown limited by screen space
+
+### Summary
+
+Good visualizations are task dependent
+
+> Pick the right interaction technique
+
+Fundamental interaction techniques
+
+> Selection, Brushing & Linking, Dynamic Queries

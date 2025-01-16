@@ -1,0 +1,326 @@
+[
+  {
+    "text": "javascript",
+    "value": 98
+  },
+  {
+    "text": "react",
+    "value": 95
+  },
+  {
+    "text": "vue",
+    "value": 93
+  },
+  {
+    "text": "typescript",
+    "value": 89
+  },
+  {
+    "text": "html",
+    "value": 85
+  },
+  {
+    "text": "css",
+    "value": 82
+  },
+  {
+    "text": "webpack",
+    "value": 78
+  },
+  {
+    "text": "node",
+    "value": 75
+  },
+  {
+    "text": "responsive",
+    "value": 72
+  },
+  {
+    "text": "framework",
+    "value": 69
+  },
+  {
+    "text": "redux",
+    "value": 65
+  },
+  {
+    "text": "angular",
+    "value": 62
+  },
+  {
+    "text": "component",
+    "value": 58
+  },
+  {
+    "text": "api",
+    "value": 55
+  },
+  {
+    "text": "sass",
+    "value": 52
+  },
+  {
+    "text": "babel",
+    "value": 48
+  },
+  {
+    "text": "npm",
+    "value": 45
+  },
+  {
+    "text": "git",
+    "value": 42
+  },
+  {
+    "text": "testing",
+    "value": 39
+  },
+  {
+    "text": "performance",
+    "value": 36
+  },
+  {
+    "text": "ui",
+    "value": 33
+  },
+  {
+    "text": "ux",
+    "value": 31
+  },
+  {
+    "text": "ajax",
+    "value": 28
+  },
+  {
+    "text": "rest",
+    "value": 26
+  },
+  {
+    "text": "dom",
+    "value": 24
+  },
+  {
+    "text": "mobile",
+    "value": 22
+  },
+  {
+    "text": "docker",
+    "value": 20
+  },
+  {
+    "text": "graphql",
+    "value": 18
+  },
+  {
+    "text": "jest",
+    "value": 17
+  },
+  {
+    "text": "cypress",
+    "value": 15
+  },
+  {
+    "text": "nuxt",
+    "value": 14
+  },
+  {
+    "text": "tailwind",
+    "value": 13
+  },
+  {
+    "text": "bootstrap",
+    "value": 12
+  },
+  {
+    "text": "antd",
+    "value": 11
+  },
+  {
+    "text": "eslint",
+    "value": 10
+  },
+  {
+    "text": "prettier",
+    "value": 9
+  },
+  {
+    "text": "vite",
+    "value": 8
+  },
+  {
+    "text": "rollup",
+    "value": 8
+  },
+  {
+    "text": "parcel",
+    "value": 7
+  },
+  {
+    "text": "pwa",
+    "value": 7
+  },
+  {
+    "text": "websocket",
+    "value": 6
+  },
+  {
+    "text": "mongodb",
+    "value": 6
+  },
+  {
+    "text": "postgresql",
+    "value": 5
+  },
+  {
+    "text": "mysql",
+    "value": 5
+  },
+  {
+    "text": "redis",
+    "value": 4
+  },
+  {
+    "text": "aws",
+    "value": 4
+  },
+  {
+    "text": "azure",
+    "value": 4
+  },
+  {
+    "text": "firebase",
+    "value": 3
+  },
+  {
+    "text": "heroku",
+    "value": 3
+  },
+  {
+    "text": "netlify",
+    "value": 3
+  },
+  {
+    "text": "vercel",
+    "value": 3
+  },
+  {
+    "text": "kubernetes",
+    "value": 2
+  },
+  {
+    "text": "jenkins",
+    "value": 2
+  },
+  {
+    "text": "gitlab",
+    "value": 2
+  },
+  {
+    "text": "github",
+    "value": 2
+  },
+  {
+    "text": "bitbucket",
+    "value": 2
+  },
+  {
+    "text": "jira",
+    "value": 2
+  },
+  {
+    "text": "confluence",
+    "value": 1
+  },
+  {
+    "text": "slack",
+    "value": 1
+  },
+  {
+    "text": "figma",
+    "value": 1
+  },
+  {
+    "text": "sketch",
+    "value": 1
+  },
+  {
+    "text": "photoshop",
+    "value": 1
+  },
+  {
+    "text": "illustrator",
+    "value": 1
+  },
+  {
+    "text": "xd",
+    "value": 1
+  },
+  {
+    "text": "invision",
+    "value": 1
+  },
+  {
+    "text": "zeplin",
+    "value": 1
+  },
+  {
+    "text": "storybook",
+    "value": 1
+  },
+  {
+    "text": "chromatic",
+    "value": 1
+  },
+  {
+    "text": "lighthouse",
+    "value": 1
+  },
+  {
+    "text": "postman",
+    "value": 1
+  },
+  {
+    "text": "insomnia",
+    "value": 1
+  },
+  {
+    "text": "yarn",
+    "value": 1
+  },
+  {
+    "text": "pnpm",
+    "value": 1
+  },
+  {
+    "text": "nginx",
+    "value": 1
+  },
+  {
+    "text": "apache",
+    "value": 1
+  },
+  {
+    "text": "caddy",
+    "value": 1
+  },
+  {
+    "text": "traefik",
+    "value": 1
+  },
+  {
+    "text": "envoy",
+    "value": 1
+  },
+  {
+    "text": "consul",
+    "value": 1
+  },
+  {
+    "text": "vault",
+    "value": 1
+  },
+  {
+    "text": "terraform",
+    "value": 1
+  }
+]

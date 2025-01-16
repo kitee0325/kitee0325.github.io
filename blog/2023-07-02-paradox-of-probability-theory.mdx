@@ -1,0 +1,61 @@
+---
+slug: paradox-of-probability-theory
+title: Paradox of Probability Theory
+tags: [probability, paradox]
+---
+
+import { InlineMath } from 'react-katex';
+
+This article explores three fascinating paradoxes in probability theory that challenge our intuitive understanding. First, we examine the Monty Hall Problem, which demonstrates how switching doors in a game show can counter-intuitively double your chances of winning. Next, we look at the Inspection Paradox through a medical testing scenario, showing how a highly accurate test can still lead to misleading conclusions when base rates are considered. Finally, we investigate Simpson's Paradox using a hospital comparison case, revealing how aggregated statistics can sometimes paint a completely different picture than when examining individual components.
+
+{/* truncate */}
+
+## Monty Hall Problem
+
+:::info
+
+Suppose you're on a game show, and you're given the choice of three doors: Behind one door is a car; behind the others, goats. You pick a door, say No. 1, and the host, who knows what's behind the doors, opens another door, say No. 3, which has a goat. He then says to you, "Do you want to pick door No. 2?" Is it to your advantage to switch your choice?
+
+You might think that the remaining two doors are now completely identical, each with a winning probability of 1/2, but in fact, switching doors gives you a winning probability as high as 2/3, while not switching only gives you a probability of 1/3.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411220603594.png?imageSlim)
+:::
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411220644164.png?imageSlim)
+In this problem, you might think there is no difference between the two doors; one door might have a goat behind it, while the other might have a car. Whether you switch or not, the probability is 1/2. So why is it that, in reality, switching gives you a 2/3 probability of winning the car, which is twice the probability of not switching? There is a concept that is easily overlooked, which is the "**fundamental event**" in probability theory. Imagine you are rolling a six-sided die; the probability of rolling a 1 is not equal to the probability of not rolling a 1. This is because "not rolling a 1" includes the outcomes of rolling a 2, 3, 4, 5, or 6—five different outcomes—while "rolling a 1" includes only one outcome. The outcome of rolling a specific number is the "fundamental event" in this context.
+
+In the Monty Hall problem, the same concept applies because the "fundamental events" associated with the two doors are different. In this problem, there are three fundamental events:
+
+1. The car is behind door 1
+2. The car is behind door 2
+3. The car is behind door 3
+
+The probability of each of these events is equal, each being 1/3. These three fundamental events can be categorized into two groups: one where you initially pick the correct door, which is event 1, and another where you initially pick the wrong door, which includes events 2 and 3. For the first group, if you choose to switch doors, you won't win the car. For the second group, if you choose to switch doors, you will win the car (since the host will always eliminate one incorrect option, leaving the correct one behind). Therefore, if you stick with the original door hoping the car is behind it, your probability of winning the car is only 1/3. However, if you switch doors, the probability of winning the car increases to 2/3.
+
+If this still doesn't align with your intuition, imagine this scenario: there are 100 doors in front of you. You choose your lucky number, say 66. The host then eliminates 98 incorrect doors, leaving door number 25 and your lucky number 66. Now, would you choose to switch your choice? One door is chosen based on your intuition, while the other is the remaining option after the host has eliminated 98 doors.
+
+## Inspection Paradox
+
+:::info
+
+A company has developed an innovative test strip that can detect early-stage cancer using just a person's saliva. This test strip boasts an impressive accuracy rate of 98%. This means that regardless of whether the final test result is positive (indicating the presence of cancer) or negative (indicating the absence of cancer), there is only a 2% chance of a misjudgment. Now that you have used this test strip and received a positive result, you might believe with its 98% accuracy rate that you are definitely ill. However, in reality, the probability of truly having cancer is only about 15%.
+
+:::
+
+People often intuitively think that if a test has a 98% accuracy rate, testing positive means there is a 98% chance of having cancer. However, this reasoning contains a subtle error. In reality, the population with cancer is a minority; the baseline prevalence of cancer in the population is only about 3 in 1000. So, don't forget that there are two steps in the foundational events: first, a person is randomly selected from the population, and then their test result is measured.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411220735064.png?imageSlim)
+Now, if you test positive, it only means that you fall into the portion of the population with a yellow background in the chart. The probability of truly having cancer is <InlineMath math="\frac{3}{1000} * \frac{98}{100} \approx \frac{2.94}{1000}" />, while the probability of a false positive is <InlineMath math="\frac{997}{1000} * \frac{2}{100} \approx \frac{19.94}{1000}" />. That's right, when you find your test result to be positive, it is more likely to be due to a false positive from the non-cancer population rather than an accurate result from the cancer population. Therefore, individuals who actually have cancer only make up 13%(<InlineMath math="\frac{2.94}{2.94 + 19.94} \approx 13\%" />) of those who test positive. So even though the test strip has a 98% accuracy rate, the large base of healthy individuals significantly increases the number of false positives, leading to a distortion in the final test results.
+
+## Simpson's Paradox
+
+:::info
+
+When it comes to choosing between a large hospital and a small one, the general assumption is that large hospitals have more specialized doctors, more advanced equipment, and better overall conditions. Indeed, if you analyze any specific department, the data from large hospitals is often superior. However, if you look at the overall treatment success rate for all patients in a hospital, you might find that large hospitals have a total success rate of only 54%, while small hospitals achieve 75%. This raises the question: why does a large hospital, which performs better in individual departments, have a lower overall treatment success rate compared to a small hospital?
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411220636820.png?imageSlim)
+:::
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411220809291.png?imageSlim)
+To understand Simpson's Paradox, all you need is a single image. In the image, each small dot represents a cured case of illness, and the color of each dot indicates the department in which the case was treated.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411220811026.png?imageSlim)
+When observing each department individually, you will notice that as the hospital's size increases, the likelihood of being cured also increases. This aligns with our general intuition that larger hospitals possess better medical expertise and facilities.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411220813032.png?imageSlim)
+However, when observing the overall trend, you'll find that as the hospital size increases, the trend of being cured actually decreases. Upon closer inspection, you'll notice that the larger hospitals tend to have departments with lower baseline cure rates, like the red-colored dots. This happens because, in everyday life, if we have a simple illness like a cold or fever, we prefer going to smaller hospitals, which means no extra travel costs and almost a guaranteed recovery. But for severe illnesses, like cancer, we must go to larger hospitals, as smaller ones aren't equipped to handle such diseases, which are often hard to cure. This data leads to the paradoxical conclusion that, overall, the larger the hospital, the lower the likelihood of being cured, which is actually a misconception.

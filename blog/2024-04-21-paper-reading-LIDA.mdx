@@ -1,0 +1,257 @@
+---
+slug: paper-reading-LIDA
+title: Paper Reading LIDA
+tags: [dataviz, papar, AI, automatic]
+---
+
+LIDA is a novel tool for generating grammar-agnostic visualizations and infographics. It addresses several key challenges in automatic visualization creation:
+
+1. Understanding data semantics
+2. Enumerating visualization goals
+3. Generating visualization specifications
+
+The system uses a multi-stage pipeline powered by large language models (LLMs) and image generation models (IGMs). It consists of 4 main modules:
+
+1. SUMMARIZER: Converts data into compact natural language summaries
+2. GOAL EXPLORER: Identifies potential visualization goals based on the data
+3. VISGENERATOR: Handles visualization code generation, refinement and filtering
+4. INFOGRAPHER: Creates data-driven stylized graphics using IGMs
+
+LIDA provides both a Python API and an interactive user interface supporting direct manipulation and multilingual natural language for generating charts, infographics and data stories.
+
+{/* truncate */}
+
+## Paper
+
+<object
+  data="/paper/LIDA A Tool for Automatic Generation of Grammar-Agnostic Visualizations and Infographics using Large Language Models.pdf"
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href="/paper/LIDA A Tool for Automatic Generation of Grammar-Agnostic Visualizations and Infographics using Large Language Models.pdf">
+    Download PDF
+  </a>
+  .
+</object>
+
+## Notes
+
+[【Origin Code from Github】](https://github.com/microsoft/lida)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411261435693.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411261453677.png?imageSlim)
+
+### Process
+
+By following the instructions in the GitHub repository, we can clone the source code and set up LIDA to run locally in our development environment. This allows us to experiment with and explore the capabilities of LIDA firsthand.
+
+1. Select a visualization library/grammar and configure the large language model. Since the default models are deprecated, you'll need to choose a new model from the available options.
+   ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202412101338304.png?imageSlim)
+
+2. Select from the example datasets or upload your own custom data for visualization.
+   ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202412101340454.png?imageSlim)
+
+3. Review the automatically generated data summary to understand the key characteristics and patterns in your dataset.
+   ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202412101342874.png?imageSlim)
+
+4. Choose a visualization goal from the suggestions generated based on your data summary. T
+   ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202412101344279.png?imageSlim)
+
+5. Review the visualization automatically generated to match your selected goal.
+   ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202412101345167.png?imageSlim)
+
+6. Refine and customize the visualization through interactive editing tools.
+   ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202412101345014.png?imageSlim)
+
+### Code
+
+How does LIDA work?
+It might not be as complex as you imagine.
+
+#### Manager Class
+
+```python
+# Visualization manager class that handles the visualization of the data with the following methods
+
+# summarize data given a df
+# generate goals given a summary
+# generate generate visualization specifications given a summary and a goal
+# execute the specification given some data
+
+
+def __init__(self, text_gen: TextGenerator = None) -> None:
+        """
+        Initialize the Manager object.
+
+        Args:
+            text_gen (TextGenerator, optional): Text generator object. Defaults to None.
+        """
+
+        self.text_gen = text_gen or llm()
+
+        self.summarizer = Summarizer()
+        self.goal = GoalExplorer()
+        self.vizgen = VizGenerator()
+        self.vizeditor = VizEditor()
+        self.executor = ChartExecutor()
+        self.explainer = VizExplainer()
+        self.evaluator = VizEvaluator()
+        self.repairer = VizRepairer()
+        self.recommender = VizRecommender()
+        self.data = None
+        self.infographer = None
+        self.persona = PersonaExplorer()
+
+```
+
+#### Prompt Design
+
+##### Summarize
+
+```text
+You are an experienced data analyst that can annotate datasets. Your instructions are as follows:
+i) ALWAYS generate the name of the dataset and the dataset_description
+ii) ALWAYS generate a field description.
+iii.) ALWAYS generate a semantic_type (a single word) for each field given its values e.g. company, city, number, supplier, location, gender, longitude, latitude, url, ip address, zip code, email, etc
+You must return an updated JSON dictionary without any preamble or explanation.
+```
+
+```text
+
+Summarize data given a DataFrame or file path.
+
+        Args:
+            data (Union[pd.DataFrame, str]): Input data, either a DataFrame or file path.
+            file_name (str, optional): Name of the file if data is loaded from a file path. Defaults to "".
+            n_samples (int, optional): Number of summary samples to generate. Defaults to 3.
+            summary_method (str, optional): Summary method to use. Defaults to "default".
+            textgen_config (TextGenerationConfig, optional): Text generation configuration. Defaults to TextGenerationConfig(n=1, temperature=0).
+
+        Returns:
+            Summary: Summary object containing the generated summary.
+
+        Example of Summary:
+            {
+                'name': 'cars.csv',
+                'file_name': 'cars.csv',
+                'dataset_description': '',
+                'fields': [
+                    {
+                        'column': 'Name',
+                        'properties': {
+                            'dtype': 'string',
+                            'samples': [
+                                'Nissan Altima S 4dr',
+                                'Mercury Marauder 4dr',
+                                'Toyota Prius 4dr (gas/electric)'
+                            ],
+                            'num_unique_values': 385,
+                            'semantic_type': '',
+                            'description': ''
+                        }
+                    },
+                    {
+                        'column': 'Type',
+                        'properties': {
+                            'dtype': 'category',
+                            'samples': ['SUV', 'Minivan', 'Sports Car'],
+                            'num_unique_values': 5,
+                            'semantic_type': '',
+                            'description': ''
+                        }
+                    },
+                    {
+                        'column': 'AWD',
+                        'properties': {
+                            'dtype': 'number',
+                            'std': 0,
+                            'min': 0,
+                            'max': 1,
+                            'samples': [1, 0],
+                            'num_unique_values': 2,
+                            'semantic_type': '',
+                            'description': ''
+                        }
+                    }
+                ]
+            }
+
+        """
+
+```
+
+##### Goal
+
+```text
+You are a an experienced data analyst who can generate a given number of insightful GOALS about data, when given a summary of the data, and a specified persona. The VISUALIZATIONS YOU RECOMMEND MUST FOLLOW VISUALIZATION BEST PRACTICES (e.g., must use bar charts instead of pie charts for comparing quantities) AND BE MEANINGFUL (e.g., plot longitude and latitude on maps where appropriate). They must also be relevant to the specified persona. Each goal must include a question, a visualization (THE VISUALIZATION MUST REFERENCE THE EXACT COLUMN FIELDS FROM THE SUMMARY), and a rationale (JUSTIFICATION FOR WHICH dataset FIELDS ARE USED and what we will learn from the visualization). Each goal MUST mention the exact fields from the dataset summary above
+
+```
+
+```text
+The number of GOALS to generate is {n}. The goals should be based on the data summary below,
+The generated goals SHOULD BE FOCUSED ON THE INTERESTS AND PERSPECTIVE of a '{persona.persona} persona, who is insterested in complex, insightful goals about the data.
+
+Generate goals based on a summary.
+
+Args:
+    summary (Summary): Input summary.
+    textgen_config (TextGenerationConfig, optional): Text generation configuration. Defaults to TextGenerationConfig().
+    n (int, optional): Number of goals to generate. Defaults to 5.
+    persona (Persona, str, dict, optional): Persona information. Defaults to None.
+
+Returns:
+    List[Goal]: List of generated goals.
+
+Example of list of goals:
+
+    Goal 0
+    Question: What is the distribution of Retail_Price?
+
+    Visualization: histogram of Retail_Price
+
+    Rationale: This tells about the spread of prices of cars in the dataset.
+
+    Goal 1
+    Question: What is the distribution of Horsepower_HP_?
+
+    Visualization: box plot of Horsepower_HP_
+
+    Rationale: This tells about the distribution of horsepower of cars in the dataset.
+
+```
+
+````text
+
+THE OUTPUT MUST BE A CODE SNIPPET OF A VALID LIST OF JSON OBJECTS. IT MUST USE THE FOLLOWING FORMAT:
+
+```
+   [
+      { "index": 0,  "question": "What is the distribution of X", "visualization": "histogram of X", "rationale": "This tells about "} ..
+   ]
+```
+
+THE OUTPUT SHOULD ONLY USE THE JSON FORMAT ABOVE.
+
+
+````
+
+##### VizGenerator
+
+```text
+
+You are a helpful assistant highly skilled in writing PERFECT code for visualizations. Given some code template, you complete the template to generate a visualization given the dataset and the goal described. The code you write MUST FOLLOW VISUALIZATION BEST PRACTICES ie. meet the specified goal, apply the right transformation, use the right visualization type, use the right data encoding, and use the right aesthetics (e.g., ensure axis are legible). The transformations you apply MUST be correct and the fields you use MUST be correct. The visualization CODE MUST BE CORRECT and MUST NOT CONTAIN ANY SYNTAX OR LOGIC ERRORS (e.g., it must consider the field types and use them correctly). You MUST first generate a brief plan for how you would solve the task e.g. what transformations you would apply e.g. if you need to construct a new column, what fields you would use, what visualization type you would use, what aesthetics you would use, etc. .
+
+```
+
+````text
+Always add a legend with various colors where appropriate. The visualization code MUST only use data fields that exist in the dataset (field_names) or fields that are transformations based on existing field_names). Only use variables that have been defined in the code or are in the dataset summary. You MUST return a FULL PYTHON PROGRAM ENCLOSED IN BACKTICKS ``` that starts with an import statement. DO NOT add any explanation. \n\n THE GENERATED CODE SOLUTION SHOULD BE CREATED BY MODIFYING THE SPECIFIED PARTS OF THE TEMPLATE BELOW \n\n {library_template} \n\n.The FINAL COMPLETED CODE BASED ON THE TEMPLATE above is ... \n\n
+
+````
+
+This is an excellent prompt design that we can learn from.
+
+1. Well-structured task description with clear goals and requirements
+2. Clear and concise language that avoids ambiguity
+3. Explicit role definition for the AI assistant
+4. Few-shot prompting
+5. Precise specification of output format and structure

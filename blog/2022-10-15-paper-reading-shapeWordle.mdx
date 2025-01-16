@@ -1,0 +1,185 @@
+---
+slug: paper-reading-shapeWordle
+title: Paper Reading ShapeWordle
+tags: [dataviz, papar, wordle, word cloud, tag cloud]
+---
+
+import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
+
+This article contains my notes from the paper "ShapeWordle: Tailoring Wordles using Shape-aware Archimedean Spirals". I'll discuss the definition, the original, the paper's contribution, and the code.
+
+{/* truncate */}
+
+## Paper
+
+<object
+  data="/paper/ShapeWordle-Tailoring Wordles using Shape-aware Archimedean Spirals.pdf"
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href="/paper/ShapeWordle-Tailoring Wordles using Shape-aware Archimedean Spirals.pdf">
+    Download PDF
+  </a>
+  .
+</object>
+
+## Notes
+
+<video
+  width="100%"
+  height="auto"
+  controls
+  poster="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410211517897.png?imageSlim"
+>
+  <source src="/video/ShapeWordle.mp4" type="video/mp4" />
+  Your browser does not support the video tag.
+</video>
+
+### Definition
+
+Word cloud is a visual representation of text data which is often used to depict keyword metadata on websites, or to visualize free form text
+
+#### Pros
+
+- Easy to understand
+- Beauty
+- Highlight key words
+
+#### Cons
+
+- Maybe missing data(No space to put)
+- Size is not sensitive
+
+> [《Word clouds considered harmful》](https://www.niemanlab.org/2011/10/word-clouds-considered-harmful/) by Jacob Harris, a New York Times senior software architect (via FlowingData).
+
+### Original
+
+> https://www.jasondavies.com/wordcloud/about/
+
+The layout algorithm itself is incredibly simple. For each word, starting with the most “important”:
+
+1. Attempt to place the word at some starting point: usually near the middle, or somewhere on a central horizontal line.
+
+2. If the word intersects with any previously-placed words, move it one step along an increasing spiral. Repeat until no intersections are found.
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410211603697.png?imageSlim)
+
+### Paper's Contribution
+
+- Shape-aware Archimedean spirals
+- Multy Center
+- Editable
+- Effect evaluation
+
+#### Shape-aware Archimedean spirals
+
+The Archimedean spiral is one of most widely-used Euclidean spirals,which can be readily defined in polar coordinates:
+
+<BlockMath math="r(\theta) = m\theta + b" />
+
+where <InlineMath math="\theta" /> is the polar angle, <InlineMath math="r" /> is the radial distance from the origin, <InlineMath math="b = r(0)" /> is the initial distance of the starting point from the origin, and <InlineMath math="m" /> controls the spacing between successive turns. Having a uniform spacing <InlineMath math="2m\pi" /> between successive turns is an important and useful characteristic of the Archimedean spiral.
+
+The Archimedean spiral can also be expressed in Cartesian coordinates, <InlineMath math="x" /> and <InlineMath math="y" />, by using trigonometric functions:
+
+<BlockMath math="\left(\begin{array}{c}x\\y\end{array}\right) = r(\theta)\left(\begin{array}{c}cos\theta\\sin\theta\end{array}\right)" />
+
+Taking the derivatives with respect to <InlineMath math="\theta" /> yields
+
+<BlockMath math="\left\{\begin{array}{l}{\frac{dx}{d\theta} = mcos\theta-r(\theta)sin\theta}\\{\frac{dy}{d\theta} = msin\theta+r(\theta)cos\theta}\end{array}\right." />
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410211802686.png?imageSlim)
+
+<InlineMath math="(\frac{dx}{d\theta},\frac{dy}{d\theta})" /> is the movement direction
+(denoted as <InlineMath math="U" />) of the spiral at <InlineMath math="(x,y)" /> in
+the 2D space. Can decompose <InlineMath math="U" /> along <InlineMath math="N=(cos\theta, sin\theta)^T" /> and <InlineMath math="T=(-sin\theta, cos\theta)^T" />
+
+<BlockMath math="U = m \left(\begin{array}{c}cos\theta\\sin\theta\end{array}\right) + r(\theta) \left(\begin{array}{c}-sin\theta\\cos\theta\end{array}\right) = mN + r(\theta)T" />
+
+where <InlineMath math="N" /> and <InlineMath math="T" /> are the unit normal vector and unit tangent vector, resp.,at point <InlineMath math="(x,y)" /> on a circle of radius <InlineMath math="\sqrt{x^2+y^2}" /> co-centered with the spiral.Such a circle can be interpreted as
+the isoline of an underlying distance field <InlineMath math="\phi(x,y) = \sqrt{x^2+y^2}" /> which measures the Euclidean distance from <InlineMath math="(x,y)" /> to the origin.
+
+**Computing the distance field**. A distance field is an effective shape representation that has been used for edge bundling and trail data visualization. It is a scalar field that specifies the shortest distance to a shape contour specified by a distance transform <InlineMath math="R^2 \rightarrow R_+" />.
+
+<BlockMath math="\phi(p\in R^2,\Omega) = min_{q\in\Omega}||p-q||" />
+
+**Extending the Archimedean spiral**.To extend the Archimedean spiral to be shape-aware, the main question is how to guide the movement of the spiral, or how to define the movement direction of the spiral at any point <InlineMath math="p" /> in the given shape. Rather than explicitly constructing the isoline and then computing the isoline normal at <InlineMath math="p" />, take the gradient of the distance field as <InlineMath math="N" />. This strategy can accurately approximate the normal for continuous scalar fields, like <InlineMath math="\phi" />. Once <InlineMath math="N" /> is available, <InlineMath math="T" /> can be easily obtained because it is a unit vector that is orthogonal to <InlineMath math="N" />.Then can rewrite the equation in a differential form:
+
+<BlockMath math="\left(\begin{array}{c}dx\\dy\end{array}\right) = md\theta N + rd\theta T" />
+
+However, using the same θ at every point in an arbitrary shape might not be proper, since the generated spiral might not be able to adapt to regions of high-curvature.
+
+To characterize such sharp features, authors consider the local curvature along the spiral and approximate the curve by small tangential movements (denoted by <InlineMath math="ds" />) perpendicular to <InlineMath math="N" /> By <InlineMath math="Rd\eta" /> and also by <InlineMath math="Rd\theta" />, where R is the local curvature radius and <InlineMath math="\eta" /> is a user-specified parameter for the angular speed.
+
+<BlockMath math="d\theta = \frac{Rd\eta}{r}" />
+
+also same like with:
+
+<BlockMath math="\left(\begin{array}{c}dx\\dy\end{array}\right) = \frac{mRd\eta}{r}N + Rd\eta T" />
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410300335424.png?imageSlim)
+
+#### Multi-centric
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410300345513.png?imageSlim)
+
+**Shape Segmentation**. Given a shape, detect connected components in the shape and generate a distance field per component. Then use an iterative gradient-descent procedure to locate the local maxima(s) and the associated shape region(s) (called as parts) in each component. This is allowed to implicitly segment a component into a few parts.
+
+**Word Assignment**. Given a list of words to fill a shape, first set a font size for each word such that the sum of the areas of all the words is 70% of the total shape area.Then use a greedy strategy to assign words to the different parts of the shape.Denoting <InlineMath math="p_{i,j}" /> as the j-th part of the i-th component, <InlineMath math="A_{i,j}" /> as the area of <InlineMath math="p_{i,j}" />, and <InlineMath math="N" /> as the total number of input words, the number of words to be assigned to <InlineMath math="p_{i,j}" /> is:
+
+<BlockMath math="\frac{A_{i,j}}{\sum_{u}\sum_{v}A_{u,v}}N" />
+
+Assuming that the word with the largest weight should be assigned to the largest part, then define the largest weight of the words in each part as:
+
+<BlockMath math="W_{i,j} = \frac{A_{i,j}}{max_{u,v}A_{u,v}}" />
+
+#### Editable
+
+:::info
+Although the author has made great efforts and remarkable achievements in this regard, I have not encountered suitable character scenes for the interaction of this part of the content. So just skip it for now.
+:::
+
+### Code
+
+:::warning
+The demo requires loading OpenCV resources. If the demo appears blank, it may be due to resource loading failure. You can try reloading using the button below.
+:::
+
+<button
+  onClick={() => {
+    const iframe = document.getElementById('shapeWordle-demo');
+    iframe.src = iframe.src;
+  }}
+  style={{
+    padding: '16px 16px 8px',
+    backgroundColor: '#1677ff',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '16px',
+    textAlign: 'center',
+    lineHeight: '1',
+  }}
+>
+  Reload Demo
+</button>
+
+<iframe
+  id="shapeWordle-demo"
+  src="/demo/ShapeWordle/index.html"
+  width="100%"
+  style={{ border: 'none' }}
+  onLoad={(e) => {
+    // Adjust iframe height to match content
+    const iframe = e.target;
+    iframe.style.height =
+      iframe.contentWindow.document.documentElement.scrollHeight + 'px';
+  }}
+/>
+
+:::tip
+
+In the demo above, the code for ShapeWordle has been reorganized by me. If you need to view the original source code of the paper, please visit https://github.com/RealKai42/Shape_Wordle.  
+I'm not sure the code is 100% correct. Some place maybe need correct and optimize.
+:::

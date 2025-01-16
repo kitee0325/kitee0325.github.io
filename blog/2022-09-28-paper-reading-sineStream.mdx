@@ -1,0 +1,183 @@
+---
+slug: paper-reading-sineStream
+title: Paper Reading SineStream
+tags: [dataviz, papar, stream]
+---
+
+import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
+
+This article contains my notes from the paper "SineStream: Improving the Readability of Streamgraphs by Minimizing Sine Illusion Effects". I'll discuss the problem statement, the evaluation criteria, the authors' approach, and the case study.
+
+{/* truncate */}
+
+## Paper
+
+<object
+  data="/paper/SineStream-Improving the Readability of Streamgraphs by  Minimizing Sine Illusion Effects.pdf"
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href="/paper/SineStream-Improving the Readability of Streamgraphs by  Minimizing Sine Illusion Effects.pdf">
+    Download PDF
+  </a>
+  .
+</object>
+
+## Notes
+
+### Stream Graph
+
+#### Definition
+
+A stream graph, sometimes written as streamgraph, is a stacked plot around a "central axis," resulting in a flowing, organic shape. Stream graphs demonstrate how topics evolve.
+
+**Problem Statement:**
+
+Given a time series <InlineMath math="{f_1,f_2,...f_n}" /> and a baseline <InlineMath math="g_0" /> compute the top layer to <InlineMath math="f_i" /> as fllows:
+
+<BlockMath math="g_i=g_0+\sum_{j=1}^if_j" />
+
+The quesion of how to compute <InlineMath math="g_0" /> remains open. Two simple strategies are
+
+- Simple model: <InlineMath math="g_0\ \equiv\ 0" />
+- Symmetric around the x-axis: <InlineMath math="g_0\ =\ -\frac{1}{2}\sum_{i=1}^nf_i" />
+
+**Remark:**
+
+<InlineMath math="f_i\ =\ {f_i(t_0),f_i(t_1),...f_i(t_n)}" />, thus <InlineMath math="g_i\ =\ {g_i(t_0),g_i(t_1),...g_i(t_n)}" />
+
+#### How to compute the baseline
+
+Reference: Stacked Graphs - Geometry and Aesthetic, L. Byron, M. Wattenberg
+
+- Simple model: <InlineMath math="g_0\ \equiv\ 0" />
+- Solution 1: minimize sihouette (same as symmetric model)  
+  silhouette: <InlineMath math="f(g_0)\ =\ g_0^2 + g_n^2\ =\ g_0^2+(g_0+\sum_{i=1}^nf_i)" />
+  <InlineMath math="\frac{df}{dg_0} = 0\ \Longrightarrow\ g_0=-\frac{1}{2}\sum_{i=1}^nf_i" />
+- Solution 2: minimize the deviation <InlineMath math="g_i" /> from the x-axis(minimizes the wiggle)  
+  deviation: <InlineMath math="f(g_0)=\sum_{i=0}^ng_i^2"  />
+
+  <InlineMath math="\frac{df}{dg_0} = 0\ \Longrightarrow\ g_0=-\frac{1}{n+1}\sum_{i=1}^n(n-i+1)f_i" />
+
+### Sine Illusion Effects
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410151219328.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410161816491.png?imageSlim)
+
+**(a)** A line with uniform thickness is drawn along a sinusoidal curve. Perception leads us to using the orthogonal distance rather than the vertical distance to determine its thickness. **(b)** The green layer with dotted border in the streamgraph seems to have a constant thickness. However, a peak occurs in its vertical thickness **(c)**.
+
+**Approach:**
+
+As the geometry of a streamgraph is controlled by its baseline (the bottom-most curve) and the ordering of the layers.  
+The authors re-interpret baseline computation and layer ordering algorithms in terms of reducing sine illusion effects.  
+**For baseline computation**, improve previous methods by introducing a Gaussian weight to penalize layers with large thickness changes.  
+**For layer ordering**, three design requirements are proposed and implemented through a hierarchical clustering algorithm.
+
+### Baseline computation
+
+#### Evaluation criteria
+
+- Wiggle metric
+  - Byron and Wattenberg:
+    <BlockMath math="Wiggle=\sum_{i=1}^n(\frac{1}{2}(g_i'+g_{i-1}'))^2*w_i" />
+  - Bartolomeo and Hu:
+    <BlockMath math="Wiggle_{n1}=\sum_{i=1}^n\frac{|g_i'|+|g_{i-1}'|}{2}*w_i" />
+
+> However, even though it is widely used, using the wiggle metric to optimize a streamgraph layout is mainly based on empirical observation and lacks a clear perception foundation. This is why authors want to introduce the sine illusion at this point.
+
+- Sine illusion:
+
+<BlockMath math="Illustion = Wiggle = \sum_{i=1}^n(\frac{1}{2}(g_i'+g_{i-1}'))^2*w_i = \sum_{i=1}^n(g_0'+\frac{1}{2}f_i'+\sum_{j=1}^{i-1}f_j')^2*w_i" />
+
+#### Authors' approach
+
+<BlockMath math="g_0' = -\frac{1}{\sum_{i=1}^nW_i}\sum_{i=0}^n\frac{1}{2}(\sum_{j=1}^if_j'+\sum_{j=1}^{i-1}f_j')w_i = -\frac{\sum_{i=1}^nw_i(f_1'+\sum_{j=1}^{i-1}(f_j'+f_{j+1}'))}{2\sum_{i=1}^nw_i}" />
+
+Authors modify the original weight w i = f i by a Gaussian weight to reduce the influence of a layer when its thickness undergoes big changes:
+
+<BlockMath math="w_i=exp(-\frac{f_i'^2}{2c^2})*f_i" />
+
+where c can be either the median, arithmetic mean, harmonic mean, or geometric mean of the <InlineMath math="|f_1'|,|f_2'|,...,|f_n'|" />
+
+### Layer ordering algorithms
+
+#### Traditional calculation
+
+- Byron and Wattenberg: **LateOnset**
+
+- Bartolomeo and Hu: **TopOpt**
+
+#### Authors' approach
+
+:::tip Compare
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410171649625.png?imageSlim)
+A comparison of different ordering algorithms is illustrated in the picture. Using LateOnset, layers are added to the streamgraph based on their start time. New layers (e.g., Layer 2 in Pink) are usually put on a slanted baseline, which introduces distortions and sine illusion effects to these new layers. TwoOpt tends to put thick layers (Layer 6 in Light Green) in the middle, resulting in large distortions and strong sine illusion effects at the neighboring layers. Compared to LateOnset and TwoOpt, authors' ordering algorithm (c) leads to a visually pleasing streamgraph. Orthogonal and vertical orientations are aligned in most layers, thus sine illusions are minimized.
+:::
+
+- compensation degree
+
+Authors define the compensation degree <InlineMath math="comp(i,j)" /> to describe the mutual compensation for every two layers <InlineMath math="f_i,f_j" /> as:
+
+<BlockMath math="comp(i,j) = \frac{1}{L}\sum_{t=0}^T\frac{|f_i'(t)+f_j'(t)|}{|f_i'(t)|+|f_j'(t)|}" />
+
+where L indicates the length of the combined layer. Authors define <InlineMath math="\frac{|f_i'(t)+f_j'(t)|}{|f_i'(t)|+|f_j'(t)|} = 0" /> when <InlineMath math="|f_i'(t)|+|f_j'(t)| = 0" />
+
+- thickness weight
+
+Authors introduce a thickness weight to describe our preference for the compensation of relatively thinner layers:
+
+<BlockMath math="w_{th}(i,j) = max\{f_i(t)+f_j(t):t\in[1,m]\}" />
+
+where <InlineMath math="f_i(t)" /> denotes the value of <InlineMath math="f_i" /> at the time point <InlineMath math="t" /> and <InlineMath math="m" /> indicates the number of time points.
+
+- length weight
+
+Authors use a length weight to describe our preference for the compensation of relatively longer layers:
+
+<BlockMath math="w_{len}(i,j)=max(\frac{m}{L_i},\frac{m}{L_j})" />
+
+Where <InlineMath math="L_i" /> is the length of layer <InlineMath math="f_i" />
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410171705806.png?imageSlim)
+
+- dist
+
+<BlockMath math="dist(i,j)=comp(i,j)*w_{len}(i,j)*w_{th}(i,j)" />
+
+The smaller <InlineMath math="dist(i, j)" />, the higher the priority that should be given to ensure that layer <InlineMath math="f_i" /> and layer <InlineMath math="f_j" /> are adjacent to each other.
+
+- Hierarchical-Clustering-Based Ordering.
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410171708061.png?imageSlim)
+
+At each time step (numbered in the blue circle), the two layers <InlineMath math="f_i" /> , <InlineMath math="f_j" /> with the shortest distance are merged to obtain a new combined layer <InlineMath math="f_k={f_i+f_j}" />. Then calculate the distances between this new layer <InlineMath math="f_k" /> and all other layers, and repeat merging.
+
+To guarantee an ordering that minimizes sine illusions, authors create the final order by minimizing the sum of distances between adjacent layers:
+
+<BlockMath math="arg\ min\sum_{i=1}^{n-1}dist(i,i+1)" />
+
+where the <InlineMath math="i" /> th and <InlineMath math="i+1" /> th layers correspond to two adjacent leaf nodes of the hierarchical clustering tree.
+
+### Case
+
+<iframe
+  id="sineStream-demo"
+  src="/demo/sineStream/index.html"
+  width="100%"
+  style={{ border: 'none' }}
+  onLoad={(e) => {
+    // Adjust iframe height to match content
+    const iframe = e.target;
+    iframe.style.height =
+      iframe.contentWindow.document.documentElement.scrollHeight + 'px';
+  }}
+/>
+
+:::tip
+
+In the demo above, the code for SineStream has been reorganized by me. If you need to view the original source code of the paper, please visit https://github.com/Ideas-Laboratory/SineStream. If you're interested in exploring other mature stream layout methods, you can visit https://d3js.org/d3-shape/stack.
+
+:::

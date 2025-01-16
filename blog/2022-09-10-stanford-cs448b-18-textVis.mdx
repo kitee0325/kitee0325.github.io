@@ -1,0 +1,358 @@
+---
+slug: stanford-cs448b-18-textVis
+title: Stanford CS448B 18 TextVis
+tags: [dataviz, stanford, class, cs448b]
+---
+
+import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
+
+This article contains my notes from Stanford's CS448B (Data Visualization) course, specifically focusing on the eighteenth lecture about text visualization. I'll discuss the importance of documents, collections of documents, and the different types of visualizations for text data.
+
+{/* truncate */}
+
+## Original
+
+<object
+  data="/stanford-cs448b/Lec18-textVis.pdf"
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href="/stanford-cs448b/Lec18-textVis.pdf">Download PDF</a>.
+</object>
+
+## Notes
+
+Text as data
+
+- Documents
+
+  - Articles, books and novels
+  - Computer programs
+  - E-mails, web pages, blogs
+  - Tags, comments
+
+- Collection of documents
+  - Messages (e-mail, blogs, tags, comments)
+  - Social networks (personal profiles)
+  - Academic collaborations (publications)
+
+<hr />
+
+Why visualize text?
+
+- **Understanding**: get the “gist”of a document
+- **Grouping**: cluster for overview or classification
+- **Compare**: compare document collections, or inspect evolution of collection over time
+- **Correlate**: compare patterns in text to those in other data, e.g., correlate with social network
+
+<hr />
+
+Example: Health Care Reform
+
+Background:
+
+- Initiatives by President Clinton
+- Overhaul by President Obama
+  Text data:
+- News articles
+- Speech transcriptions
+- Legal documents
+
+What questions might you want to answer?  
+What visualizations might help?
+
+**A Concrete Example**
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141721178.png?imageSlim)
+
+**Word/Tag Clouds: Word Count**
+
+President Obama’s Health Care Speech to Congress
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141722911.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141722064.png?imageSlim)
+
+**WordTree: Word Sequences**
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141723644.png?imageSlim)
+
+<hr />
+
+**Gulf of Evaluation**
+
+- Many (most?) text visualizations do not represent text directly. They represent the output of a language model (word counts, word sequences, etc.)
+- Can you interpret the visualization?
+  - How well does it convey the properties of the model?
+- Do you trust the model?
+  - How does the model enable us to reason about the text?
+
+### Text as Data
+
+Words as nominal data?
+
+High dimensional (10,000+)
+
+More than equality tests
+
+- **Correlations**: Hong Kong, San Francisco, Bay Area
+- **Order**: April, February, January, June, March, May
+- **Membership**: Tennis, Running, Swimming, Hiking, Piano
+- **Hierarchy**, antonyms & synonyms, entities, ...
+
+Words have meanings and relations
+
+#### Text Processing Pipeline
+
+Tokenization
+
+- Segment text into terms.
+- Remove stop words? <span style={{color:'green'}}>a, an, the, of, to, be</span>
+- Numbers and symbols? <span style={{color:'green'}}>#cardinal, \@Stanford, OMG!!!!!!!!</span>
+- Entities? <span style={{color:'green'}}>Palo Alto, O’Connor, U.S.A.</span>
+
+Stemming
+
+- Group together different forms of a word.
+- Porter stemmer? <span style={{color:'green'}}>visualization(s), visualize(s), visually -> visual</span>
+- Lemmatization? <span style={{color:'green'}}>oes, went, gone -> go</span>
+
+Ordered list of terms
+
+**The Bag of Words Model**
+
+Ignore ordering relationships within the text
+
+A document <InlineMath math="\approx" /> vector of term weights
+
+- Each term corresponds to a dimension (10,000+)
+- Each value represents the relevance
+  - For example, simple term counts
+
+Aggregate into a document x term matrix
+
+- Document vector space model
+
+**Document \* Term matrix**
+
+Each document is a vector of term weights  
+Simplest weighting is to just count occurrences
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141733810.png?imageSlim)
+
+<p></p>
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141733105.png?imageSlim)
+https://books.google.com/ngrams/
+
+<p></p>
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141734607.png?imageSlim)
+
+<p></p>
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141734044.png?imageSlim)
+
+Strengths
+
+- Can help with gisting and initial query formation
+
+Weaknesses
+
+- Sub-optimal visual encoding (size not pos. encodes freq.)
+- Inaccurate size encoding (long words are bigger)
+- May not facilitate comparison (unstable layout)
+- Term frequency may not be meaningful
+- Does not show the structure of the text
+
+#### Keyword Weighting
+
+Given a text, what are the best descriptive words?
+
+Term Frequency:
+
+<BlockMath math="tf_{td} = count(t)\ in\ d" />
+
+Can take log frequency: <InlineMath  math="log(1\ +\ tf_{td})" />
+
+Can normalize to show proportion: <InlineMath math="tf_{td}\ /\ \sum_ttf_{td}" />
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141745745.png?imageSlim)
+
+> Fightin’ Words: Lexical Feature Selection and Evaluation for Identifying the Content of Political Conflict
+
+TF.IDF: Term Freq by Inverse Document Freq
+
+<BlockMath math="tf.idf_{td}\ =\ log(1\ +\ tf_{td})\ *\ log(N/df_t)" />
+
+<BlockMath math="dt_t\ =\ \#\ docs\ containing\ t" />
+<BlockMath math="N\ =\ \#\ of\ docs" />
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141748623.png?imageSlim)
+
+#### Limitations of Frequency Statistics
+
+- Typically focus on unigrams (single terms)
+- Often favors frequent (TF) or rare (IDF) terms
+  - Not clear that these provide best description
+- “Bag of words” ignores additional info
+  - Grammar / part-of-speech
+  - Position within document
+  - Recognizable entities
+
+#### How do people describe text?
+
+Asked 69 graduate students to read and describe dissertation abstracts  
+Each given 3 documents in sequence; summarized each using keyphrases, then summarized the 3 together as a whole using keyphrases  
+Were matched to both familiar and unfamiliar topics; topical diversity within a collection was varied systematically
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141752558.png?imageSlim)
+
+**Term Commonness**
+
+<BlockMath math="log(tf_w)/log(tf_{the})" />
+
+The normalized term frequency relative to the most frequent n-gram, e.g., the word “the”
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141755707.png?imageSlim)
+
+#### Yelp:Review Spotlight
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141758585.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141759956.png?imageSlim)
+
+<a href="/stanford-cs448b/Review Spotlight A User Interface for Summarizing User-generated Reviews Using Adjective-Noun Word Pairs.pdf">
+  Download PDF《Review Spotlight: A User Interface for Summarizing
+  User-generated Reviews Using Adjective-Noun Word Pairs》
+</a>
+
+#### Tips: Descriptive Keyphrases
+
+Understand the limitations of your language model
+
+- **Bag of words:**
+  - Easy to compute
+  - Single words
+  - Loss of word ordering
+
+Select appropriate model and visualization
+
+- Generate longer, more meaningful phrases
+- Adjective-noun word pairs for reviews
+- Show keyphrases within source text
+
+### Visualizing Document Content
+
+#### Information Retrieval
+
+- Search for documents
+- Match query string with documents
+- Visualization to contextualize results
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141808722.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141809085.png?imageSlim)
+
+#### Concordance
+
+What is the common local context of a term?
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141810563.png?imageSlim)
+
+**wordTree**
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141810552.png?imageSlim)\
+
+- Filter infrequent runs
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141812485.png?imageSlim)
+
+- Recurrent themes in speech
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141811149.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141812369.png?imageSlim)
+
+#### Glimpses of structure
+
+Concordances show local, repeated structure  
+But what about other types of patterns?
+
+:::tip Example
+Lexical: \<A\> at \<B\>  
+Syntactic: \<Noun\> \<Verb\> \<Object\>
+:::
+
+#### Phrase Nets [van Ham 2009]
+
+- Look for specific linking patterns in the text:
+  - ‘A and B’, ‘A at B’, ‘A of B’, etc
+  - Could be output of regexp or parser
+- Visualize extracted patterns in a node-link view
+  - Occurrences -> Node size
+  - Pattern position -> Edge direction
+  - Darker color -> higher ratio of out-edges to in-edges
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141815535.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141816713.png?imageSlim)
+
+### Visualizing Conversation
+
+- Many dimensions to consider:
+  - Who (senders, receivers)
+  - What (the content of communication)
+  - When (temporal patterns)
+- Interesting cross-products:
+  - What x When -> Topic “Zeitgeist”
+  - Who x Who -> Social network
+  - Who x Who x What x When -> Information flow
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141818645.png?imageSlim)
+
+#### Usenet Visualization [Viégas]
+
+Show correspondence patterns in text forums  
+Initiate vs. reply; size and duration of discussion
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141818121.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141819053.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141819907.png?imageSlim)
+
+#### Themail (Viégas)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141820440.png?imageSlim)
+
+One person over time, TF.IDF weighted terms
+
+### Document Collections
+
+Topic modeling Approach
+
+- Assume documents are a mixture of topics
+- Topics are (roughly) a set of co-occurring terms
+- Latent Semantic Analysis (LSA): reduce term matrix
+- Latent Dirichlet Allocation (LDA): statistical model
+
+#### ThemeRiver (Havre et al 99)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141821586.png?imageSlim)
+
+#### Termite: Visualizing Topic Models [Chuang ’12]
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141822526.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141822564.png?imageSlim)
+
+Show salient (vs. frequent) terms. Seriate rows & columns.
+
+#### Stanford Dissertation Browser
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141823865.png?imageSlim)
+
+### Summary
+
+- High Dimensionality
+  - Where possible use text to represent text...
+  - ... which terms are the most descriptive?
+- Context & Semantics
+  - Provide relevant context to aid understanding.
+  - Show (or provide access to) the source text.

@@ -1,0 +1,273 @@
+---
+slug: stanford-cs448b-09-perception
+title: Stanford CS448B 09 Perception
+tags: [dataviz, stanford, class, cs448b]
+---
+
+import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
+
+This article contains my notes from Stanford's CS448B (Data Visualization) course, specifically focusing on the ninth lecture about perception. I'll discuss the importance of perception in data visualization, the principles behind it, and explore various techniques for visualizing data, including the use of guides, expressiveness, effectiveness, support for comparison and pattern perception, grouping and sorting data, transforming data, reducing cognitive overhead, and consistency. I'll also cover various chart types, such as line charts, bar charts, stacked area charts, and others, providing examples and discussing their design considerations.
+
+{/* truncate */}
+
+## Original
+
+<object
+  data="/stanford-cs448b/Lec09-perception.pdf"
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href="/stanford-cs448b/Lec09-perception.pdf">Download PDF</a>.
+</object>
+
+## Notes
+
+### [Mackinlay](https://www.tableau.com/research/people/jock-mackinlay)
+
+- Effectiveness Criteria
+  A visualization is more effective than another visualization if the information conveyed by one visualization is more readily perceived than the information in the other visualization.
+
+- Encoding Ranking
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251618167.png?imageSlim)
+
+:::info Notes
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/ObsidianPasted%20image%2020230811151332.png)
+:::
+
+### Detection
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251620336.png?imageSlim)
+
+Just noticeable difference (JND) is the smallest difference in a stimulus that can be detected.Also be called [Weber’s Law](https://en.wikipedia.org/wiki/Weber%E2%80%93Fechner_law).
+
+<InlineMath math="ΔS = k\frac{ΔI}{I}" />
+
+- Ratios more important than magnitude
+- Most continuous variations in stimuli are perceived in discrete steps
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251628662.png?imageSlim)
+
+Information in color and value:
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251630296.png?imageSlim)
+
+Sizes standardized in 16th century
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251631567.png?imageSlim)
+
+### Estimating Magnitude
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian20230822212812.png)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian20230822212823.png)
+
+[Stevens's Power Law](https://en.wikipedia.org/wiki/Stevens%27s_power_law)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian20230822212941.png)
+
+| Sensation     | Exponent                      |
+| ------------- | ----------------------------- |
+| Loudness      | 0.6                           |
+| Brightness    | 0.33                          |
+| Smell         | 0.55 (Coffee) - 0.6 (Heptane) |
+| Taste         | 0.6 (Saccharine) -1.3 (Salt)  |
+| Temperature   | 1.0 (Cold) – 1.6 (Warm)       |
+| Vibration     | 0.6 (250 Hz) – 0.95 (60 Hz)   |
+| Duration      | 1.1                           |
+| Pressure      | 1.1                           |
+| Heaviness     | 1.45                          |
+| Electic Shock | 3.5                           |
+
+Apparent magnitude scaling
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202403142054082.png?imageSlim)
+
+Absolute Symbol Scaling
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202403142055458.png?imageSlim)
+
+<InlineMath math="r=k*v" />
+Flannery Scaling ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202403142056594.png?imageSlim)
+
+<InlineMath math="r=k*v^{0.57}" />
+
+Graduated Symbols ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202403142056926.png?imageSlim)
+
+Graduated sphere map
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202403142057822.png?imageSlim)
+
+### Cleveland and McGill
+
+<object
+  data="/paper/ClevelandMcGill1984.pdf"
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href="/paper/ClevelandMcGill1984.pdf">Download PDF</a>.
+</object>
+
+:::info Notes
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202403142058710.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202403142058773.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202403142059073.png?imageSlim)
+
+- Understanding Graphical Perception: The paper explores how humans perceive and interpret graphical information, providing a foundational understanding of graphical perception. This includes studying how accurately and efficiently people can decode different types of graphs such as bar charts, pie charts, and scatter plots.
+- Accuracy of Perceptual Tasks: Cleveland and McGill's experiments revealed that different graphical representations have varying levels of accuracy when it comes to conveying information. For example, position-based encodings (like bar lengths in bar charts) are generally interpreted more accurately than area or angle-based encodings (like slices in pie charts).
+- Design Principles: Based on their findings, they proposed several design principles to enhance the effectiveness of data visualizations. One key recommendation is to use position encodings over area or angle encodings to improve the accuracy of data interpretation.
+- Experimental Methods: Their use of rigorous experimental methods to test the performance of different graphical representations set a standard for future research in the field. This empirical approach provided quantitative evidence for the effectiveness of various visualization techniques.
+
+Overall, Cleveland and McGill's work emphasized the importance of considering human perceptual abilities when designing data visualizations. Their research hasguided the development of more effective and interpretable graphical methods, influencing both academic research and practical applications in data visualization.
+:::
+
+### Relative magnitude estimation
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202403142100262.png?imageSlim)
+
+### Preattentive vs. Attentive
+
+- How many 3's
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202403142100119.png?imageSlim)
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202403142101897.png?imageSlim)
+
+- Visual pop-out: Color
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202403142101512.png?imageSlim)
+
+- Visual pop-out: Shape
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202403142102803.png?imageSlim)
+
+- Feature conjunctions
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202403142103037.png?imageSlim)
+
+**Preattentive features**
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202403142103430.png?imageSlim)
+
+More preattentive features
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202403142104739.png?imageSlim)
+
+### [Feature-integration theory](https://en.wikipedia.org/wiki/Feature_integration_theory)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251715015.png?imageSlim)
+
+### Multiple Attributes
+
+- One-dimensional: Lightness
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251717297.png?imageSlim)
+
+- One-dimensional: Shape
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251716828.png?imageSlim)
+
+- Correlated dims: Shape or lightness
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251717908.png?imageSlim)
+
+- Orthogonal dims: Shape & lightness
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251718645.png?imageSlim)
+
+:::info Notes
+**Speeded classification**
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251718936.png?imageSlim)
+
+- Redundancy gain  
+  Facilitation in reading one dimension when the other provides redundant information
+- Filtering interference  
+  Difficulty in ignoring one dimension while attending to the other
+
+**Types of dimensions**
+
+- Integral  
+  Filtering interference and redundancy gain
+- Separable  
+  No interference or gain
+- Configural  
+  Only interference, but no redundancy gain
+- Asymmetrical  
+   One dimension separable from other, not vice versa
+  :::
+
+- Correlated dims: Size and value
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251721335.png?imageSlim)
+
+- Othogonal dims: Height, Width
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251721209.png?imageSlim)
+
+- Orientation and Size (Single Mark)
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251722688.png?imageSlim)
+  How well can you see temperature or precipitation?
+  Is there a correlation between the two?
+
+- Shape and Size
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251723552.png?imageSlim)
+  Easier to see one shape across multiple sizes than
+  one size of across multiple shapes?
+
+:::info Notes
+Summary of Integral-Separable
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251724029.png?imageSlim)
+
+:::
+
+### Gestalt
+
+Principles
+
+- figure/ground
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251726280.png?imageSlim)
+- proximity
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251726357.png?imageSlim)
+- similarity
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251727273.png?imageSlim)
+- symmetry
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251727907.png?imageSlim)
+- connectedness
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251727865.png?imageSlim)
+- continuity
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251728980.png?imageSlim)
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251728601.png?imageSlim)
+- closure
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251729482.png?imageSlim)
+- common fate
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251729304.png?imageSlim)
+- transparency
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251730817.png?imageSlim)
+
+### Layering:Gridlines
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409261732814.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409261733238.png?imageSlim)
+
+### Layering: Color and line width
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409261733227.png?imageSlim)
+
+### Small multiples
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409261734404.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409261734785.png?imageSlim)
+
+### Rensink’s demonstration
+
+<video width="100%" height="auto" controls>
+  <source
+    src="/stanford-cs448b/Change blindness demonstration.mp4"
+    type="video/mp4"
+  />
+  Your browser does not support the video tag.
+</video>
+
+:::info Notes
+Find More Examples About Change blindness demonstration [Here](https://www2.psych.ubc.ca/~rensink/flicker/download/index.html)
+:::
+
+### Summary
+
+Choosing effective visual encodings requires knowledge of visual perception.
+
+Visual features/attributes
+
+- Individual attributes often preattentive.
+- Multiple attributes may be separable, often integral.
+
+[Gestalt principles](https://www.interaction-design.org/literature/topics/gestalt-principles) provide higher level design guidelines.  
+We don’t always see everything that is there.

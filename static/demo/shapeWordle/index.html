@@ -1,0 +1,1332 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body,
+      html {
+        width: 100vw;
+        height: 100vh;
+      }
+
+      #container {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      #container > * {
+        margin-top: 40px;
+      }
+
+      #container > *:first-child {
+        margin-top: 0;
+      }
+
+      canvas {
+        width: 900px;
+        height: 600px;
+        flex-shrink: 0;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+
+      #result {
+        background-image: url('./chrome.png');
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+      }
+
+      #debug-groups {
+        background-image: url('./chrome.png');
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-color: rgba(255, 255, 255, 0.7);
+        background-blend-mode: lighten;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="container">
+      <canvas id="result" width="900" height="600"></canvas>
+      <p>DEBUG OUTPUT ⬇</p>
+      <canvas id="debug-groups" width="900" height="600"></canvas>
+      <canvas id="debug-dists" width="900" height="600"></canvas>
+      <canvas id="debug-occupied" width="900" height="600"></canvas>
+    </div>
+  </body>
+  <script>
+    var Module = {
+      onRuntimeInitialized: function () {
+        console.log('OpenCV.js is ready');
+        main();
+      },
+    };
+  </script>
+  <script async src="opencv-4.10.0.js" type="text/javascript"></script>
+  <script>
+    // 定义配置项
+    const KEYWORDS_NUM = 40;
+    const FILLING_WORDS_NUM = 200;
+    const WIDTH = 900;
+    const HEIGHT = 600;
+
+    // Initialize all canvases with the same dimensions
+    const canvases = [
+      'result',
+      'debug-groups',
+      'debug-dists',
+      'debug-occupied',
+    ];
+    canvases.forEach((id) => {
+      const canvas = document.getElementById(id);
+      // Set both the CSS dimensions and the canvas internal dimensions
+      canvas.style.width = `${WIDTH}px`;
+      canvas.style.height = `${HEIGHT}px`;
+      canvas.width = WIDTH;
+      canvas.height = HEIGHT;
+    });
+
+    const FONT_SIZE = [8, 48];
+    const FONT_WEIGHT = [400, 700];
+    const FONT_FAMILY = 'Arial';
+    const ANGLE_MODE = 0;
+
+    async function main() {
+      // 1. 获取数据
+      const data = await fetch('../../data/words.json').then((res) =>
+        res.json()
+      );
+      const { keywords, fillingWords } = preProcessWords(data);
+
+      // 2. 处理图片
+      const { dist, contours, areas, groups } = await preProcessImg();
+      // 3. 处理距离场
+      const regions = processDistanceField(dist, contours, areas);
+      // 4. 分配单词
+      allocateWordsToRegions(keywords, regions, areas);
+      allocateWordsToExtremePoint(keywords, regions, areas);
+
+      // 5. 布局并绘制
+      const occupiedMatrix = generateWordle(
+        keywords,
+        fillingWords,
+        regions,
+        groups
+      );
+    }
+
+    function preProcessWords(data) {
+      const maxValue = Math.max(...data.map((word) => word.value));
+      const words = data
+        .map((word) => ({
+          ...word,
+          weight: word.value / maxValue,
+          fontSize: Math.round(
+            (FONT_SIZE[1] - FONT_SIZE[0]) * Math.sqrt(word.value / maxValue) +
+              FONT_SIZE[0]
+          ),
+          fontWeight: Math.round(
+            (FONT_WEIGHT[1] - FONT_WEIGHT[0]) *
+              Math.sqrt(word.value / maxValue) +
+              FONT_WEIGHT[0]
+          ),
+          angle: calcAngle(word.value / maxValue),
+        }))
+        .sort((a, b) => b.weight - a.weight);
+
+      words.forEach((word) => {
+        // 测量单词的宽高
+        measureText(word);
+      });
+
+      const keywords = words.slice(0, KEYWORDS_NUM);
+      const fillingWords = words.slice(
+        KEYWORDS_NUM,
+        KEYWORDS_NUM + FILLING_WORDS_NUM
+      );
+      if (fillingWords.length < FILLING_WORDS_NUM) {
+        while (fillingWords.length < FILLING_WORDS_NUM) {
+          const randomIndex = Math.floor(Math.random() * fillingWords.length);
+          fillingWords.push(fillingWords[randomIndex]);
+        }
+      }
+
+      return { keywords, fillingWords };
+    }
+
+    function calcAngle(weight) {
+      const max = Math.PI / 2;
+      const min = -Math.PI / 2;
+
+      switch (ANGLE_MODE) {
+        case 0:
+          return 0;
+        case 1:
+          if (weight > 0.5) {
+            return 0;
+          }
+          if (Math.random() > 0.6) {
+            return Math.random() > 0.5 ? max : min;
+          } else {
+            return 0;
+          }
+        case 2:
+          return Math.random() * (max - min + 1) + min;
+        case 3:
+          return Math.PI / 4;
+        case 4:
+          return -Math.PI / 4;
+        case 5:
+          if (Math.random() > 0.5) {
+            return Math.PI / 4;
+          } else {
+            return -Math.PI / 4;
+          }
+        default:
+          return 0;
+      }
+    }
+
+    async function preProcessImg(url = 'chrome.png') {
+      // 读取图片
+      const img = new Image();
+      img.src = url;
+      const canvas = await new Promise((resolve) => {
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          // 计算缩放比例
+          const scale = Math.min(WIDTH / img.width, HEIGHT / img.height);
+
+          // 计算居中位置
+          const scaledWidth = img.width * scale;
+          const scaledHeight = img.height * scale;
+          const x = (WIDTH - scaledWidth) / 2;
+          const y = (HEIGHT - scaledHeight) / 2;
+
+          canvas.width = WIDTH;
+          canvas.height = HEIGHT;
+
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = 'white';
+          ctx.fillRect(0, 0, WIDTH, HEIGHT);
+          ctx.drawImage(img, x, y, scaledWidth, scaledHeight);
+
+          resolve(canvas);
+        };
+      });
+
+      // 将 Canvas 转换为 Mat
+      const sourceImg = cv.imread(canvas);
+
+      // 获取分组信息
+      const groups = getGroups(sourceImg);
+      const { distData, contourData, areaData } = getGroupInfo(groups);
+
+      // 清理内存
+      return {
+        dist: distData,
+        contours: contourData,
+        areas: areaData,
+        groups,
+      };
+    }
+
+    function getGroups(sourceImg) {
+      // 转换为灰度图
+      const gray = new cv.Mat();
+      cv.cvtColor(sourceImg, gray, cv.COLOR_RGBA2GRAY); // 注意这里改用 RGBA2GRAY
+
+      // 二值化
+      const thresh = new cv.Mat();
+      cv.threshold(gray, thresh, 0, 255, cv.THRESH_BINARY_INV + cv.THRESH_OTSU);
+
+      // 连通组件分析
+      const labelsMat = new cv.Mat();
+      const statsMat = new cv.Mat();
+      const centroidsMat = new cv.Mat();
+      const connectedComponentCount = cv.connectedComponentsWithStats(
+        thresh,
+        labelsMat,
+        statsMat,
+        centroidsMat,
+        8,
+        cv.CV_32S
+      );
+
+      if (connectedComponentCount <= 1) {
+        throw new Error('No valid regions found in the image');
+      }
+
+      // 转换为数组格式
+      const labelGrid = [];
+      for (let row = 0; row < labelsMat.rows; row++) {
+        labelGrid[row] = [];
+        for (let col = 0; col < labelsMat.cols; col++) {
+          labelGrid[row][col] = labelsMat.ucharPtr(row, col)[0];
+        }
+      }
+
+      // Debug模式: 渲染分组结果
+      const debugCanvas = document.createElement('canvas');
+      debugCanvas.width = WIDTH;
+      debugCanvas.height = HEIGHT;
+      debugCanvas.id = 'debug-groups';
+      debugCanvas.style.cssText = `
+          z-index: 9999;
+          background: white;
+          box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        `;
+      document.getElementById('container').appendChild(debugCanvas);
+      const debugCtx = debugCanvas.getContext('2d');
+
+      if (!debugCtx) {
+        console.error('Failed to get canvas context');
+        return;
+      }
+
+      // 生成区分色
+      const regionColors = Array.from(
+        { length: connectedComponentCount },
+        (_, i) => HSLToRGB(((i * 360) / connectedComponentCount) % 360, 70, 60)
+      );
+
+      // 绘制分组结果
+      const debugImageData = debugCtx.createImageData(WIDTH, HEIGHT);
+      for (let row = 0; row < HEIGHT; row++) {
+        for (let col = 0; col < WIDTH; col++) {
+          const regionId = labelGrid[row][col];
+          const color =
+            regionId === 0 || regionId >= regionColors.length
+              ? [255, 255, 255]
+              : regionColors[regionId];
+          const pixelIndex = (row * WIDTH + col) * 4;
+          debugImageData.data[pixelIndex] = color[0]; // R
+          debugImageData.data[pixelIndex + 1] = color[1]; // G
+          debugImageData.data[pixelIndex + 2] = color[2]; // B
+          debugImageData.data[pixelIndex + 3] = 255; // A
+        }
+      }
+      debugCtx.putImageData(debugImageData, 0, 0);
+
+      // 添加标签文本，确保文本在画布范围内
+      debugCtx.font = '12px Arial';
+      debugCtx.fillStyle = 'black';
+      for (let regionId = 1; regionId < connectedComponentCount; regionId++) {
+        const centerX = Math.round(centroidsMat.doublePtr(regionId, 0));
+        const centerY = Math.round(centroidsMat.doublePtr(regionId, 1));
+
+        // 确保文本不会超出画布边界
+        const regionLabel = `${regionId}`;
+        const textMetrics = debugCtx.measureText(regionLabel);
+        const textX = Math.min(
+          Math.max(centerX, textMetrics.width / 2),
+          WIDTH - textMetrics.width / 2
+        );
+        const textY = Math.min(Math.max(centerY, 12), HEIGHT - 5);
+
+        debugCtx.fillText(regionLabel, textX, textY);
+      }
+
+      // 清理内存
+      sourceImg.delete();
+      gray.delete();
+      thresh.delete();
+      labelsMat.delete();
+      statsMat.delete();
+      centroidsMat.delete();
+
+      return labelGrid;
+    }
+
+    function HSLToRGB(hue, saturation, lightness) {
+      saturation /= 100;
+      lightness /= 100;
+      const k = (n) => (n + hue / 30) % 12;
+      const a = saturation * Math.min(lightness, 1 - lightness);
+      const f = (n) =>
+        lightness - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+      return [
+        Math.round(255 * f(0)),
+        Math.round(255 * f(8)),
+        Math.round(255 * f(4)),
+      ];
+    }
+
+    function getGroupInfo(groups) {
+      // 获取唯一标签
+      const labels = [...new Set(groups.flat())].filter((x) => x !== 0);
+
+      const distData = [];
+      const contourData = [];
+      const areaData = [];
+
+      labels.forEach((label) => {
+        // 创建二值图像
+        const newMarkers = groups.map((row) =>
+          row.map((pixel) => (pixel === label ? 1 : 0))
+        );
+
+        // 创建Mat对象
+        const newImage = cv.matFromArray(
+          HEIGHT,
+          WIDTH,
+          cv.CV_8UC1,
+          newMarkers.flat()
+        );
+
+        // 距离变换
+        const distImg = new cv.Mat();
+        cv.distanceTransform(newImage, distImg, cv.DIST_L2, cv.DIST_MASK_3);
+
+        // 收集距离场数据
+        const distPoints = Array(WIDTH)
+          .fill()
+          .map(() => Array(HEIGHT).fill(0));
+        for (let y = 0; y < HEIGHT; y++) {
+          for (let x = 0; x < WIDTH; x++) {
+            const dist = distImg.floatPtr(y, x)[0];
+            if (dist !== 0) {
+              distPoints[x][y] = dist;
+            }
+          }
+        }
+
+        distData.push(distPoints);
+        // 轮廓检测
+        const contours = new cv.MatVector();
+        const hierarchy = new cv.Mat();
+        cv.findContours(
+          newImage,
+          contours,
+          hierarchy,
+          cv.RETR_TREE,
+          cv.CHAIN_APPROX_TC89_KCOS
+        );
+
+        // 处理轮廓数据
+        const contourPoints = [];
+        let area = 0;
+        for (let i = 0; i < contours.size(); i++) {
+          const contour = contours.get(i);
+          area += cv.contourArea(contour);
+          for (let j = 0; j < contour.data32S.length; j += 2) {
+            contourPoints.push([contour.data32S[j], contour.data32S[j + 1]]);
+          }
+          contour.delete();
+        }
+        contourData.push(contourPoints);
+        areaData.push(Math.floor(area));
+
+        // 清理内存
+        newImage.delete();
+        distImg.delete();
+        contours.delete();
+        hierarchy.delete();
+      });
+
+      const debugCanvas = document.getElementById('debug-dists');
+      const debugCtx = debugCanvas.getContext('2d');
+
+      const regionColors = Array.from({ length: labels.length }, (_, i) =>
+        HSLToRGB(((i * 360) / labels.length) % 360, 70, 60)
+      );
+
+      distData.forEach((dist, index) => {
+        const color = regionColors[index];
+        // 绘制距离场，距离场数值越大，颜色越深
+        for (let y = 0; y < HEIGHT; y++) {
+          for (let x = 0; x < WIDTH; x++) {
+            const value = dist[x][y];
+            const alpha = Math.min(value / 50, 1);
+            debugCtx.fillStyle = `rgba(${color[0]}, ${color[1]}, ${color[2]}, ${alpha})`;
+            debugCtx.fillRect(x, y, 1, 1);
+          }
+        }
+      });
+      return { distData, contourData, areaData };
+    }
+
+    function processDistanceField(dist, contours, areas) {
+      const regions = dist.map((region, regionID) => {
+        // 平滑距离场三次
+        smoothDistanceField(region);
+        smoothDistanceField(region);
+        smoothDistanceField(region);
+
+        // 查找极点和最大点
+        let { extremePoints, maxDis, maxPoint } = findExtremePointsAndMaximum(
+          region,
+          regionID
+        );
+
+        // 过滤掉极点中的最大点
+        extremePoints = extremePoints.filter(
+          (p) => p.pos[0] !== maxPoint[0] || p.pos[1] !== maxPoint[1]
+        );
+
+        // 处理靠近最点的极点
+        let hasAppend = false;
+        for (let i = 0; i < extremePoints.length; i++) {
+          const e = extremePoints[i];
+          if (calculateDistance(e.pos, maxPoint) < 100) {
+            if (
+              i >= 1 &&
+              extremePoints[i - 1].pos[0] === maxPoint[0] &&
+              extremePoints[i - 1].pos[1] === maxPoint[1]
+            ) {
+              extremePoints.splice(i, 1);
+            } else if (e.value < maxDis) {
+              e.pos = maxPoint;
+              e.value = maxDis;
+            }
+            hasAppend = true;
+          }
+        }
+
+        if (!hasAppend) {
+          extremePoints.push({
+            pos: maxPoint,
+            value: maxDis,
+            regionID,
+          });
+        }
+
+        return {
+          contour: contours[regionID],
+          dist: region,
+          extremePoints,
+          id: regionID,
+        };
+      });
+
+      // 合并所有极点
+      let extremePoints = regions
+        .map((region) => region.extremePoints)
+        .reduce((total, e) => total.concat(e), []);
+
+      // 过滤距离较近的极点
+      const points = [];
+      const DISTANCE_THRESHOLD = 60;
+
+      // 按value值从大到小排序,优先保留value大的点
+      const sortedPoints = [...extremePoints].sort((a, b) => b.value - a.value);
+
+      for (const point of sortedPoints) {
+        // 检查是否已存在距离较近的点
+        const nearbyPoint = points.find(
+          (p) => calculateDistance(point.pos, p.pos) < DISTANCE_THRESHOLD
+        );
+
+        if (!nearbyPoint) {
+          // 不存在近邻点,直接添加
+          points.push(point);
+        }
+        // 存在近邻点时,由于已按value排序,无需替换
+      }
+
+      // 将过滤后的极点分配回每个region
+      extremePoints = points;
+
+      regions.forEach((region, regionID) => {
+        const extremePoint = extremePoints
+          .filter((e) => e.regionID === regionID)
+          .sort((a, b) => b.value - a.value);
+
+        const sum = extremePoint.reduce(
+          (total, { value }) => total + value * value,
+          0
+        );
+        extremePoint.forEach((e) => {
+          e.ratio = Math.round(((e.value * e.value) / sum) * 100) / 100;
+          e.value = Math.round(e.value * 100) / 100;
+        });
+
+        region.extremePoints = extremePoint;
+        region.value = extremePoint[0]?.value || 0;
+        region.area = areas[regionID];
+      });
+
+      // 渲染极点
+      const debugCanvas = document.getElementById('debug-groups');
+      const debugCtx = debugCanvas.getContext('2d');
+      regions.forEach((region) => {
+        region.extremePoints.forEach((e) => {
+          debugCtx.fillStyle = 'red';
+          debugCtx.fillRect(e.pos[0], e.pos[1], 5, 5);
+        });
+      });
+
+      return regions;
+    }
+
+    function smoothDistanceField(dist) {
+      // 平滑距离场
+      const kernelSize = 3;
+      const offset = Math.floor(kernelSize / 2);
+
+      for (let y = 1; y < HEIGHT - 1; y++) {
+        for (let x = 1; x < WIDTH - 1; x++) {
+          const kernel = [
+            [1, 2, 1],
+            [2, 4, 2],
+            [1, 2, 1],
+          ];
+          let value = 0;
+          for (let i = 0; i < kernelSize; i++) {
+            for (let j = 0; j < kernelSize; j++) {
+              const offsetX = i - offset;
+              const offsetY = j - offset;
+              value += kernel[i][j] * dist[x + offsetX][y + offsetY];
+            }
+          }
+          // 处16为kernel阵中值的和
+          dist[x][y] = value / 16;
+        }
+      }
+    }
+
+    function findExtremePointsAndMaximum(dist, regionID) {
+      const points = [];
+      let maxDis = -Infinity;
+      let maxPoint = [];
+
+      for (let y = 2; y < HEIGHT - 2; y++) {
+        for (let x = 2; x < WIDTH - 2; x++) {
+          if (dist[x][y] < 0) continue;
+
+          if (dist[x][y] > maxDis) {
+            maxDis = dist[x][y];
+            maxPoint = [x, y];
+          }
+
+          // 检查是否是极点
+          let cnt = 0;
+          for (let offsetX = -1; offsetX < 2; offsetX++) {
+            for (let offsetY = -1; offsetY < 2; offsetY++) {
+              if (
+                dist[x + offsetX] &&
+                dist[x + offsetX][y + offsetY] !== undefined &&
+                dist[x + offsetX][y + offsetY] < dist[x][y]
+              ) {
+                cnt++;
+              }
+            }
+          }
+
+          if (cnt >= 8) {
+            points.push({
+              pos: [x, y],
+              value: dist[x][y],
+              regionID,
+            });
+          }
+        }
+      }
+
+      return {
+        extremePoints: points,
+        maxDis,
+        maxPoint,
+      };
+    }
+
+    function calculateDistance(pos1, pos2) {
+      const dx = pos1[0] - pos2[0];
+      const dy = pos1[1] - pos2[1];
+      return Math.sqrt(dx * dx + dy * dy);
+    }
+    function allocateWordsToRegions(keywords, regions, areas) {
+      const wordsMinWeight = Math.min(...keywords.map((word) => word.weight));
+      // 生成面积从大到小的索引数组
+      const areasSortedIndices = areas
+        .map((area, index) => ({ area, index }))
+        .sort((a, b) => b.area - a.area)
+        .map((item) => item.index);
+
+      const areaMaxId = areasSortedIndices[0];
+      const areaMax = areas[areaMaxId];
+      const totalArea = areas.reduce((total, area) => total + area, 0);
+
+      const valueMax = Math.max(...regions.map((region) => region.value));
+
+      // 给每个区域分配单词数量和权重限制
+      const wordsSum = regions.reduce((sum, region) => {
+        const { area, value } = region;
+        // 根据区域大小和值分配单词数量
+        const wordsNum =
+          value <= 18 && valueMax > 45
+            ? 0
+            : Math.round((area / totalArea) * KEYWORDS_NUM);
+
+        // 计算区域权重
+        const wordsWeight = wordsNum < 3 ? wordsMinWeight : area / areaMax;
+
+        // 更新区域属性
+        region.wordsNum = wordsNum;
+        region.wordsWeight = wordsWeight;
+
+        return sum + wordsNum;
+      }, 0);
+
+      if (wordsSum !== KEYWORDS_NUM) {
+        regions[areaMaxId].wordsNum += KEYWORDS_NUM - wordsSum;
+      }
+
+      const wordsNums = regions.map((region) => region.wordsNum);
+
+      // 对每个单词进行分配
+      // 为每个关键词分配区域
+      keywords.forEach((word) => {
+        // 找第一个满足条件的区域
+        const regionIndex = areasSortedIndices.find((areaIndex) => {
+          const region = regions[areaIndex];
+          return (
+            wordsNums[areaIndex] > 0 && // 区域还有剩余空间
+            word.weight <= region.wordsWeight && // 单词权重合适
+            isWordFitRegion(word, region) // 单词大小适合区域
+          );
+        });
+
+        // 分配区域ID,如果没找到合适区域则使用最面积区域
+        word.regionID = regionIndex ?? areaMaxId;
+
+        // 更新区域剩余单词数
+        if (regionIndex !== undefined) {
+          wordsNums[regionIndex]--;
+        }
+      });
+
+      // 辅助函数:检查单词是否适合区域
+      function isWordFitRegion(word, region) {
+        const isShortWord = word.text.length <= 5;
+        const isLargeRegion = region.extremePoints[0].value >= 24;
+
+        return (
+          isLargeRegion || (region.extremePoints[0].value < 24 && isShortWord)
+        );
+      }
+    }
+    function allocateWordsToExtremePoint(keywords, regions, areas) {
+      const wordsMinWeight = Math.min(...keywords.map((word) => word.weight));
+
+      regions.forEach((region, regionID) => {
+        // 计算每个极点的权重和单词数量
+        const { extremePoints } = region;
+        const firstEPRatio = extremePoints[0].ratio;
+        let wordsSum = 0;
+
+        extremePoints.forEach((ep) => {
+          // 计极点权重,确保不小于最小权重
+          ep.epWeight =
+            Math.round(
+              Math.max(
+                (ep.ratio / firstEPRatio) * region.wordsWeight,
+                wordsMinWeight
+              ) * 100
+            ) / 100;
+
+          // 计算极点可容纳的单词数量
+          ep.epNumber =
+            ep.value < 20 ? 0 : Math.round(ep.ratio * region.wordsNum);
+          wordsSum += ep.epNumber;
+        });
+
+        // 调整第一个极点的单词数以匹配总数
+        if (wordsSum !== region.wordsNum) {
+          extremePoints[0].epNumber += region.wordsNum - wordsSum;
+        }
+
+        // 为该区域的单词分配极点
+        const wordsNumbers = extremePoints.map((ep) => ep.epNumber);
+        const maxAttempts = extremePoints.length * 2;
+
+        keywords
+          .filter((word) => word.regionID === regionID)
+          .forEach((word) => {
+            let currEP = 0;
+            let attempts = 0;
+
+            // 尝试找到合适的极点
+            while (attempts < maxAttempts) {
+              if (
+                wordsNumbers[currEP] > 0 &&
+                word.weight <= extremePoints[currEP].epWeight
+              ) {
+                word.epID = currEP;
+                wordsNumbers[currEP]--;
+                break;
+              }
+              currEP = (currEP + 1) % extremePoints.length;
+              attempts++;
+            }
+
+            // 如果找到合适的极点,分配到第一个极点
+            if (attempts >= maxAttempts) {
+              word.epID = 0;
+            }
+          });
+      });
+    }
+
+    function generateWordle(keywords, fillingWords, regions, groups) {
+      try {
+        // 初始化占用矩阵
+        const occupiedMatrix = new Array(WIDTH)
+          .fill(0)
+          .map(() => new Array(HEIGHT).fill(false));
+        for (let y = 0; y < HEIGHT; y++) {
+          for (let x = 0; x < WIDTH; x++) {
+            occupiedMatrix[x][y] = !groups[y][x];
+          }
+        }
+
+        // 处理每个区域
+        regions.forEach((region) => {
+          const regionKeyWords = keywords.filter(
+            (word) => word.regionID === region.id
+          );
+          handleRegion(regionKeyWords, region, groups, occupiedMatrix);
+        });
+
+        const debugCanvas = document.getElementById('debug-occupied');
+        const debugCtx = debugCanvas.getContext('2d');
+        for (let y = 0; y < HEIGHT; y++) {
+          for (let x = 0; x < WIDTH; x++) {
+            debugCtx.fillStyle = occupiedMatrix[x][y] ? 'red' : 'white';
+            debugCtx.fillRect(x, y, 1, 1);
+          }
+        }
+
+        const canvas = document.getElementById('result');
+        const ctx = canvas.getContext('2d');
+        // 在处理完关键词后，添加以下填充词处理逻辑
+        const gridSize = 1;
+        const grid = createFillingGrid(occupiedMatrix, gridSize);
+
+        // 多次填充，保证填充率
+        let fontSize = 12; // 初始字体大小
+        let alpha = 1; // 初始透明度
+        const deltaFontSize = 1; // 每次填充字体大小的减少量
+        const deltaAlpha = 0.1; // 每次填充透明度的减少量
+        const fillingTimes = 10;
+
+        for (let i = 0; i < fillingTimes; i++) {
+          fillingWords.forEach((word) => {
+            putFillingWord(word, fontSize, alpha, grid, ctx, groups);
+          });
+
+          fontSize = Math.max(fontSize - deltaFontSize, 8); // 最小字体限制为8px
+          alpha = Math.max(alpha - deltaAlpha, 0.3); // 最小透明度限制为0.3
+        }
+      } catch (error) {
+        console.error('Error in generateWordle:', error);
+        throw error;
+      }
+    }
+
+    function measureText(word) {
+      // 测量文本包围盒的宽高
+      const { text, fontSize, fontWeight } = word;
+
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      ctx.font = `${fontWeight} ${fontSize}px ${FONT_FAMILY}`;
+      const metrics = ctx.measureText(text);
+
+      word.width = Math.ceil(metrics.width);
+      word.height = Math.ceil(
+        metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent
+      );
+
+      // 释放canvas
+      canvas.remove();
+    }
+
+    function handleRegion(keywords, region, groups, occupiedMatrix) {
+      const { dist, extremePoints } = region;
+      const epSpiralPoints = extremePoints.map((ep) =>
+        getShapeSpiralPoints(ep.pos, dist, 4)
+      );
+      const canvas = document.getElementById('result');
+      const ctx = canvas.getContext('2d');
+
+      // 使用已有的 debug canvas
+      const debugCanvas = document.getElementById('debug-occupied');
+      const debugCtx = debugCanvas.getContext('2d');
+      debugCtx.fillStyle = 'rgba(0, 0, 255, 0.2)'; // 使用半透明蓝色标记螺旋线点
+      epSpiralPoints.forEach((points) => {
+        points.forEach((point) => {
+          debugCtx.fillRect(point[0], point[1], 1, 1);
+        });
+      });
+
+      keywords.forEach((word) => {
+        const spiral = epSpiralPoints[word.epID];
+        for (let i = 0; i < spiral.length; i++) {
+          const point = spiral[i];
+          const result = tryPutWord(point, word, occupiedMatrix);
+          // 如果该点可以放置单词，则跳出螺旋线循环，进行下一个单词的放置
+          if (result) {
+            drawWord(ctx, word);
+            break;
+          }
+        }
+      });
+    }
+
+    function getShapeSpiralPoints(startPoint, dist, stepSize = 4) {
+      const points = [];
+      const pos = [...startPoint];
+      points.push([...pos]);
+
+      const m = 0.9;
+      const dEta = Math.PI / 8;
+      const maxTS = 2.0;
+      const minTS = 1.5;
+
+      const MAX_ITERATIONS = 1000;
+      let iterations = 0;
+
+      while (iterations < MAX_ITERATIONS) {
+        iterations++;
+
+        const x = Math.round(pos[0]);
+        const y = Math.round(pos[1]);
+
+        if (!isValidPosition(x, y, dist)) {
+          break;
+        }
+
+        const r = dist[x][y];
+
+        if (r < 1) {
+          break;
+        }
+
+        const normal = computeNormal(dist, x, y);
+        const normalLen = Math.sqrt(
+          normal[0] * normal[0] + normal[1] * normal[1]
+        );
+
+        if (normalLen < 0.001) continue;
+
+        const tangent = [-normal[1] / normalLen, normal[0] / normalLen];
+
+        const hessian = computeHessian(dist, x, y);
+        const tem = [
+          tangent[0] * hessian.xx + tangent[1] * hessian.xy,
+          tangent[0] * hessian.xy + tangent[1] * hessian.yy,
+        ];
+        const temValue = tangent[0] * tem[0] + tangent[1] * tem[1];
+        const curvature = Math.max(
+          temValue / (normalLen * normalLen * normalLen),
+          0.001
+        );
+
+        const R = Math.abs(1 / curvature);
+
+        let dTheta = (R * dEta) / Math.max(r, 1);
+        dTheta = Math.min(dTheta / Math.PI / 100, 0.1);
+
+        let dTangent = [r * dTheta * tangent[0], r * dTheta * tangent[1]];
+
+        const normDT = Math.sqrt(
+          dTangent[0] * dTangent[0] + dTangent[1] * dTangent[1]
+        );
+        if (normDT > maxTS) {
+          const scale = maxTS / normDT;
+          dTangent = [dTangent[0] * scale, dTangent[1] * scale];
+        } else if (normDT < minTS) {
+          const scale = minTS / Math.max(normDT, 0.001);
+          dTangent = [dTangent[0] * scale, dTangent[1] * scale];
+        }
+
+        const dNormal = [
+          (m * dTheta * normal[0]) / normalLen,
+          (m * dTheta * normal[1]) / normalLen,
+        ];
+
+        const newPos = [
+          pos[0] + dNormal[0] + dTangent[0],
+          pos[1] + dNormal[1] + dTangent[1],
+        ];
+
+        pos[0] = newPos[0];
+        pos[1] = newPos[1];
+
+        if (iterations % stepSize === 0) {
+          points.push([...pos]);
+        }
+
+        if (calculateDistance(pos, startPoint) > Math.max(WIDTH, HEIGHT) / 2) {
+          break;
+        }
+      }
+
+      return points;
+    }
+
+    function getRandomSpiralPoints(groups) {
+      const points = [];
+      const [center, distance] = getRandomPosition();
+      const maxRadius = Math.floor(
+        Math.sqrt(WIDTH * WIDTH + HEIGHT * HEIGHT) / 2
+      );
+      const radius = distance + maxRadius;
+
+      let angle = 0;
+      const radiusStep = 0.5;
+      const angleStep = 10;
+      for (let r = 0; r < radius; r += radiusStep) {
+        const [dX, dY] = getSpiralPoint(angle, r);
+        const [x, y] = [center[0] + dX, center[1] + dY];
+        if (x >= 0 && x < WIDTH && y >= 0 && y < HEIGHT) {
+          points.push([x, y]);
+        }
+        angle = angle >= 360 ? 0 : angle + angleStep * ((radius - r) / radius);
+      }
+
+      return points;
+    }
+
+    function getSpiralPoint(angle, r) {
+      return [
+        r * Math.cos((angle / 180) * Math.PI),
+        r * Math.sin((angle / 180) * Math.PI),
+      ];
+    }
+
+    function getRandomPosition() {
+      const offset = 300;
+      const center = [WIDTH / 2, HEIGHT / 2];
+      const [xMin, xMax] = [center[0] - offset, center[0] + offset];
+      const [yMin, yMax] = [center[1] - offset, center[1] + offset];
+
+      const x = Math.round(Math.random() * (xMax - xMin + 1) + xMin);
+      const y = Math.round(Math.random() * (yMax - yMin + 1) + yMin);
+
+      const distance = calculateDistance([x, y], center);
+      return [[x, y], distance];
+    }
+    // 辅助函数：计算法线方向
+    function computeNormal(dist, px, py) {
+      const kernelSize = 3;
+      const offset = Math.floor(kernelSize / 2);
+      let gradX = 0;
+      let gradY = 0;
+
+      const gradKernelX = [
+        [1, 2, 1],
+        [0, 0, 0],
+        [-1, -2, -1],
+      ];
+      const gradKernelY = [
+        [1, 0, -1],
+        [2, 0, -2],
+        [1, 0, -1],
+      ];
+
+      for (let i = 0; i < kernelSize; i++) {
+        for (let j = 0; j < kernelSize; j++) {
+          const offsetX = i - offset;
+          const offsetY = j - offset;
+          const value = -dist[px + offsetX]?.[py + offsetY] || 0;
+          gradX += value * gradKernelX[i][j];
+          gradY += value * gradKernelY[i][j];
+        }
+      }
+
+      return [gradX, gradY];
+    }
+
+    // 辅助函数：计算 Hessian 矩阵
+    function computeHessian(dist, px, py) {
+      const kernelSize = 3;
+      const offset = Math.floor(kernelSize / 2);
+      const hessian = { xx: 0, xy: 0, yy: 0 };
+
+      const gradKernelX = [
+        [1, 2, 1],
+        [0, 0, 0],
+        [-1, -2, -1],
+      ];
+      const gradKernelY = [
+        [1, 0, -1],
+        [2, 0, -2],
+        [1, 0, -1],
+      ];
+
+      for (let i = 0; i < kernelSize; i++) {
+        for (let j = 0; j < kernelSize; j++) {
+          const offsetX = i - offset;
+          const offsetY = j - offset;
+          const normal = computeNormal(dist, px + offsetX, py + offsetY);
+          hessian.xx += normal[0] * gradKernelX[i][j];
+          hessian.xy += normal[0] * gradKernelY[i][j];
+          hessian.yy += normal[1] * gradKernelY[i][j];
+        }
+      }
+
+      return hessian;
+    }
+
+    // 辅助函数：检查位置是否有效
+    function isValidPosition(x, y, dist) {
+      if (x < 2 || x >= WIDTH - 2 || y < 2 || y >= HEIGHT - 2) {
+        return false;
+      }
+
+      const value = dist[Math.floor(x)]?.[Math.floor(y)];
+      return value !== undefined && value > 0;
+    }
+
+    function tryPutWord(point, word, occupiedMatrix) {
+      const [cx, cy] = point;
+      const { width, height, angle } = word;
+
+      // 计算sin和cos
+      const cos = Math.cos(angle);
+      const sin = Math.sin(angle);
+
+      // 计算矩形半宽和半高
+      const hw = width / 2;
+      const hh = height / 2;
+
+      // 快速计算边界框
+      const rx = Math.abs(hw * cos) + Math.abs(hh * sin);
+      const ry = Math.abs(hw * sin) + Math.abs(hh * cos);
+
+      // 边界框的整数边界
+      const left = Math.floor(cx - rx);
+      const right = Math.ceil(cx + rx);
+      const top = Math.floor(cy - ry);
+      const bottom = Math.ceil(cy + ry);
+
+      // 检查边界
+      if (left < 0 || right >= WIDTH || top < 0 || bottom >= HEIGHT) {
+        return false;
+      }
+
+      // 预计算旋转矩阵的逆变换
+      const invCos = cos;
+      const invSin = -sin;
+
+      // 存储需要标记的点
+      const pointsToMark = [];
+
+      // 检查碰撞
+      for (let y = top; y <= bottom; y++) {
+        for (let x = left; x <= right; x++) {
+          // 将点变换到矩形的局部坐标系
+          const dx = x - cx;
+          const dy = y - cy;
+          const lx = dx * invCos - dy * invSin;
+          const ly = dx * invSin + dy * invCos;
+
+          // 检查点是否在矩形内
+          if (Math.abs(lx) <= hw && Math.abs(ly) <= hh) {
+            // 如果已占用则返回false
+            if (occupiedMatrix[x][y]) {
+              return false;
+            }
+            // 收集需要标记的点
+            pointsToMark.push([x, y]);
+          }
+        }
+      }
+
+      // 确认可以放置，标记所有收集的点为占用
+      pointsToMark.forEach(([x, y]) => {
+        occupiedMatrix[x][y] = true;
+      });
+
+      word.pos = point;
+      return true;
+    }
+
+    function drawWord(ctx, word) {
+      const { pos, text, fontSize, fontWeight, angle } = word;
+
+      const font = `${fontWeight} ${fontSize}px ${FONT_FAMILY}`;
+
+      ctx.save();
+      ctx.translate(pos[0], pos[1]);
+      ctx.rotate(angle);
+
+      ctx.font = font;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      ctx.fillStyle = word.color || '#000000';
+
+      ctx.fillText(text, 0, 0);
+
+      ctx.restore();
+    }
+
+    function createFillingGrid(occupiedMatrix, gridSize) {
+      const gridWidth = Math.ceil(WIDTH / gridSize);
+      const gridHeight = Math.ceil(HEIGHT / gridSize);
+      const grid = new Array(gridWidth)
+        .fill(0)
+        .map(() => new Array(gridHeight).fill(1));
+
+      // 将已占用的像素转换为网格
+      for (let x = 0; x < WIDTH; x++) {
+        for (let y = 0; y < HEIGHT; y++) {
+          if (occupiedMatrix[x][y]) {
+            const gridX = Math.floor(x / gridSize);
+            const gridY = Math.floor(y / gridSize);
+            grid[gridX][gridY] = 0;
+          }
+        }
+      }
+
+      return grid;
+    }
+
+    function putFillingWord(word, fontSize, alpha, grid, ctx, groups) {
+      const angle = calcAngle(0.1); // 使用较小的权重值来获得更多的水平文字
+      const wordPixels = getWordPixels(word, fontSize, angle);
+      if (!wordPixels) return false;
+
+      const [center, distance] = getRandomPosition();
+      const maxRadius = Math.floor(
+        Math.sqrt(WIDTH * WIDTH + HEIGHT * HEIGHT) / 2
+      );
+      const radius = distance + maxRadius;
+
+      let currentAngle = Math.random() * 360;
+      const radiusStep = 0.5;
+      const angleStep = 10;
+
+      for (let r = 0; r < radius; r += radiusStep) {
+        const [dX, dY] = getSpiralPoint(currentAngle, r);
+        const [x, y] = [Math.round(center[0] + dX), Math.round(center[1] + dY)];
+
+        if (
+          x >= 0 &&
+          x < WIDTH &&
+          y >= 0 &&
+          y < HEIGHT &&
+          canPlaceWordAtPoint(grid, wordPixels, x, y)
+        ) {
+          // 更新网格占用情况
+          updateGrid(grid, wordPixels, x, y, 0);
+
+          // 绘制文字
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.rotate(angle);
+          ctx.font = `${fontSize}px ${FONT_FAMILY}`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.globalAlpha = alpha;
+          ctx.fillStyle = word.color || '#000000';
+          ctx.fillText(word.text, 0, 0);
+          ctx.restore();
+
+          return true;
+        }
+
+        currentAngle =
+          currentAngle >= 360
+            ? 0
+            : currentAngle + angleStep * ((radius - r) / radius);
+      }
+
+      return false;
+    }
+
+    function getWordPixels(word, fontSize, angle) {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      ctx.font = `${fontSize}px ${FONT_FAMILY}`;
+      const metrics = ctx.measureText(word.text);
+      const width = Math.ceil(metrics.width);
+      const height = Math.ceil(
+        metrics.actualBoundingBoxAscent + metrics.actualBoundingBoxDescent
+      );
+
+      canvas.width = width * 2;
+      canvas.height = height * 2;
+
+      ctx.translate(canvas.width / 2, canvas.height / 2);
+      ctx.rotate(angle);
+      ctx.font = `${fontSize}px ${FONT_FAMILY}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(word.text, 0, 0);
+
+      const imageData = ctx.getImageData(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      ).data;
+      const pixels = [];
+
+      for (let y = 0; y < canvas.height; y++) {
+        for (let x = 0; x < canvas.width; x++) {
+          const i = (y * canvas.width + x) * 4;
+          if (imageData[i + 3] > 0) {
+            pixels.push([x - canvas.width / 2, y - canvas.height / 2]);
+          }
+        }
+      }
+
+      return pixels;
+    }
+
+    function canPlaceWordAtPoint(grid, wordPixels, x, y) {
+      const gridSize = 1;
+      for (const [dx, dy] of wordPixels) {
+        const gridX = Math.floor((x + dx) / gridSize);
+        const gridY = Math.floor((y + dy) / gridSize);
+
+        if (
+          gridX < 0 ||
+          gridX >= grid.length ||
+          gridY < 0 ||
+          gridY >= grid[0].length
+        ) {
+          return false;
+        }
+
+        if (grid[gridX][gridY] === 0) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    function updateGrid(grid, wordPixels, x, y, value) {
+      const gridSize = 1;
+      for (const [dx, dy] of wordPixels) {
+        const gridX = Math.floor((x + dx) / gridSize);
+        const gridY = Math.floor((y + dy) / gridSize);
+        if (
+          gridX >= 0 &&
+          gridX < grid.length &&
+          gridY >= 0 &&
+          gridY < grid[0].length
+        ) {
+          grid[gridX][gridY] = value;
+        }
+      }
+    }
+  </script>
+</html>

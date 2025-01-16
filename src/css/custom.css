@@ -1,0 +1,53 @@
+/**
+ * Any CSS included here will be global. The classic template
+ * bundles Infima by default. Infima is a CSS framework designed to
+ * work well for content-centric websites.
+ */
+* {
+  padding: 0px;
+  margin: 0px;
+  box-sizing: border-box;
+}
+
+/* You can override the default Infima variables here. */
+:root {
+  --ifm-color-primary: #00646b;
+  --ifm-color-primary-dark: #005a60;
+  --ifm-color-primary-darker: #00555b;
+  --ifm-color-primary-darkest: #00464b;
+  --ifm-color-primary-light: #006e76;
+  --ifm-color-primary-lighter: #00737b;
+  --ifm-color-primary-lightest: #00828b;
+  --ifm-container-width-xl: 1440px;
+}
+
+/* For readability concerns, you should choose a lighter palette in dark mode. */
+[data-theme='dark'] {
+  --ifm-color-primary: #13c2c2;
+  --ifm-color-primary-dark: #11afaf;
+  --ifm-color-primary-darker: #10a5a5;
+  --ifm-color-primary-darkest: #0d8888;
+  --ifm-color-primary-light: #15d5d5;
+  --ifm-color-primary-lighter: #16dfdf;
+  --ifm-color-primary-lightest: #2beaea;
+  --ifm-background-color: #000000;
+}
+
+.markdown img {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  margin-top: 0.8rem;
+  margin-bottom: 1.2rem;
+}
+
+.table-of-contents a {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+.markdown p {
+  margin-bottom: 0.4rem;
+}

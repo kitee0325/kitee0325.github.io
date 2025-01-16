@@ -1,0 +1,280 @@
+---
+slug: stanford-cs448b-15-deconstructingVisualizations
+title: Stanford CS448B 15 Deconstructing Visualizations
+tags: [dataviz, stanford, class, cs448b]
+---
+
+import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
+
+This article contains my notes from Stanford's CS448B (Data Visualization) course, specifically focusing on the fifteenth lecture about deconstructing visualizations. I'll discuss the importance of classification, mark extraction, data extraction, and redesign.
+
+{/* truncate */}
+
+## Original
+
+<object
+  data="/stanford-cs448b/Lec15-deconstructingVisualizations.pdf"
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href="/stanford-cs448b/Lec15-deconstructingVisualizations.pdf">
+    Download PDF
+  </a>
+  .
+</object>
+
+## Notes
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111013877.png?imageSlim)
+
+### Forward Thinking
+
+- For the data explainer project, do we have to find one dataset and create our three visualizations off of that one dataset, or is it alright if we find a high-level topic that we are interested in, and create three visualizations within that topic but using separate datasets?
+- When using social network analysis, how do you validate your findings and/or determine if your findings are statistically significant? Is there an analogous "p value" standard for graph analysis? [Do you use qualitative or quantitative measures of validity?]
+- Why do we go for complex graphs if we can break down a complex concept into multiple, easily digestible graphs [e.g. broken down into strongly connected components]?  
+  Wouldn't this also help with making the structure more intuitive?
+
+<hr />
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111020730.png?imageSlim)
+
+Pixels are a poor representation of charts and graphs
+
+Cannot index, search, manipulate or interact with the data
+
+Goal: Reconstruct higher-level representation of charts and graphs that lets machines and people redesign, reuse and revitalize them
+
+<hr />
+What is a good representation?
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111022612.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111022631.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111025160.png?imageSlim)
+
+**Approach**
+
+- Classification: Determine chart type
+- Mark extraction: Retrieve graphical marks
+- Data extraction: Retrieve underlying data table
+
+### Classification
+
+#### Training the Classifier
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111035498.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111035386.png?imageSlim)
+
+<hr />
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111036190.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111036903.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111036981.png?imageSlim)
+
+<div style={{display:'flex', justifyContent:'center'}}>
+
+| Method                                 | Accuracy |
+| -------------------------------------- | -------- |
+| [Prasad 2007] Multi-class SVM          | 84%      |
+| ReVision: Multi-class SVM              | 88%      |
+| ReVision: Binary SVM (yes/no per type) | 96%      |
+
+</div>
+
+#### Corpus
+
+Over 2500 labeled images and 10 chart types/
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111057037.png?imageSlim)
+ReVision binary SVMs give 96% classification accuracy.
+
+http://vis.berkeley.edu/papers/revision/
+
+#### Mark and Data Extraction
+
+Assumptions
+
+Bar charts and pie charts only  
+No shading or texture, 3D, stacked bars, or exploded pies
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111106211.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111107509.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111107813.png?imageSlim)
+
+Extraction Results
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111108521.png?imageSlim)
+
+Data Extraction Error
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111109540.png?imageSlim)
+
+### Redesign
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111109187.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111109844.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111110095.png?imageSlim)
+
+Limitations
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111111982.png?imageSlim)
+
+### Graphical Overlays
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111111752.png?imageSlim)
+
+Visual elements that are layered onto a chart to facilitate the
+perceptual and cognitive processes involved in chart reading
+
+<hr />
+Taxonomy
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111112233.png?imageSlim)
+
+<hr />
+Demo
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111113779.png?imageSlim)
+
+<hr />
+Reference Structures
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111113831.png?imageSlim)
+
+Help by breaking marks into regular segments andaid reading axis values
+
+<hr />
+Highlights
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111114143.png?imageSlim)
+
+Draws viewers’ attention to specific marks
+
+<hr />
+Redundant Encodings
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111119120.png?imageSlim)
+
+Emphasize data values or trends
+
+<hr />
+Summary Statistics
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111121490.png?imageSlim)
+
+Enables comparison with statistics based on the data
+
+<hr />
+Annotation
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111122719.png?imageSlim)
+
+Provide context and support collaboration
+
+Most overlays only require access to marks
+
+- Reference structures (marks)
+- Highlights (marks)
+- Redundant encodings (marks and data)
+- Summary statistics (marks)
+- Annotations (marks)
+
+### Interactive Documents
+
+How can we facilitate reading text and charts together?
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111123252.png?imageSlim)
+
+**Goal**: Extract references between text and chart  
+**Problem**: Diversity of writing styles
+
+<hr />
+**Example 1: Pew Research**
+
+**Before:**
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111127585.png?imageSlim)
+Skepticism for capitalism is lowest in Brazil (22%), China (19%), Germany (29%) (although East Germans are less supportive than West Germans) and the U.S. (24%). Skepticism for free markets is highest in Mexico (60%) and Japan (60%).
+
+**After:**
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111135089.png?imageSlim)
+
+Skepticism for capitalism is lowest in **Brazil (22%), China (19%), Germany (29%)** (although East Germans are less supportive than West Germans) and the **U.S. (24%)**.Skepticism for free markets is highest in **Mexico (60%)** and **Japan (60%)**.
+
+<hr />
+**Example 2: Economist**
+
+**Before:**
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111137190.png?imageSlim)
+
+Top earners have attracted more opprobrium as their salaries and the performance of the economy have headed in opposite directions. Europeans and Latin Americans tend to have similar attitudes to the rich; the Anglo-Saxon world is a bit more forgiving.
+
+**After:**
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111138899.png?imageSlim)
+
+Top earners have attracted more opprobrium as their salaries and the performance of the economy have headed in opposite directions. Europeans and Latin Americans tend to have similar attitudes to the rich; **the Anglo-Saxon world** is a bit more forgiving.
+
+<hr />
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111143598.png?imageSlim)
+<hr />
+
+**Evaluation**
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111144845.png?imageSlim)
+
+Avg. F1 distance: expert specified references vs. crowd pecified references
+
+<hr />
+
+**Deconstructing D3 Charts**
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111145759.png?imageSlim)
+
+Automatically convert D3 code into mapping based representation to enable redesign and style reuse
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111146690.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111146641.png?imageSlim)
+
+### Automatic Redesign
+
+Can we automatically redesign charts to improve
+
+- Perceptual effectiveness?
+- Visual aesthetics?
+- Accessibility for vision impaired users?
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111147276.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111148335.png?imageSlim)
+
+:::info important
+
+Many specialized collections
+
+- Scientific: PLOS, JSTOR, ACM DL, ...
+- Web visualizations: D3, Processing, ...
+- News: New York Times, Pew research, ...
+
+How can deconstruction aid search?
+
+- Search by chart type, data type, marks, data, ...
+- Similarity search with inexact matching
+- Query expansion
+
+:::
+
+### Takeaways
+
+A chart is a collection of mappings between data and marks  
+We can reconstruct this representation from chart bitmaps  
+Such reconstruction enables redesign, reuse and revitalization

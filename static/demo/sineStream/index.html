@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>D3.js Stream Graph</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+      .stream-layers path {
+        fill-opacity: 0.7;
+      }
+      #layout-select {
+        margin-bottom: 10px;
+      }
+      .tooltip {
+        position: absolute;
+        padding: 10px;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        border-radius: 5px;
+        pointer-events: none;
+      }
+      .color-block {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        margin-right: 5px;
+      }
+      .axis-pointer {
+        pointer-events: none;
+      }
+      #chart {
+        width: 800px;
+        height: 500px;
+        max-width: 100%;
+        margin: 0 auto;
+      }
+      @media (max-width: 800px) {
+        #chart {
+          width: 100%;
+          height: 400px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <select id="layout-select">
+      <option value="base">Base</option>
+      <option value="symmetric">Symmetric</option>
+      <option value="wiggle">Wiggle</option>
+      <option value="sine">Sine</option>
+    </select>
+    <div id="chart"></div>
+    <script src="sine.js"></script>
+    <script>
+      // 从 babyNames.json 文件中引入数据
+      fetch('/data/babyNames.json')
+        // fetch('/data/countriesData.json')
+        .then((response) => response.json())
+        .then((data) => {
+          // 数据加载完成后，继续处理图表
+          createChart(data);
+        })
+        .catch((error) => console.error('Error loading the data:', error));
+
+      function createChart(data) {
+        const margin = { top: 20, right: 30, bottom: 30, left: 50 };
+        const containerWidth = document.getElementById('chart').clientWidth;
+        const containerHeight =
+          document.getElementById('chart').clientHeight ||
+          window.innerHeight * 0.8;
+        const width = containerWidth - margin.left - margin.right;
+        const height = containerHeight - margin.top - margin.bottom;
+
+        const svg = d3
+          .select('#chart')
+          .append('svg')
+          .attr('width', width + margin.left + margin.right)
+          .attr('height', height + margin.top + margin.bottom)
+          .append('g')
+          .attr('transform', `translate(${margin.left},${margin.top})`);
+
+        const years = d3.union(data.map((d) => d.year));
+
+        const x = d3.scaleLinear().domain(d3.extent(years)).range([0, width]);
+
+        const maxValue = d3.max(years, (year) => {
+          return data.reduce((sum, entry) => {
+            return sum + (entry.year === year ? entry.number : 0);
+          }, 0);
+        });
+
+        let y = d3
+          .scaleLinear()
+          .domain([0, maxValue * 1.1]) // 增加 10% 的空间
+          .range([height, 0]);
+
+        const color = d3.scaleOrdinal(d3.schemeCategory10);
+
+        const area = d3
+          .area()
+          .x((d) => x(d.data[0]))
+          .y0((d) => y(d[0]))
+          .y1((d) => y(d[1]));
+
+        // 创建tooltip
+        const tooltip = d3
+          .select('body')
+          .append('div')
+          .attr('class', 'tooltip')
+          .style('opacity', 0)
+          .style('pointer-events', 'none');
+
+        // 创建axisPointer
+        const axisPointer = svg
+          .append('line')
+          .attr('class', 'axis-pointer')
+          .attr('y1', 0)
+          .attr('y2', height)
+          .style('stroke', 'black')
+          .style('stroke-width', '1px')
+          .style('opacity', 0);
+
+        function updateLayout(layout) {
+          // 清除旧的tooltip和axisPointer
+          tooltip.style('opacity', 0);
+          axisPointer.style('opacity', 0);
+
+          // layout confirm both baseline and order
+          let stackLayout;
+          let stackOrder;
+          switch (layout) {
+            case 'base':
+              stackLayout = d3.stackOffsetNone;
+              break;
+            case 'symmetric':
+              stackLayout = d3.stackOffsetSilhouette;
+              break;
+            case 'wiggle':
+              stackLayout = d3.stackOffsetWiggle;
+              break;
+            case 'sine':
+              stackLayout = sineLayout;
+              break;
+            default:
+              stackLayout = d3.stackOffsetNone;
+          }
+
+          stackOrder =
+            layout === 'sine' ? hierarchicalClusteringOrder : d3.stackOrderNone;
+
+          const stack = d3
+            .stack()
+            .order(stackOrder)
+            .offset(stackLayout)
+            .keys(d3.union(data.map((d) => d.name)))
+            .value(([, group], key) => group.get(key).number);
+
+          const layers = stack(
+            d3.index(
+              data,
+              (d) => d.year,
+              (d) => d.name
+            )
+          );
+
+          // 更新 y 轴的比例尺
+          const yExtent = d3.extent(layers.flat().flat());
+          y = d3
+            .scaleLinear()
+            .domain([Math.min(0, yExtent[0]), Math.max(0, yExtent[1])])
+            .range([height, 0]);
+
+          svg.selectAll('path').remove();
+
+          svg
+            .selectAll('path')
+            .data(layers)
+            .enter()
+            .append('path')
+            .attr('d', area)
+            .attr('class', 'stream-layers')
+            .style('fill', (d, i) => color(i));
+
+          // Add a transparent rectangle to capture mouse events in the entire SVG area
+          svg
+            .append('rect')
+            .attr('width', width)
+            .attr('height', height)
+            .attr('fill', 'transparent')
+            .style('pointer-events', 'all')
+            .on('mousemove', function (event) {
+              const [mouseX, mouseY] = d3.pointer(event);
+              // Trigger the same mousemove logic
+              const year = Math.round(x.invert(mouseX));
+
+              const tooltipContent = `
+              <div style="font-weight: bold;">Year: ${year}</div>
+              ${layers
+                .slice()
+                .reverse()
+                .map((s, i) => {
+                  const value =
+                    s.find((d) => d.data[0] === year)?.[1] -
+                    s.find((d) => d.data[0] === year)?.[0];
+                  return `
+                  <div style="display: flex; align-items: center; margin-top: 5px;">
+                    <div style="width: 10px; height: 10px; background-color: ${color(
+                      layers.length - 1 - i
+                    )}; margin-right: 5px;"></div>
+                    <span>${s.key}: ${value ? value.toFixed(0) : '0'}</span>
+                  </div>
+                `;
+                })
+                .join('')}
+              `;
+
+              // Adjust tooltip position to stay within the chart
+              const tooltipX = Math.min(
+                event.pageX + 10,
+                containerWidth - tooltip.node().offsetWidth - 10
+              );
+              const tooltipY = Math.min(
+                event.pageY - 10,
+                containerHeight - tooltip.node().offsetHeight - 10
+              );
+
+              tooltip
+                .html(tooltipContent)
+                .style('left', tooltipX + 'px')
+                .style('top', tooltipY + 'px')
+                .style('opacity', 1);
+
+              // Show axisPointer
+              axisPointer
+                .attr('x1', mouseX)
+                .attr('x2', mouseX)
+                .style('opacity', 1);
+            });
+
+          // 将axisPointer移到最上层
+          axisPointer.raise();
+        }
+
+        svg
+          .append('g')
+          .attr('transform', `translate(0,${height})`)
+          .call(d3.axisBottom(x).tickFormat(d3.format('d')));
+
+        // Initial layout
+        updateLayout('base');
+
+        // Add event listener for layout selection
+        d3.select('#layout-select').on('change', function () {
+          updateLayout(this.value);
+        });
+      }
+    </script>
+  </body>
+</html>

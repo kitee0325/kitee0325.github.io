@@ -1,0 +1,175 @@
+---
+slug: stanford-cs448b-10-visExplainers
+title: Stanford CS448B 10 VisExplainers
+tags: [dataviz, stanford, class, cs448b]
+---
+
+import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
+
+This article contains my notes from Stanford's CS448B (Data Visualization) course, specifically focusing on the tenth lecture about visualization explainers. I'll discuss the importance of storytelling, design space of narrative visualization, interactive documents, chart sequences, and GraphScape.
+
+{/* truncate */}
+
+## Original
+
+<object
+  data="/stanford-cs448b/Lec10-visExplainers.pdf"
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href="/stanford-cs448b/Lec10-visExplainers.pdf">Download PDF</a>.
+</object>
+
+## Notes
+
+### Forward Thinking
+
+- How does change blindness apply to interactive charts and how should we design around it?
+- Is it feasible to make creating robust and highly customizable visual explainers easier for less technical users?
+- Why are these kind of "bad" visuals are justified in the talk by placing the context in a more specific community when the accessibility for those communities is not inherently better based on format?
+- When deciding which data should be encoded in which channels: should the most important data be noticed first, or noticed the most accurately?
+
+### Topics
+
+1. Storytelling
+2. Design space of narrative visualization
+3. Interactive documents
+4. Chart sequences
+
+### Storytelling
+
+As ancient as mankind
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409261811251.png?imageSlim)
+
+All media tell stories:
+
+- <span style={{ color: 'red' }}>PEOPLE</span> TELL STORIES
+- <span style={{ color: 'red' }}>WORDS</span> TELL STORIES
+- <span style={{ color: 'red' }}>IMAGES</span> TELL STORIES
+- <span style={{ color: 'red' }}>COMICS</span> TELL STORIES
+- <span style={{ color: 'red' }}>MOVIES</span> TELL STORIES
+- <span style={{ color: 'red' }}>VISUALIZATIONS</span> TELL STORIES
+
+### Narrative Storytelling
+
+narrative (n): An account of a series of events, facts, etc., given in order and with the establishing of connections between them.
+
+> “... require[s] skills like those familiar to movie directors,
+> beyond a technical expert’s knowledge of computer
+> engineering and science.”
+>
+> <p style={{ textAlign: 'right' }}>- Gershon & Page 01</p>
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409261827738.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409261827595.png?imageSlim)
+
+<hr />
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409261828401.png?imageSlim)
+<hr />
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409261828600.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409261828734.png?imageSlim)
+<hr />
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409261830670.png?imageSlim)
+<hr />
+**Hans Rosling's 200 Countries, 200 Years, 4 Minutes - The Joy of Stats - BBC Four**
+<video width="100%" height="auto" controls>
+  <source
+    src="/stanford-cs448b/Hans Rosling-s 200 Countries- 200 Years- 4 Minutes - The Joy of Stats - BBC Four.mp4"
+    type="video/mp4"
+  />
+  Your browser does not support the video tag.
+</video>
+
+### Design Space of Narrative Visualization
+
+A way of structuring information
+
+- Easier to understand than lists
+- Uncertainty, conflict, resolution
+- Text and visuals can be complementary
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409261835687.png?imageSlim)
+
+<hr />
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409261845936.png?imageSlim)
+
+<a href="/paper/2010-Narrative-InfoVis.pdf">
+  《Narrative Visualization: Telling Stories with Data》PDF
+</a>
+<hr />
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409261844665.png?imageSlim)
+<hr />
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409261844848.png?imageSlim)
+<hr />
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409261845651.png?imageSlim)
+
+:::info
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409261847635.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409261848553.png?imageSlim)
+:::
+
+### Interactive Documents
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409271630287.png?imageSlim)
+
+<hr />
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409271630462.png?imageSlim)
+<hr />
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409271631880.png?imageSlim)
+<hr />
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409271631379.png?imageSlim)
+<hr />
+
+### Chart Sequences
+
+**Multiple Charts in Data Analysis**  
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409271738251.png?imageSlim)
+
+<hr />
+
+**Multiple Charts in Storytelling**  
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409271739381.png?imageSlim)
+
+<hr />
+
+**Can we automatically identify sequences to recommend to a human designer?**  
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409271740594.png?imageSlim)
+
+:::info Notes
+
+<a href="/paper/A Deeper Understanding of Sequence in Narrative Visualization.pdf">
+  《A Deeper Understanding of Sequence in Narrative Visualization》PDF
+</a>
+:::
+
+### GraphScape
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409271748132.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409271749779.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409271750471.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409271750159.png?imageSlim)
+
+Previously we’ve discussed approaches for automatic design of a single visualization (e.g. Mackinlay’s APT)  
+GraphScape supports automated design methods for collections of visualizations.  
+**Plenty of future work to do here!**
+
+:::info Notes
+
+<a href="/paper/GraphScape-A Model for Automated Reasoning about Visualization Similarity and Sequencing.pdf">
+  《GraphScape-A Model for Automated Reasoning about Visualization Similarity
+  and Sequencing.pdf》PDF
+</a>
+:::
+
+### Summary
+
+- Narrative visualizations blend communication via **imagery and text** with interaction techniques
+- Specific strategies can be identified by studying what expert designers make
+- Automating construction of effective explainers is an active area of Visualization research

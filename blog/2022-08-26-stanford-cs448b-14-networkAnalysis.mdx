@@ -1,0 +1,279 @@
+---
+slug: stanford-cs448b-14-networkAnalysis
+title: Stanford CS448B 14 Network Analysis
+tags: [dataviz, stanford, class, cs448b]
+---
+
+import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
+
+This article contains my notes from Stanford's CS448B (Data Visualization) course, specifically focusing on the fourteenth lecture about network analysis. I'll discuss the importance of centrality, community structure, and simulating network models.
+
+{/* truncate */}
+
+## Original
+
+<object
+  data="/stanford-cs448b/Lec14-networkAnalysis.pdf"
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href="/stanford-cs448b/Lec14-networkAnalysis.pdf">Download PDF</a>.
+</object>
+
+## Notes
+
+- Diseases
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101736631.png?imageSlim)
+
+- Transportation
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101737721.png?imageSlim)
+
+- Actors and movies (bipartite)
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101738621.png?imageSlim)
+
+### Characterizing networks
+
+What does it look like?
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101739051.png?imageSlim)
+
+<hr />
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101739126.png?imageSlim)
+
+- Size?
+- Density?
+- Centrality?
+- Clustering?
+- Components?
+- Cliques?
+- Motifs?
+- Avg. path length?  
+  ...
+
+### Centrality
+
+How far apart are things?  
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101741038.png?imageSlim)
+
+#### Distance: shortest paths
+
+Shortest path (geodesic path)
+
+- The shortest sequence of links connecting two nodes
+- Not always unique
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101742629.png?imageSlim)
+
+- A and C are connected by 2 shortest paths
+- A –E –B -C
+- A –E –D -C
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101743264.png?imageSlim)
+
+Shortest path from 2 to 3: 1
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101743350.png?imageSlim)
+
+Shortest path from 2 to 3?
+
+<hr />
+**Most important node?**
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101744263.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101745324.png?imageSlim)
+
+#### Degree centrality (undirected)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101746623.png?imageSlim)
+
+<BlockMath math="C_D = d(n_i)=A_{i+}=\sum_jA_{ij}" />
+
+#### Normalized degree centrality
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101749359.png?imageSlim)
+
+<BlockMath math="C_D(i) = \frac{d(i)}{N-1}" />
+
+<hr />
+
+When is degree not sufficient?
+
+Does not capture
+
+- Ability to broker between groups
+- Likelihood that information originating anywhere in the network reaches you
+
+<hr />
+
+#### Betweenness
+
+Assuming nodes communicate using the most direct (shortest) route, how many pairs of nodes have to pass information through target node?
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101752068.png?imageSlim)
+
+##### examples
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101753749.png?imageSlim)
+
+##### definition
+
+<BlockMath math="C_B(i)=\sum_{j,k \neq i,j&lt;k}g_{jk}(i)/g_{jk}" />
+
+<InlineMath math="g_{jk}" /> the number of shortest paths connecting jk
+
+<InlineMath math="g_{jk}(i)" /> the number that node iis on.
+
+Normalization：
+
+<BlockMath math="C_B'(i)=C_B(i)/[(n-1)(n-2)/2]" />
+
+number of pairs of vertices excluding the vertex itself.
+
+<hr />
+
+When are Cd, Cb not sufficient?
+
+Do not capture
+
+> Likelihood that information originating anywhere in the network reaches you
+
+#### Closeness
+
+##### definition
+
+Being close to the center of the graph
+
+Closeness Centrality:
+
+<BlockMath math="C_C(i)=[\sum_{j=1,j \neq i}^Nd(i,j)]^{-1}" />
+
+Normalized Closeness Centrality
+
+<BlockMath math="C_C'(i)=(C_C(i))/(N-1)=\frac{N-1}{\sum_{j=1,j \neq i}^Nd(i,j)}" />
+
+##### example
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101804290.png?imageSlim)
+
+### Community Structure
+
+How dense is it?
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101836676.png?imageSlim)
+
+<BlockMath math="density=e/e_{max}" />
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101837508.png?imageSlim)
+Max. possible edges:
+
+- Directed: <InlineMath math="e_{max}=n*(n-1)" />
+- Undirected: <InlineMath math="e_{max}=n*(n-1)/2" />
+
+<hr />
+
+Is everything connected?
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101839547.png?imageSlim)
+
+<hr />
+
+Connected Components - Directed
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101840321.png?imageSlim)
+
+Strongly connected components
+
+- Each node in component can be reached from every other node in component by following directed links
+  - B C D E
+  - A
+  - G H
+  - F
+
+Weakly connected components
+
+- Each node can be reached from every other node by following links in either direction
+  - A B C D E
+  - G H F
+
+<hr />
+
+Community finding (clustering)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101841561.png?imageSlim)
+
+<hr />
+
+Hierarchical clustering
+
+Process:
+
+- Calculate affinity weights W for all pairs of vertices
+- Start: N disconnected vertices
+- Adding edges (one by one) between pairs of clusters in order of decreasing weight (use closest distance to compare clusters)
+- Result: nested components
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101851299.png?imageSlim)
+
+<hr />
+
+Cluster Dendrograms
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101852888.png?imageSlim)
+
+<hr />
+
+Betweenness clustering
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101852843.png?imageSlim)
+
+Girvan and Newman 2002 iterative algorithm:
+
+- Compute <InlineMath math="C_b" /> of all edges
+- Remove edge i where <InlineMath math="C_b(i) == max(C_b)" />
+- Recalculate betweenness
+
+### Simulating network models
+
+#### Small world network
+
+Milgram (1967)
+
+- Mean path length in US social networks
+- ~ 6 hops separate any two people
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101855758.png?imageSlim)
+
+Watts and Strogatz 1998
+a few random links in an otherwise structured graph make the network a small world
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101856936.png?imageSlim)
+
+#### Defining small world phenomenon
+
+<BlockMath math="C_{network}>>C{random graph}" />
+<BlockMath math="l_{network} \approx ln(N)" />
+
+Pattern:
+
+- high clustering
+- low mean shortest path
+
+Examples
+
+- neural network of C. elegans,
+- semantic networks of languages,
+- actor collaboration graph
+- food webs
+
+### Summary
+
+Structural analysis
+
+- Centrality
+- Community structure
+- Pattern finding
+
+Widely applicable across domains

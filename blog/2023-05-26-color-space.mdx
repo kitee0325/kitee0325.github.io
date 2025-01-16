@@ -1,0 +1,128 @@
+---
+slug: color-space
+title: Color Space
+tags: [dataviz, color, color space]
+---
+
+import ModelViewer from '@site/src/components/ModelViewer';
+
+This article explores the concept of color spaces, their diversity, and characteristics. It delves into the foundational CIE 1931 color space, which serves as the reference standard for all other color spaces. Through interactive visualizations and video explanations, we'll examine how different color spaces are defined and their practical implications in color representation and reproduction.
+{/* truncate */}
+
+## Color Space
+
+<iframe
+  src="https://facelessuser.github.io/coloraide/demos/3d_models.html"
+  width="100%"
+  style={{ border: 'none' }}
+  onLoad={(e) => {
+    // Adjust iframe height to match content
+    const iframe = e.target;
+    iframe.style.height =
+      iframe.contentWindow.document.documentElement.scrollHeight + 'px';
+  }}
+/>
+
+> source from https://github.com/facelessuser/coloraide/
+
+- Why there are so many different color spaces?
+- What are the characteristics of each color space?
+
+<iframe
+  width="560"
+  height="315"
+  src="https://www.youtube.com/embed/srRI7yMjGz0?si=AVLpBfHHGH3dJIDe"
+  title="YouTube video player"
+  frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+  referrerpolicy="strict-origin-when-cross-origin"
+  allowfullscreen
+></iframe>
+
+### Definition
+
+**A color space describes a specific, measurable, and fixed range of possible colors and luminance values.**
+
+Larger color spaces mean a greater range of colors can be accurately captured and/or reproduced.  
+But how do you explicitly define something as slippery as color?  
+The maddening answer is that a color space can only be defined in reference to another color space.
+
+So, which is the base stone?
+
+:::tip
+In 1931, the [International Commission on Illumination](https://cie.co.at/), or the CIE (from the French “Commission internationale de l’éclairage”) defined an all-encompassing color space based on human perception, using averaged data from experiments conducted with a small set of test subjects. Nearly a century later, this space, CIE 1931, remains the standard reference used to describe all other color spaces.
+
+<iframe
+  width="560"
+  height="315"
+  src="https://www.youtube.com/embed/SDLHsGVeR2Y?si=qg05OtN_7ECftGFT"
+  title="YouTube video player"
+  frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+  referrerpolicy="strict-origin-when-cross-origin"
+  allowfullscreen
+></iframe>
+:::
+
+### Color Spaces
+
+Any color space can be transformed into any other color space with the right math.
+
+But when transforming from a larger space into a smaller one, there will be so-called “out of gamut” values to contend with that can’t be reproduced in the source space. There are a number of methods for addressing these values, but there’s no getting around them. You can’t cheat mathematics and physics.
+
+#### RGB
+
+<ModelViewer modelPath="/model/rgb/scene.glb" />
+
+RGB is based on red, green, and blue color component (band) values. Typically, these components are directly used for acquiring and displaying color. For example, when displaying a color image buffer, the first band is routed to the monitor's first output channel (usually red), the second band to the second channel (usually green), and the third band to the third channel (usually blue).  
+The RGB color space can be seen as a cube with a red, green, and blue axis. Colors located at the origin, [0, 0, 0], are considered to be black, while colors located at [255, 255, 255] (for an 8-bit buffer) are considered to be white. All other colors can be represented as a combination of red, green, and blue values within this range.  
+Acquisition and display devices can render RGB data differently. Since RGB maps to such devices, it is a device-dependent color space.  
+Theoretically, there are as many RGB color spaces as there are color devices. Although there will always be some variance, color devices typically adhere to certain internationally accepted standards. To interpret color space data, MIL uses standard RGB specifications (sRGB), as defined by the International Electrotechnical Commission (IEC) Project Team 61966-2-1.
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411111609803.png?imageSlim)
+[Metamerism (color)](<https://en.wikipedia.org/wiki/Metamerism_(color)>).We can simulate any color using any combination of spectra BUT when we choose to use combinations of the above shown narrow band RGB spectra, we are said to be working on the RGB color space.
+
+#### HSL
+
+> A computer graphics student can get fuddled if he/she has been given only Red, Green and Blue lights to create complex shades. For example, what combination should I use to get this exact amount of greenish blue? How should I make it appear "lighter" or more "whiter"? How much of Red should I add to make it appear more "natural"?
+
+HSL is established from an RGB color model, but is based on hue, saturation, and luminance color component (band) values. Since such components are generally more intuitive, HSL can be seen as a color space designed to mimic the human way of describing colors. Like RGB, HSL is device-dependent.  
+In RGB, every color is a mixture of red, green, and blue, which can make it difficult to ascertain the exact component values of a particular color. However, in HSL, the color's hue is stored as a separate component (H), which is represented as an angular position on a circular color disk. The other components control only the color's purity (S) and lightness (or luminance, L), which can be used to alter the color's quality, but not the color's basic hue. In the diagram below, the lightness (or luminance) component extends from one point of a bicone to the other, from black (0% lightness) to white (100% lightness). The colors at the center disk are situated at 50% lightness.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410211845010.png?imageSlim)
+With the HSL model, band independence makes color manipulation much simpler. Most applications that allow for an interactive manipulation of colors represent the color with HSL. You can, for example, perform color matching with the hue (color) band only, using McolControl() with M_BAND_MODE set to M_COLOR_BAND_0. This can solve certain problems, such as matching dark orange and bright orange, which can be difficult in RGB. Also, matching the hue independently of the luminance can be useful if your image has non-uniform lighting, shadows, or highlights.
+
+#### HSV
+
+<ModelViewer modelPath="/model/hsv/scene1.glb" />
+
+HSV resembles HSL, except the third component is called value, and represents brightness as if the white point of the HSL model has been compressed to the central disk. In the diagram below, the model is shown as a simple cone, with hue (H) positioned around a circular disk, and saturation (S) increasing from the center out. The value (V) component ranges from black (the far point of the cone below the disk) to white (the center of the disk).
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410211846501.png?imageSlim)
+In this model, 100% brightness (or value) corresponds to maximum color richness, offering an intuitive advantage over HSL, which represents the richest colors at only 50% lightness.  
+The HSV color space reflects how paint colors change when creating tints (adding white) or shades (adding black), which is intuitively easy to understand. As with HSL, the separate bands allow for interactive manipulation.
+
+#### CIELAB
+
+<ModelViewer modelPath="/model/cielab/scene.glb" />
+
+CIELAB (or LAB) is based on the color's luminance (L), its position between red and green (A), and its position between yellow and blue (B). Unlike RGB and HSL, LAB is intended to be device-independent, and was developed as a distinct color model intended to represent a completely human interpretation of color using statistical data taken from visual experiments. Color differences in LAB vary proportionally with human perception. For example, if two colors are at a distance of 5, they will appear roughly 5 times as different as two colors at a distance of 1. LAB was designed to be perceptually uniform, making it a good space to measure color difference.  
+Since LAB is based on color perception, its mathematical model better represents how humans distinguish color, and color differences are more meaningful. This can be seen in the following example, where you have to choose which color, A or B, is closer to color X.
+Mathematically, color A is the closest color, in an RGB color space. However, color B is intuitively closer, which is also what the distance in the LAB color space mathematically represents.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410211847218.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410211847739.png?imageSlim)
+
+It can be preferable to use CIELAB over RGB since, like HSL, you can use CIELAB to discard the luminance (band L), and perform color matching with only band A and band B. Also, CIELAB can be more robust with colors that are visually alike, especially for minor color differences. For example, when matching a red target among color-samples with similar shades of red, CIELAB can outperform RGB and HSL.
+
+With CIELAB, distances have been standardized by the International Commission on Illumination (CIE). A color distance of 1 with CIELAB corresponds to the smallest possible color difference a human can perceive.
+
+#### HCT
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411111442060.png?imageSlim)
+
+[The Science of Color & Design - Material Design](https://m3.material.io/blog/science-of-color-design)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410211830373.png?imageSlim)
+
+You can use the [Material Theme Builder](https://material-foundation.github.io/material-theme-builder/) to generate colors in HCT space.
+
+You can use the [Material Color Utilities](https://github.com/material-foundation/material-color-utilities) to handle color in HCT space.

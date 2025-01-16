@@ -1,0 +1,336 @@
+---
+slug: stanford-cs448b-11-color
+title: Stanford CS448B 11 Color
+tags: [dataviz, stanford, class, cs448b]
+---
+
+import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
+
+This article contains my notes from Stanford's CS448B (Data Visualization) course, specifically focusing on the eleventh lecture about color. I'll discuss the importance of color in data visualization, the principles behind it, and explore various techniques for visualizing data, including the use of guides, expressiveness, effectiveness, support for comparison and pattern perception, grouping and sorting data, transforming data, reducing cognitive overhead, and consistency. I'll also cover various chart types, such as line charts, bar charts, stacked area charts, and others, providing examples and discussing their design considerations.
+
+{/* truncate */}
+
+## Original
+
+<object
+  data="/stanford-cs448b/Lec11-color.pdf"
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href="/stanford-cs448b/Lec11-color.pdf">Download PDF</a>.
+</object>
+
+## Notes
+
+### Purpose of Color
+
+- To label
+- To measure
+- To represent and imitate
+- To enliven and decorate
+
+> “Above all, do no harm.”
+>
+> <p style={{ textAlign: 'right' }}>- Edward Tufte </p>
+
+### Color Perception
+
+- Physical World
+- Visual System
+- Mental Models
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409271814403.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409271814988.png?imageSlim)
+
+Physicist’s view of color:
+
+Light as electromagnetic wave  
+Energy or “Relative power” across visible spectrum of wavelengths
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409271816222.png?imageSlim)
+
+Emissive vs. reflective light
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409271817745.png?imageSlim)
+
+1. Retina
+   ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409271818586.png?imageSlim)
+
+2. As light enters our retina
+
+LMS (Long, Middle, Short) Cones
+
+- Sensitive to different wavelength
+- Integration with input stimulus
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409271819913.png?imageSlim)
+
+<InlineMath math="L = \int_\lambda L(\lambda)S(\lambda)d\lambda" />
+<br />
+<InlineMath math="M = \int_\lambda M(\lambda)S(\lambda)d\lambda" />
+<br />
+<InlineMath math="S = \int_\lambda S(\lambda)S(\lambda)d\lambda" />
+<br />
+
+3. Effects of Retina Encoding
+
+Spectra that stimulate the same LMS response are indistinguishable (a.k.a. “metamers”).
+
+Tri-stimulus response
+
+- Computer displays
+- Digital scanners
+- Digital cameras
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409271829367.png?imageSlim)
+
+#### CIE XYZ Color Space
+
+Standardized in 1931 to mathematically
+represent tri-stimulus response
+
+“Standard observer” response curves:
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409271830737.png?imageSlim)
+
+#### Color Blindness
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409272113445.png?imageSlim)
+
+:::info Notes
+
+Color Blindness Simulators:  
+https://pilestone.com/pages/color-blindness-simulator-1  
+https://www.color-blindness.com/coblis-color-blindness-simulator/#google_vignette
+
+:::
+
+#### Primary Colors
+
+LMS are linearly combined to create:
+
+- Lightness
+- Red-green contrast
+- Yellow-blue contrast
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409272119391.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409272122619.png?imageSlim)
+
+:::tip Example
+
+Experiments:
+No reddish green, no bluish yellow color after images
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409272123631.png?imageSlim)
+:::
+
+#### CIE LUV and LAB color spaces
+
+Standardized in 1976 to mathematically represent opponent processing theory.
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409272126132.png?imageSlim)
+
+#### Axes of CIE LAB
+
+Correspond to opponent signals  
+`L* = Luminance`  
+`a* = Red-green contrast`  
+`b* = Yellow-blue contrast`
+
+Scaling of axes to represent “color distance”
+JND = Just noticeable difference (~2.3 units)
+
+<hr />
+
+[Munsell Atlas](https://munsell.com/color-blog/atlas-color-system-charts/)  
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409272131331.png?imageSlim)
+
+#### Hue, Value, Chroma
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409272133396.png?imageSlim)
+
+### Perceptual brightness
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409272204276.png?imageSlim)
+HLS, HSV, HSB
+NOT perceptual models
+Simple re-notation of RGB
+
+- View along gray axis
+- See a hue hexagon
+- L or V is grayscale pixel value
+
+Cannot predict perceived lightness  
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409272151809.png?imageSlim)
+
+<hr />
+
+If we have a perceptually-uniform color space, can we predict how we perceive colors?
+
+> In order to use color effectively it is necessary to recognize that it deceives continually.
+>
+> <p style={{ textAlign: 'right' }}> - Josef Albers, Interaction of Color</p>
+
+#### Simultaneous Contrast
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409272206346.png?imageSlim)  
+The lines on both sides are the same color
+
+<hr />
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409272207961.png?imageSlim)  
+Inner and outer thin rings are the same color
+
+#### Bezold Effect
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409272208036.png?imageSlim)  
+The fill colors on both sides are the same color
+
+#### Crispening
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409272210537.png?imageSlim)  
+Perceived difference depends on background
+
+#### Spreading
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409272210183.png?imageSlim)  
+Adjacent colors blend
+
+Spatial frequency
+
+- The paint chip problem
+- Small text, lines, glyphs
+- Image colors
+
+### Basic color terms
+
+Chance discovery by `Brent Berlin` and `Paul Kay`
+
+Initial study in 1969
+Surveyed speakers from 20 languages
+Literature from 69 languages
+
+Seven levels in which cultures fall:
+
+- Stage I: Dark-cool and light-warm (this covers a larger set of colors than just English "black" and "white".)
+- Stage II: Red
+- Stage III: Either green or yellow
+- Stage IV: Both green and yellow
+- Stage V: Blue
+- Stage VI: Brown
+- Stage VII: Purple, pink, orange, or gray
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410081012828.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410081012608.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410081013440.png?imageSlim)
+
+Basic color terms recur across languages
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410081013647.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410081014039.png?imageSlim)
+
+Naming affects color perception
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410081016724.png?imageSlim)
+
+:::info Notes
+It is indeed very interesting that despite significant differences in culture and language, the perception of color boundaries is almost consistent.
+:::
+
+Colors according to XKCD...
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410081020837.png?imageSlim)
+
+### Using Color in Visualization
+
+Colormap Design Considerations
+
+1. Perceptually distinguishable colors
+2. Value distance matches perceptual distance
+3. Colors and concepts properly align
+4. Aesthetically pleasing, intriguing
+5. Respect color vision deficiencies
+6. Should survive printing to black & white
+7. Don’t overwhelm people’s capability
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410081023933.png?imageSlim)
+
+#### Categorical Color
+
+- Gray’s Anatomy  
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410081048920.png?imageSlim)  
+  Superficial dissection of the right side of the neck, showing the carotid and subclavian arteries
+
+- Radio Spectrum Map
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410081051501.png?imageSlim)
+
+Issues:
+
+1. Too many colors
+2. Hard to remember mapping
+3. Colors not distinctive
+4. Poor grouping; similar bands with dissimilar colors
+5. Labels cause clutter
+6. Color surround effects
+7. Color interactions; adjacent colors don’tlook good next to each other
+
+Minimize overlap and ambiguity of color names
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410081053926.png?imageSlim)
+
+[Standford Vis Group: Color Names](http://vis.stanford.edu/color-names/)
+
+#### Quantitative Color
+
+Avoid Mapping Data to Color (Rainbows)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410081055212.png?imageSlim)
+
+1. Hues are not naturally ordered
+2. People segment colors into classes, perceptual banding
+3. Naïve rainbows unfriendly to color blind viewers
+4. Low luminance colors (blue) hide high frequencies
+
+Artery Visualization
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410081056208.png?imageSlim)
+
+Steps, rather than gradients
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410081057673.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410081058611.png?imageSlim)
+
+Age-adjusted mortality rates for the United States  
+Common option: **break into 5 or 7 quantiles**
+
+> - Equal interval (arithmetic progression)
+> - Quantiles (recommended)
+> - Standard deviations
+> - Clustering (Jenks’ natural breaks / 1D K-Means)
+> - Minimize within group variance
+> - Maximize between group variance
+
+**Sequential color scale**  
+Ramp in luminance, possibly also hue  
+Typically higher values map to darker colors  
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410081100115.png?imageSlim)
+
+**Diverging color scale**  
+Useful when data has a meaningful “midpoint”  
+Use neutral color (e.g., grey) for midpoint  
+Use saturated colors for endpoints  
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410081101264.png?imageSlim)
+
+**\*Limit number of steps in color to 3-9**
+
+### Summary
+
+- Color perception
+  - Better acuity for luminance than for hue
+  - Beware of simultaneous contrast, crispening, spreading
+- Color naming
+  - Use colors that are easily distinguished by name
+- Color palettes
+  - Use small number of hues (about 6)
+  - Avoid rainbow palette except in special cases
+  - Steal well designed palettes (e.g. ColorBrewer)
+  - Consider sequential and diverging scales for Q data

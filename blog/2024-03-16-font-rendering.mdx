@@ -1,0 +1,186 @@
+---
+slug: font-rendering
+title: Font Rendering
+tags: [font, design]
+---
+
+This article contains my notes about font rendering.
+{/* truncate */}
+
+## Rendering
+
+In daily front-end development work, it is common to encounter issues where the same font appears inconsistently across different devices. The same text content may display inconsistently on the same software across different devices, and even on different software on the same device.
+
+### Render Engine
+
+The root cause of this phenomenon is actually that different software and systems use different font rendering engines.
+
+Each operating system contains a text rendering engine — sometimes multiple engines from which to choose. And each browser controls which of those rendering engines is used. So on the same OS, two browsers can produce text with very different appearances because they use different rendering engines. On top of that, often the rendering engines differ between different versions of the OS and different versions of the browser. Additionally, default font-smoothing settings vary by OS and OS version, and can be overridden by users’ browser preferences.
+
+Over the years, GDI was the sole font engine in Windows. In January 2000, Microsoft extended GDI to take advantage of LCD screens. This extension was known as ClearType—a form of sub-pixel positioning and anti-aliasing for the font engine that, as LCDs became more popular, provided people with limited options to adjust fonts to their preference.
+
+While ClearType was a welcomed improvement to Windows GDI font rendering, many discerning users considered Linux or Mac font rendering to be superior—clearer, less tiring, smoother, and more akin to printed text on a page.
+
+As work on GDI++ and GDIPlus ceased, MacType took over and added numerous features. MacType is now a stable, highly configurable option for replacing fonts in most Windows software, offering a better choice for those concerned with improved fonts.
+
+DirectWrite was first released in July 2009 with Windows 7, intended to replace GDI and GDI+. It has several technical advantages over GDI, including better international language support and advanced typography support.
+
+However, when DirectWrite was initially released, many people were confused, believing DirectWrite fonts looked worse than GDI/ClearType, especially since other major font engines (FreeType and Apple's) were both mature and visually superior. In a technical sense, DirectWrite was a step forward, yet from a visual standpoint, it was a step back, actually losing some functionalities of GDI, like sub-pixel anti-aliasing.
+
+Microsoft itself demonstrated a lack of confidence in the new platform when it released Office 2013 in January 2013. This version did not use GDI or DirectWrite (which had been available for over five years by then). Instead, Office 2013 used its own font rendering method, not adhering to any established standards.
+
+![image.png](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202402291108585.png?imageSlim)
+
+![image.png](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202402291348491.png?imageSlim)
+
+### Preview
+
+You can clearly see the rendering results of the same font across different font rendering engines, with Font `FacitWeb` used above and Font `Minion Pro` used below.
+
+coreText:
+![image.png](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202402291425191.png?imageSlim)
+
+DirectWrite:
+![image.png](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202402291425978.png?imageSlim)
+
+GDI（ClearType）:
+![image.png](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202402291426380.png?imageSlim)
+
+GDI（Standard anti-aliasing）:
+![image.png](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202402291427764.png?imageSlim)
+
+GDI:
+![image.png](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202402291427634.png?imageSlim)
+
+### Render Strategy
+
+Ideal rendering results:
+![image.png](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202402291350506.png?imageSlim)
+
+First generation used black and white:
+![image.png](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202402291350689.png?imageSlim)
+
+Second generation used grayscale:
+![image.png](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202402291350098.png?imageSlim)
+
+Third generation used sub-pixel anti-aliasing:
+![image.png](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202402291351641.png?imageSlim)
+
+Subpixel rendering integrates well with LCD screens.
+![image.png](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202402291351175.png?imageSlim)
+
+Different operating systems have different render strategies.
+
+Windows (Microsoft):
+
+To maintain compatibility, the Windows system offers a wide range of choices to both applications and the system itself. The end result is that the reading experience of text on Windows is not uniform—some areas look fine, while others are hard to view. This is closely related to the overall ecosystem of Windows, which needs to support a variety of screens and resolutions. Additionally, the previously mentioned subpixel rendering technology is inherently tied to the physical characteristics of LCD screens. Different LCD pixel layouts require specific adaptations, increasing the cost for Microsoft to refine this experience.
+
+:::info
+Browser Support
+![image.png](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202402291352658.png?imageSlim)
+:::
+
+MAC (Apple):
+
+On the Mac OS system, all browsers use the Quartz rendering engine (2D graphics) and Core Text (text rendering) technology, both of which are said to be very reliable. TrueType and PostScript fonts are rendered in the same way, using subpixel rendering technology, with hinting deliberately ignored. This is the main conceptual difference between the two types of fonts. Mac OS treats PS and TrueType fonts equally, regardless of their differing characteristics. Mac OS's font rendering technology does not attempt to understand the strokes and features that make up the fonts. As a result, letter shapes are not interpreted, preventing distortion. Additionally, Apple seems to apply some sophisticated automated measures to enhance rendering effects, although these self-enhancing technologies are undocumented, leaving us unaware of the details behind them. Another challenging and uncontrollable phenomenon on the Mac is that fonts tend to render heavier. This difference is especially noticeable at text font sizes, where the same font appears thicker on Mac OS and lighter on Windows.
+
+:::info
+Apple believes that the goal of (font rendering) algorithms should be to preserve the original design of the fonts as much as possible, even if it causes some slight blurring.
+
+Microsoft, on the other hand, believes that character shapes should align with the pixels to prevent blurring and enhance readability, even if it means distorting the font's structure.
+:::
+
+Windows traditionally used heavy hinting until DirectWrite, which disabled horizontal hinting. In contrast, Mac OS X does not use hinting information at all, only applying some autohinting in the vertical direction.
+
+Windows disabled antialiasing for small font sizes, only enabling vertical antialiasing for larger fonts with DirectWrite. Conversely, Mac OS X only disables antialiasing at very small font sizes; it is enabled in most cases.
+
+Prior to DirectWrite, Windows did not support subpixel positioning, whereas Mac OS X has consistently offered this feature, primarily affecting spacing.
+
+:::info
+What's even more astonishing is that the subpixel rendering technology optimized for LCDs was actually invented in the graphics display of the Apple II in 1977, a full 22 years before Microsoft announced ClearType. Steve Wozniak, the designer of the Apple II and the holder of the patent for this technology, provided the following response regarding who really invented the technology:
+
+> "Back in 1976, my design of the Apple II's high resolution graphics system utilized a characteristic of the NTSC color video signal (called the 'color subcarrier') that creates a left to right horizontal distribution of available colors. By coincidence, this is exactly analogous to the R-G-B distribution of colored sub-pixels used by modern LCD display panels. So more than twenty years ago, Apple II graphics programmers were using this 'sub-pixel' technology to effectively increase the horizontal resolution of their Apple II displays."
+
+:::
+
+### Font Family Support
+
+![image.png](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202402291118203.png?imageSlim)
+
+### Font Formats
+
+- TrueType Font (.ttf)  
+  [TrueType overview - Typography | Microsoft Learn](https://learn.microsoft.com/en-us/typography/truetype/)  
+  TrueType was invented by Apple in the mid-1980s as a competitor to Adobe's PostScript Type 1 and was later licensed to Microsoft.
+- OpenType Font (.otf, .ttf, .ttc)  
+  [OpenType fonts features | Adobe Type](https://www.adobe.com/products/type/opentype.html)  
+  OpenType fonts were jointly developed by Adobe and Microsoft to improve upon Microsoft’s TrueType fonts by incorporating a larger basic character set, enhanced typographic behavior, and more robust data structures. This includes small caps, old-style figures, and more detailed shapes such as glyphs and ligatures. OpenType fonts are single-file formats, scalable to any size, and clear at all sizes. They can be used on both Macintosh and Windows platforms without conversion. Designers benefit from OpenType due to its larger character set and support for features like automatic character substitution and ligature support.
+- PostScript (.pfb, .pfm, .ofm)  
+  [Adobe PostScript](https://www.adobe.com/products/postscript.html)  
+  PostScript is a programming language initially developed by Adobe Systems to communicate the structure of outline fonts and printing instructions to digital printers. Any new Adobe PostScript language devices manufactured today are device-independent and support all three font standards. PostScript fonts are smooth, detailed, and high-quality, ideal for professional-quality printing such as books, magazines, and other print outputs like package design. The inherent integration of PostScript language within PDF technology makes it ubiquitous in the publishing industry.
+- Web Open Font Format
+  [The Web Open Font Format (WOFF) - CSS: Cascading Style Sheets | MDN (mozilla.org)](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_fonts/WOFF)
+
+### hinting
+
+![image.png](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202402291409020.png?imageSlim)
+Hinting in font rendering is a technique used to enhance the readability and clarity of vector fonts on low-resolution screens. Vector fonts are defined by mathematical formulas, which can reproduce intricate font details well on high-resolution displays. However, when displayed on low-resolution devices, the edges of these vectors may become blurred.
+
+Hinting improves this by adjusting and optimizing the shapes of font characters to better align with the device's pixel grid, resulting in clearer display outcomes. Specifically, hinting works through the following methods:
+
+Aligning Characters to the Pixel Grid: Hinting aligns the edges of characters along the pixel grid of the device, reducing blurriness and jagged edges to ensure that the text remains legible at small sizes.
+Adjusting Character Spacing: Hinting can adjust the spacing between characters to enhance readability and consistency of the text.
+Improving Stroke Weight: By controlling how different strokes of a character are rendered on the pixel grid, hinting prevents thin lines from disappearing or appearing too bold on low-resolution screens.
+This technique is often manually set by font designers during font development or implemented automatically by font rendering engines. As a result, it significantly improves the consistency and readability of fonts across different screens and sizes.
+
+unhinting => hinting:
+![image.png](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202402291432680.png?imageSlim)
+
+> [Google Fonts Glossary: Hinting](https://fonts.google.com/knowledge/glossary/hinting)  
+> [Why is Arial Font the Go-to Choice for Graphic Designers? - Logomakerr.AI Blog | Logo, Branding, Business](https://logomakerr.ai/blog/arial-font-logo/)
+
+### Convert Outlines
+
+Outlining text refers to the process of converting text fonts into vector paths. This is very common in the design and printing industries and is mainly used to ensure that text styles are displayed accurately when files are opened on other devices or software. Once outlined, the text is no longer editable as text but becomes a graphical element, thus avoiding display issues due to missing or incompatible fonts.
+
+For example, when a designer provides a watermark in SVG format that includes text, if the text is not outlined, converting it to an image can result in the text being rendered as a font. This may lead to different rendering outcomes on different operating systems. By outlining the text, the designer ensures consistency in the appearance of the watermark across various platforms and devices, as it is treated as a graphic rather than editable text.
+
+## Font Family
+
+In front-end development, font-family is one of the most commonly used properties in CSS. However, why is it called font-family instead of something like font-name?
+
+In reality, when a font is designed, the font developer adapts it for various styles, such as italics and different weights, with each weight being a separate font file. Typically, designers only provide the normal weight font file. When you set font-weight in CSS, it doesn't actually call upon other font weight files; instead, the browser itself processes the text. If you initially use a Heavy weight font file and then set the font-weight to 100, what is actually displayed is still Heavy. Yes, the browser's processing of fonts occurs within a very limited range. If your development scenario requires high fidelity in font rendering, you should specify the font weight directly through font-family instead of setting font-weight. This approach can avoid differences in the final rendering result due to different font processing strategies across various browsers. However, this also leads to larger static resource requests for fonts on webpages. In such cases, you might consider using font subsetting to reduce the size of static resources.
+
+Top: Browser processed
+Bottom: Native bold font file
+![image.png](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202402291514771.png?imageSlim)
+
+:::info
+Fallback Mechanism:
+If the specified weight value is unavailable, the following rules determine the actual rendered weight:
+
+- If the specified weight is between 400 and 500 (inclusive):
+  - Search ascending for a weight available between the specified value and 500.
+  - If no match is found, search descending for an available weight less than the specified value.
+  - If no match is found, search ascending for an available weight greater than 500.
+- If the specified value is less than 400, search descending for an available weight less than the specified value. If no match is found, search ascending for an available weight greater than the specified value (start with the smallest possible, then the largest).
+- If the specified value is greater than 500, search ascending for an available weight greater than the specified value. If no match is found, search descending for an available weight less than the specified value (start with the largest possible, then the smallest).
+
+These strategies imply that if a font only has normal and bold options, then specifying a weight between 100-500 will render as normal, and specifying a weight between 501-900 will render as bold.
+
+:::
+
+## Variable Fonts
+
+Variable fonts are an evolution of the OpenType font specification that enables many different variations of a typeface to be incorporated into a single file, rather than having a separate font file for every width, weight, or style. They let you access all the variations contained in a given font file via CSS and a single @font-face reference.
+
+In the past, a typeface would be produced as several individual fonts, and each font would represent one specific width/weight/style combination. So you would have separate files for 'Roboto Regular', 'Roboto Bold', and 'Roboto Bold Italic' — meaning that you could end up with 20 or 30 different font files to represent a complete typeface (it could be several times that for a large typeface that has different widths as well).
+
+In such a scenario, to use a typeface for typical use on a site for body copy you would need at least four files: regular, italic, bold, and bold italic. If you wanted to add more weights, like a lighter one for captions or a heavier one for extra emphasis, that would mean several more files. This results in more HTTP requests, and more data being downloaded (usually around 20k or more per file).
+
+With a variable font, all of those permutations can be contained in a single file. That file would be larger than a single font, but in most cases smaller or about the same size as the 4 you might load for body copy. The advantage in choosing the variable font is that you have access to the entire range of weights, widths, and styles available, rather than being constrained to only the few that you previously would have loaded separately.
+
+This allows for common typographic techniques such as setting different size headings in different weights for better readability at each size or using a slightly narrower width for data-dense displays. For comparison, it is typical in a typographic system for a magazine to use 10–15 or more different weight and width combinations throughout the publication — giving a much wider range of styles than currently typical on the web (or indeed practical for performance reasons alone).
+
+<img src="/img/variable fonts.gif" />
+[GSAP 3 ETC Variable Font Wave (codepen.io)](https://codepen.io/Chokcoco/pen/BamYMYg)

@@ -1,0 +1,149 @@
+---
+slug: stanford-cs448b-16-visNLP
+title: Stanford CS448B 16 VisNLP
+tags: [dataviz, stanford, class, cs448b]
+---
+
+import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
+
+This article contains my notes from Stanford's CS448B (Data Visualization) course, specifically focusing on the sixteenth lecture about visualization and natural language processing. I'll discuss the importance of linking text with visualization, understanding how readers integrate charts and captions, visual question and answering, and natural language interfaces.
+
+{/* truncate */}
+
+## Original
+
+<object
+  data="/stanford-cs448b/Lec16-visNLP.pdf"
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href="/stanford-cs448b/Lec16-visNLP.pdf">Download PDF</a>.
+</object>
+
+## Notes
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141417913.png?imageSlim)
+GVC trade grew rapidly in the 1990s but stagnated after the 2008 global financial crisis
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141418912.png?imageSlim)
+**Question**: How much did the GVC share rise between 1990 and 2008?
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141420316.png?imageSlim)
+
+> “Words and pictures belong together.”
+>
+> <p style={{ textAlign: 'right' }}>--Tufte, 1983</p>
+
+### Linking text with visualization
+
+> Facilitating Document Reading by Linking Text and Tables
+>
+> <p style={{ textAlign: 'right' }}>--Kim et al. 2018</p>
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141426929.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141426656.png?imageSlim)
+
+**Stage 1**: Table Structure Extraction
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141427300.png?imageSlim)
+
+**Stage 2**: Match Sentence Text to Table Cells
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141428801.png?imageSlim)
+
+**Stage 3**: Rule-based Refinement of Matches
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141428878.png?imageSlim)
+
+#### Pipeline Evaluation
+
+Corpus
+
+- Pew Research Reports
+- ACL and CVPR papers
+- Kong et. al (2014)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141437563.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141438667.png?imageSlim)
+
+#### User Study
+
+Hypothesis:Our interface facilitates reading documents with tables
+
+Within-subject study  
+14 adult volunteers, all fluent in English  
+Task: Annotate references with/without our interface
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141440902.png?imageSlim)
+
+### Understanding how readers integrate charts and captions
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141441841.png?imageSlim)
+
+Do readers rely more on the chart or captions for their takeaways?
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141441361.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141442198.png?imageSlim)
+
+<hr />
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141445072.png?imageSlim)
+
+When text and visualization emphasis mismatch, readers rely more on the chart and can miss information in the caption
+
+### Visual question and answering
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141445799.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141446223.png?imageSlim)
+
+#### Formative Study
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141447371.png?imageSlim)
+
+Explanations describe procedure for computing answer  
+Half of the explanations referred to visual features of chart
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141448796.png?imageSlim)
+
+#### Chart QA Pipeline and Generating Explanations
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141449760.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141449544.png?imageSlim)
+
+:::tip Example
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141450548.png?imageSlim)
+:::
+
+#### User Study
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141451193.png?imageSlim)
+
+- 16 participants
+- 20 Chart-Question-Answer-Explanation tuples (5 per explanation type)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141452560.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141452548.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141453991.png?imageSlim)
+
+### Natural language interfaces
+
+<object
+  data="/paper/Eviza-A Natural Language Interface for Visual Analysis.pdf"
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href="/paper/Eviza-A Natural Language Interface for Visual Analysis.pdf">
+    Download PDF
+  </a>
+  .
+</object>

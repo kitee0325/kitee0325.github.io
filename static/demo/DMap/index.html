@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Force-Directed Graph</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://d3js.org/d3-hexbin.v0.2.min.js"></script>
+    <style>
+      body {
+        margin: 0;
+        padding: 20px;
+        font-family: Arial, sans-serif;
+      }
+      #force-directed-container,
+      #hex-container {
+        width: 100%;
+        height: 800px;
+        margin-bottom: 20px;
+        box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.1);
+        position: relative;
+      }
+      .node {
+        stroke: #fff;
+        stroke-width: 1.5px;
+        transition: opacity 0.5s ease;
+      }
+      .link {
+        stroke: #999;
+        stroke-opacity: 0.6;
+        stroke-width: 1px;
+      }
+      .node:hover {
+        stroke: #000;
+        stroke-width: 2px;
+      }
+      .node.inactive {
+        opacity: 0.1;
+      }
+      .controls {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        z-index: 100;
+        background: white;
+        padding: 10px;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      }
+      button {
+        padding: 8px 15px;
+        margin: 0 5px;
+        border: none;
+        border-radius: 4px;
+        background: #4caf50;
+        color: white;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #45a049;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="force-directed-container"></div>
+    <div id="hex-container">
+      <div class="controls">
+        <button id="playButton">播放动画</button>
+      </div>
+    </div>
+    <script src="createData.js"></script>
+    <script src="hexLayout.js"></script>
+    <script>
+      // Create color scale for categories globally
+      const color = d3.scaleOrdinal(d3.schemeCategory10);
+      // hexSize is defined in hexLayout.js
+
+      function fitToCanvas(svg, g, width, height, zoom, padding = 0.1) {
+        const bounds = g.node().getBBox();
+        const fullWidth = width;
+        const fullHeight = height;
+
+        // Calculate scale to fit 80% of the canvas
+        const scale =
+          0.8 * Math.min(fullWidth / bounds.width, fullHeight / bounds.height);
+
+        // Calculate translation to center
+        const centerX =
+          (fullWidth - bounds.width * scale) / 2 - bounds.x * scale;
+        const centerY =
+          (fullHeight - bounds.height * scale) / 2 - bounds.y * scale;
+
+        // Apply transform
+        const transform = d3.zoomIdentity
+          .translate(centerX, centerY)
+          .scale(scale);
+
+        svg.transition().duration(750).call(zoom.transform, transform);
+      }
+
+      function createForceDirectedGraph(containerId, data) {
+        // Initialize SVG
+        const width = document.getElementById(containerId).clientWidth;
+        const height = document.getElementById(containerId).clientHeight;
+
+        const svg = d3
+          .select(`#${containerId}`)
+          .append('svg')
+          .attr('width', width)
+          .attr('height', height);
+
+        // Add a group for the visualization
+        const g = svg.append('g');
+
+        // Add zoom behavior
+        const zoom = d3
+          .zoom()
+          .scaleExtent([0.1, 4])
+          .on('zoom', (event) => {
+            g.attr('transform', event.transform);
+          });
+
+        svg.call(zoom);
+
+        // Create force simulation
+        const simulation = d3
+          .forceSimulation(data.nodes)
+          .force(
+            'link',
+            d3
+              .forceLink(data.edges)
+              .id((d) => d.id)
+              .distance(30)
+          )
+          .force('charge', d3.forceManyBody().strength(-50))
+          .force('center', d3.forceCenter(width / 2, height / 2))
+          .force('collision', d3.forceCollide().radius(8));
+
+        // Add links
+        const links = g
+          .selectAll('.link')
+          .data(data.edges)
+          .join('line')
+          .attr('class', 'link');
+
+        // Add nodes
+        const nodes = g
+          .selectAll('.node')
+          .data(data.nodes)
+          .join('circle')
+          .attr('class', 'node')
+          .attr('r', 10)
+          .attr('fill', (d) => color(d.category))
+          .call(drag(simulation));
+
+        // Add tooltips
+        nodes
+          .append('title')
+          .text((d) => `ID: ${d.id}\nCategory: ${d.category}\nTime: ${d.time}`);
+
+        // Update positions on each tick
+        simulation.on('tick', () => {
+          links
+            .attr('x1', (d) => d.source.x)
+            .attr('y1', (d) => d.source.y)
+            .attr('x2', (d) => d.target.x)
+            .attr('y2', (d) => d.target.y);
+
+          nodes.attr('cx', (d) => d.x).attr('cy', (d) => d.y);
+        });
+
+        // Drag behavior
+        function drag(simulation) {
+          function dragstarted(event) {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            event.subject.fx = event.subject.x;
+            event.subject.fy = event.subject.y;
+          }
+
+          function dragged(event) {
+            event.subject.fx = event.x;
+            event.subject.fy = event.y;
+          }
+
+          function dragended(event) {
+            if (!event.active) simulation.alphaTarget(0);
+            event.subject.fx = null;
+            event.subject.fy = null;
+          }
+
+          return d3
+            .drag()
+            .on('start', dragstarted)
+            .on('drag', dragged)
+            .on('end', dragended);
+        }
+
+        return {
+          svg,
+          g,
+          simulation,
+          zoom,
+          width,
+          height,
+        };
+      }
+      function createHexLayout(containerId, data) {
+        // Initialize SVG
+        const width = document.getElementById(containerId).clientWidth;
+        const height = document.getElementById(containerId).clientHeight;
+
+        const svg = d3
+          .select(`#${containerId}`)
+          .append('svg')
+          .attr('width', width)
+          .attr('height', height);
+
+        // Add a group for the visualization
+        const g = svg.append('g');
+
+        // Add zoom behavior
+        const zoom = d3
+          .zoom()
+          .scaleExtent([0.1, 4])
+          .on('zoom', (event) => {
+            g.attr('transform', event.transform);
+          });
+
+        svg.call(zoom);
+
+        // Apply hex layout
+        const { nodes } = data;
+        const hexNodes = hexLayout(nodes);
+
+        // Calculate time ranges
+        const timeExtent = d3.extent(hexNodes, (d) => d.time);
+        const dayInMs = 24 * 60 * 60 * 1000;
+        const timeRanges = [
+          [timeExtent[0], new Date(timeExtent[0].getTime() + dayInMs)],
+          [
+            new Date(timeExtent[0].getTime() + dayInMs),
+            new Date(timeExtent[0].getTime() + 2 * dayInMs),
+          ],
+          [new Date(timeExtent[0].getTime() + 2 * dayInMs), timeExtent[1]],
+        ];
+
+        // Draw nodes
+        function hexagonPath(size) {
+          const points = [];
+          for (let i = 0; i < 6; i++) {
+            const angle = (i * Math.PI) / 3 + Math.PI / 2;
+            points.push([size * Math.cos(angle), size * Math.sin(angle)]);
+          }
+          return d3.line()(points) + 'Z';
+        }
+
+        const hexGraphNodes = g
+          .selectAll('.node')
+          .data(hexNodes)
+          .join('path')
+          .attr('class', 'node')
+          .attr('d', (d) => hexagonPath(hexSize))
+          .attr('transform', (d) => `translate(${d.x},${d.y})`)
+          .attr('fill', (d) => color(d.category));
+
+        hexGraphNodes.append('title').text((d) => d.id);
+
+        // Center the visualization
+        const bounds = g.node().getBBox();
+
+        // Instead of manual centering, use fitToCanvas
+        fitToCanvas(svg, g, width, height, zoom);
+
+        // Animation control
+        let isPlaying = false;
+        let currentStep = -1;
+        const animationDuration = 1000;
+
+        function updateNodes(timeRange) {
+          hexGraphNodes.classed('inactive', (d) => {
+            if (!timeRange) return false;
+            return d.time < timeRange[0] || d.time > timeRange[1];
+          });
+        }
+
+        function playAnimation() {
+          if (isPlaying) return;
+          isPlaying = true;
+          currentStep = 0;
+
+          function step() {
+            if (currentStep >= timeRanges.length) {
+              updateNodes(null); // Show all nodes
+              isPlaying = false;
+              currentStep = -1;
+              d3.select('#playButton').text('播放动画');
+              return;
+            }
+
+            updateNodes(timeRanges[currentStep]);
+            currentStep++;
+            setTimeout(step, animationDuration);
+          }
+
+          step();
+        }
+
+        // Add button event listener
+        d3.select('#playButton').on('click', () => {
+          if (isPlaying) return;
+          d3.select('#playButton').text('播放中...');
+          playAnimation();
+        });
+
+        return {
+          svg,
+          nodes: hexGraphNodes,
+        };
+      }
+      // Get data and initialize the graph
+      const data = main();
+      const { svg, g, simulation, zoom, width, height } =
+        createForceDirectedGraph('force-directed-container', data);
+
+      // Wait for force-directed layout to stabilize
+      simulation.on('end', () => {
+        // Record final positions
+        data.nodes.forEach((node) => {
+          node.pos = { x: node.x, y: node.y };
+        });
+
+        // Fit to canvas
+        fitToCanvas(svg, g, width, height, zoom);
+
+        const hexLayout = createHexLayout('hex-container', data);
+      });
+    </script>
+  </body>
+</html>
