@@ -11,14 +11,30 @@ interface BlogInfo {
 
 const featuredBlogs: BlogInfo[] = [
   {
-    title: 'test1asdad啊都是法师打发斯蒂芬萨法三大发啥打法撒打发手打发撒',
-    link: '/blog/2021-08-26-welcome',
-    description: '撒旦法人啊发生的发生大萨达asdasdasdasdasd',
+    title: 'Data Visualization',
+    link: '/blog/stanford-cs448b-01-purpose',
+    description:
+      'I enjoy data visualization related algorithms, design, and courses',
+    img: 'https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202501161833157.png?imageSlim',
   },
   {
-    title: 'test2',
-    link: '/blog/2019-05-28-first-blog-post',
-    description: '撒旦法人啊发生的发生大萨达',
+    title: 'AI',
+    link: '/blog/AI-review',
+    description: 'Yeah, as we all know, this is the era of AI',
+    img: 'https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202501161833280.png?imageSlim',
+  },
+  {
+    title: 'Mathematics',
+    link: '/blog/paradox-of-probability-theory',
+    description:
+      'Complex mathematics gives me headaches, but I am still happy to understand them',
+    img: 'https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202501161833533.png?imageSlim',
+  },
+  {
+    title: 'Design',
+    link: '/blog/color-space',
+    description: 'Beautiful visual expressions captivate me',
+    img: 'https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202501161834235.png?imageSlim',
   },
 ];
 
@@ -42,7 +58,7 @@ function BlogCard({ title, description, img, link }: BlogInfo) {
 const FeatureBlogs: React.FC = () => {
   return (
     <section className={styles['feature-blogs']}>
-      <h2>Some Of My Focus</h2>
+      <h2>What I'm Learning</h2>
       <div className={styles['blog-cards']}>
         {featuredBlogs.map((blog) => (
           <BlogCard key={blog.title} {...blog} />
