@@ -1,0 +1,128 @@
+---
+slug: eyes-tracking
+title: Eyes Tracking
+tags: [interaction]
+---
+
+## Introduction
+
+Throughout my career, I have frequently encountered visualization scenarios similar to those depicted in the image, particularly in cases like "organizational relationship visualization." In such visualizations, the main graph typically contains numerous nodes and edges, with users able to focus on specific areas through zooming and panning operations. When a user clicks on a node, that node and its associated connections are highlighted, while corresponding detailed information is displayed in auxiliary views like sub-graphs and detail panels on the side.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202501250944706.png?imageSlim)
+
+A persistent challenge I've observed is that while the main graph's dense network of nodes and edges provides a good macro-level overview, it makes it difficult to examine the intricate relationships between individual nodes. Although various techniques like clustering and edge bundling can improve the visualization's clarity, they still don't offer a fully intuitive way to explore these relationships.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202501250959212.png?imageSlim)
+Recently, I've discovered two new technologies to me that could significantly enhance the interaction experience for such relationship diagrams, particularly in relational graph. The first is AntV's component called `fisheye`, which enables users to magnify specific portions of the relationship graph to reveal hidden nodes and edges. The second is eye tracking technology.
+
+<img src="/img/AntV Fish Eyes.gif" alt="fisheye" />
+
+Upon discovering these two technologies, I naturally thought of combining them: using eye tracking to control the fisheye effect while preserving AntV's existing mouse-based interactions. In this enhanced interaction model, eye tracking would control the fisheye in the main graph, improving the experience of exploring complex multi-graph linkages. Meanwhile, the mouse remains free for other interactions, such as selecting bars in auxiliary charts to highlight corresponding nodes in the main graph. The fisheye effect would automatically activate wherever the user's gaze falls on the main graph, creating a more natural and intuitive exploration experience.
+
+## Demo
+
+:::tip
+
+# Eye Tracking Visualization Guide
+
+For better experience, you can open this demo in a new window by clicking the button below. This will give you more screen space and better performance.
+
+<button
+  onClick={() => {
+    const isDev = window.location.hostname === 'localhost';
+    const url = isDev
+      ? 'http://localhost:3000/demo/eyesTrack/index.html'
+      : 'https://kitee0325.github.io/demo/eyesTrack/index.html';
+    window.open(url, '_blank');
+  }}
+  style={{
+    padding: '12px 24px',
+    backgroundColor: '#4CAF50',
+    color: 'white',
+    border: 'none',
+    borderRadius: '5px',
+    cursor: 'pointer',
+    marginBottom: '20px',
+    fontSize: '16px',
+    lineHeight: '24px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: '48px',
+  }}
+>
+  <span style={{ margin: 0 }}>Open in New Window</span>
+</button>
+
+1. **Initial Setup**
+
+   - Allow camera access when prompted
+   - Wait for eye tracking initialization
+   - Ensure good lighting and face visibility
+
+2. **Calibration Process**
+
+   - Click "Start Calibration" button when ready
+   - Look at each red dot as it appears on screen
+   - Stay focused on each point until it moves
+   - Complete all 9 calibration points
+   - Wait for calibration to finish
+
+3. **Main Visualization Features**
+
+   - Character relationship graph (left panel)
+   - Top 5 first letters statistics (top right)
+   - Eye tracking feedback (middle right)
+   - Control panel (bottom right)
+
+4. **Interaction Methods**
+
+   - Use your eyes to trigger fisheye effect
+   - Hover over nodes to see character names
+   - Drag nodes to adjust graph layout
+   - Mouse over bars to highlight related characters
+
+5. **Visual Feedback**
+
+   - Red dot shows your current gaze position
+   - Fisheye lens follows your eye movement
+   - Nodes and text enlarge when looked at
+   - Connected relationships are emphasized
+
+6. **Tips**
+   - Keep your face within the feedback box
+   - Maintain stable head position
+   - Recalibrate if tracking becomes inaccurate
+   - Close the page to end eye tracking session
+
+:::
+
+<iframe
+  src="/demo/eyesTrack/index.html"
+  width="100%"
+  style={{ border: 'none' }}
+  onLoad={(e) => {
+    // Adjust iframe height to match content
+    const iframe = e.target;
+    iframe.style.height =
+      iframe.contentWindow.document.documentElement.scrollHeight + 'px';
+  }}
+></iframe>
+
+:::info
+
+<img src="/img/Eye Tracking Visualization.gif" alt="eyesTrack" />
+
+I spent some time
+reading and learning the WebGazer API documentation because the initial eye-tracking
+results were consistently poor. Unfortunately, despite trying various methods such
+as increasing calibration points and sampling frequency, I still couldn't achieve
+a highly accurate tracking effect. According to my research on Google, I found that
+the precision of eye-tracking using just a camera is currently not very high. You
+either need to purchase more specialized eye movement recorders or spend extended
+periods training sampling models to better adapt to the user's environment.
+
+As it stands, such high usage costs make it nearly impossible to turn this into a viable product. However, technology is always advancing, and perhaps I should wait for breakthroughs from professionals in this field. Meanwhile, learning about the computational logic of the fishEye component in AntV has been quite rewarding for me.
+
+<img src="/img/D3 Fish Eyes.gif" alt="eyesTrack" />
+The effects shown in the image above are controlled by mouse movement.
+
+:::
