@@ -65,40 +65,40 @@ For better experience, you can open this demo in a new window by clicking the bu
    - Wait for eye tracking initialization
    - Ensure good lighting and face visibility
 
-2. **Calibration Process**
+2. **Eye Tracking Process**
 
-   - Click "Start Calibration" button when ready
-   - Look at each red dot as it appears on screen
-   - Stay focused on each point until it moves
-   - Complete all 9 calibration points
-   - Wait for calibration to finish
+   - Click "Start Eye Tracking" button when ready
+   - Complete the calibration process if no saved calibration data
+   - System will automatically load previous calibration if available
+   - Use "Clear Saved Calibration" button if tracking seems inaccurate
+   - Click "Stop Eye Tracking" to end the session
 
 3. **Main Visualization Features**
 
    - Character relationship graph (left panel)
-   - Top 5 first letters statistics (top right)
-   - Eye tracking feedback (middle right)
-   - Control panel (bottom right)
+   - Top 5 first letters statistics (right top)
+   - Control panel (right bottom)
 
 4. **Interaction Methods**
 
-   - Use your eyes to trigger fisheye effect
+   - Use your eyes to trigger fisheye effect in eye tracking mode
+   - Switch to mouse tracking mode for mouse-based interaction
    - Hover over nodes to see character names
    - Drag nodes to adjust graph layout
    - Mouse over bars to highlight related characters
 
 5. **Visual Feedback**
 
-   - Red dot shows your current gaze position
-   - Fisheye lens follows your eye movement
-   - Nodes and text enlarge when looked at
+   - Fisheye lens follows your gaze/mouse position
+   - Nodes and text enlarge when looked at/hovered over
    - Connected relationships are emphasized
+   - Bar chart highlights related nodes when interacted with
 
 6. **Tips**
-   - Keep your face within the feedback box
-   - Maintain stable head position
-   - Recalibrate if tracking becomes inaccurate
-   - Close the page to end eye tracking session
+   - Maintain stable head position during calibration
+   - Use "Clear Saved Calibration" if tracking becomes inaccurate
+   - Switch to mouse tracking mode if needed
+   - Stop eye tracking before closing the page
 
 :::
 
@@ -118,16 +118,11 @@ For better experience, you can open this demo in a new window by clicking the bu
 
 <img src="/img/Eye Tracking Visualization.gif" alt="eyesTrack" />
 
-I spent some time
-reading and learning the WebGazer API documentation because the initial eye-tracking
-results were consistently poor. Unfortunately, despite trying various methods such
-as increasing calibration points and sampling frequency, I still couldn't achieve
-a highly accurate tracking effect. According to my research on Google, I found that
-the precision of eye-tracking using just a camera is currently not very high. You
-either need to purchase more specialized eye movement recorders or spend extended
-periods training sampling models to better adapt to the user's environment.
+Initially, I used the WebGazer.js visual tracking library. However, its default tracking mode uses the mouse position as an auxiliary calibration point, leading to significant tracking discrepancies when your mouse is on the right side of the panel while you are looking at the main graph on the left. Later, I switched to GazeRecorder, which greatly improved the results. Unfortunately, GazeRecorder cannot be used commercially as it isn't fully open-source; it is an SDK open for free trials for researchers only.
 
-As it stands, such high usage costs make it nearly impossible to turn this into a viable product. However, technology is always advancing, and perhaps I should wait for breakthroughs from professionals in this field. Meanwhile, learning about the computational logic of the fishEye component in AntV has been quite rewarding for me.
+This was a very interesting experiment for me, as it worked as expected in the interactive scenarios I envisioned. Additionally, I replicated AntV’s fishEye component in D3.js and gained a foundational understanding of its transformation algorithm.
+
+In the future, I might need to return to WebGazer.js and tweak its parameters to achieve results similar to GazeRecorder. But for now, I'll leave it as it is.
 
 <img src="/img/D3 Fish Eyes.gif" alt="eyesTrack" />
 The effects shown in the image above are controlled by mouse movement.

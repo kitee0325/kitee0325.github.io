@@ -5,13 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Graph Layout</title>
     <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script src="https://webgazer.cs.brown.edu/webgazer.js"></script>
+    <script src="https://api.gazerecorder.com/GazeCloudAPI.js"></script>
+    <script src="https://app.gazerecorder.com/GazeRecorderAPI.js"></script>
+    <script src="https://app.gazerecorder.com/GazePlayer.js"></script>
     <style>
       body {
         margin: 0;
         padding: 20px;
         height: 100vh;
         box-sizing: border-box;
+        background-color: white;
       }
 
       .container {
@@ -27,6 +30,7 @@
         border-radius: 10px;
         padding: 20px;
         position: relative;
+        background-color: white;
       }
 
       .main-graph h2 {
@@ -52,14 +56,44 @@
 
       .right-panel {
         display: grid;
-        grid-template-rows: 1fr 1fr auto;
+        grid-template-rows: 1fr auto;
         gap: 20px;
+        height: 100%;
+      }
+
+      .sub-graph {
+        border: 2px solid #4682b4;
+        border-radius: 10px;
+        padding: 20px;
+        background-color: white;
+        position: relative;
+        height: calc(100% - 40px);
+      }
+
+      .sub-graph h2 {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        z-index: 1;
+        margin: 0;
+        padding: 5px 10px;
+        background-color: rgba(255, 255, 255, 0.9);
+        border-radius: 5px;
+      }
+
+      .sub-graph svg {
+        width: 100%;
+        height: 100%;
+        padding: 20px;
+        box-sizing: border-box;
       }
 
       .control-panel {
         border: 2px solid #9370db;
         border-radius: 10px;
         padding: 20px;
+        background-color: white;
+        height: fit-content;
       }
 
       .calibration-panel {
@@ -68,87 +102,57 @@
         gap: 10px;
       }
 
-      .detail {
-        border: 2px solid #90ee90;
-        border-radius: 10px;
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-      }
-
-      .webgazer-container {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 20px;
-        flex: 1;
-        min-height: 240px;
-      }
-
-      .video-feed {
+      .toggle-button {
         width: 100%;
-        height: 240px;
-        border: 2px solid #ccc;
-        border-radius: 8px;
-        overflow: hidden;
-        display: flex;
-        justify-content: center;
-        align-items: center;
+        background: #4682b4;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background 0.3s;
+        margin-top: 10px;
       }
 
-      .feedback-container {
-        position: relative;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        border: 2px solid #ccc;
-        border-radius: 8px;
-        background: rgba(0, 0, 0, 0.05);
-        height: 240px;
+      .toggle-button:hover {
+        background: #36648b;
       }
 
-      #webgazerVideoContainer {
-        position: fixed !important;
-        top: -999px !important;
-        left: -999px !important;
-        transition: all 0.3s ease-in-out;
+      .toggle-button.active {
+        background: #36648b;
       }
 
-      .video-feed #webgazerVideoContainer {
-        position: relative !important;
-        top: unset !important;
-        left: unset !important;
-        width: 100% !important;
-        height: 100% !important;
-      }
-
-      #webgazerFaceFeedbackBox,
-      #webgazerFaceOverlay {
-        position: fixed !important;
-        top: -999px !important;
-        left: -999px !important;
-        transition: all 0.3s ease-in-out;
-      }
-
-      .feedback-container #webgazerFaceFeedbackBox,
-      .feedback-container #webgazerFaceOverlay {
-        position: absolute !important;
-        top: 0 !important;
-        left: 0 !important;
-        width: 100% !important;
-        height: 100% !important;
-      }
-
-      video {
-        width: 100% !important;
-        height: 100% !important;
-        object-fit: cover;
-      }
-
-      h2 {
-        margin: 0;
+      .control-button {
+        width: 100%;
+        background: #4caf50;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: background 0.3s;
         margin-bottom: 10px;
-        font-family: Arial, sans-serif;
+      }
+
+      .control-button:hover {
+        background: #45a049;
+      }
+
+      .control-button:disabled {
+        background: #cccccc;
+        cursor: not-allowed;
+      }
+
+      .status {
+        margin-top: 10px;
+        font-size: 14px;
+        color: #666;
+      }
+
+      .node {
+        position: relative;
       }
 
       .links line {
@@ -216,91 +220,6 @@
         stroke-dasharray: 5, 3;
         opacity: 0.6;
       }
-
-      .calibration-button {
-        width: 100%;
-        background: #4caf50;
-        color: white;
-        border: none;
-        padding: 10px 20px;
-        border-radius: 5px;
-        cursor: pointer;
-        font-size: 14px;
-        transition: background 0.3s;
-      }
-
-      .calibration-button:hover {
-        background: #45a049;
-      }
-
-      .calibration-button:disabled {
-        background: #cccccc;
-        cursor: not-allowed;
-      }
-
-      .calibration-point {
-        position: fixed;
-        width: 20px;
-        height: 20px;
-        background: red;
-        border-radius: 50%;
-        transform: translate(-50%, -50%);
-        pointer-events: none;
-        display: none;
-        z-index: 9999;
-        box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
-        animation: pulse 1s infinite;
-      }
-
-      @keyframes pulse {
-        0% {
-          transform: translate(-50%, -50%) scale(1);
-          opacity: 1;
-        }
-        50% {
-          transform: translate(-50%, -50%) scale(1.2);
-          opacity: 0.8;
-        }
-        100% {
-          transform: translate(-50%, -50%) scale(1);
-          opacity: 1;
-        }
-      }
-
-      .calibration-point.active {
-        display: block;
-      }
-
-      .calibration-status {
-        margin-top: 10px;
-        font-size: 14px;
-        color: #666;
-      }
-
-      .node {
-        position: relative;
-      }
-
-      .toggle-button {
-        width: 100%;
-        background: #4682b4;
-        color: white;
-        border: none;
-        padding: 10px 20px;
-        border-radius: 5px;
-        cursor: pointer;
-        font-size: 14px;
-        transition: background 0.3s;
-        margin-top: 10px;
-      }
-
-      .toggle-button:hover {
-        background: #36648b;
-      }
-
-      .toggle-button.active {
-        background: #36648b;
-      }
     </style>
   </head>
   <body>
@@ -314,384 +233,35 @@
           <h2 style="color: #4682b4">Top 5 First Letters</h2>
           <svg width="100%" height="90%"></svg>
         </div>
-        <div class="detail">
-          <h2 style="color: #4a8c4a">Eye Tracking Feedback</h2>
-          <div class="webgazer-container">
-            <div id="webgazerVideoFeed" class="video-feed"></div>
-            <div class="feedback-container" id="feedback"></div>
-          </div>
-        </div>
         <div class="control-panel">
           <div class="calibration-panel">
-            <button id="calibrateBtn" class="calibration-button">
-              Start Calibration
+            <button id="startBtn" class="control-button">
+              Start Eye Tracking
             </button>
-            <div id="calibrationStatus" class="calibration-status">
-              Status: Initializing eye tracking...
-            </div>
+            <button id="stopBtn" class="control-button">
+              Stop Eye Tracking
+            </button>
+            <div id="status" class="status">Status: Ready to start</div>
             <button id="toggleTrackingBtn" class="toggle-button">
               Switch to Mouse Tracking
+            </button>
+            <button id="clearCalibrationBtn" class="control-button">
+              Clear Saved Calibration
             </button>
           </div>
         </div>
       </div>
     </div>
-    <div id="calibrationPoint" class="calibration-point"></div>
 
     <script>
-      // 校准相关变量
-      let isCalibrating = false;
-      let currentPoint = 0;
-      let samplesPerPoint = 0;
-      const requiredSamplesPerPoint = 20; // 每个点收集20个样本
-      const calibrationDelay = 1000; // 注视点出现后等待1秒再开始收集样本
-      const maxTimePerPoint = 2000; // 每个点最多采样2秒
-      let samplingStartTime = 0;
-
-      // 增加校准点数量和优化分布
-      const calibrationPoints = [
-        // 外圈8个点
-        { x: 10, y: 10 }, // 左上
-        { x: 50, y: 10 }, // 上中
-        { x: 90, y: 10 }, // 右上
-        { x: 10, y: 50 }, // 左中
-        { x: 90, y: 50 }, // 右中
-        { x: 10, y: 90 }, // 左下
-        { x: 50, y: 90 }, // 下中
-        { x: 90, y: 90 }, // 右下
-        // 中心点
-        { x: 50, y: 50 }, // 中心
-      ];
-
-      const calibrateBtn = document.getElementById('calibrateBtn');
-      const calibrationPoint = document.getElementById('calibrationPoint');
-      const calibrationStatus = document.getElementById('calibrationStatus');
-
-      // 初始状态下禁用校准按钮
-      calibrateBtn.disabled = true;
-      calibrationStatus.textContent = 'Status: Initializing eye tracking...';
-
-      // 添加点击事件监听器
-      calibrateBtn.addEventListener('click', startCalibration);
-
-      function showNextCalibrationPoint() {
-        if (currentPoint >= calibrationPoints.length) {
-          endCalibration();
-          return;
-        }
-
-        console.log('Showing calibration point', currentPoint + 1);
-        const point = calibrationPoints[currentPoint];
-
-        // 计算点的实际位置（相对于视口）
-        const viewportX = (point.x / 100) * window.innerWidth;
-        const viewportY = (point.y / 100) * window.innerHeight;
-
-        console.log('Point position:', viewportX, viewportY);
-
-        // 显示校准点
-        const calibrationPoint = document.getElementById('calibrationPoint');
-        calibrationPoint.style.left = viewportX + 'px';
-        calibrationPoint.style.top = viewportY + 'px';
-        calibrationPoint.classList.add('active');
-        calibrationPoint.style.display = 'block';
-        calibrationPoint.style.zIndex = '9999';
-
-        // 重置采样计数
-        samplesPerPoint = 0;
-
-        // 等待用户注视点一段时间后再开始收集样本
-        setTimeout(() => {
-          console.log(
-            'Starting to collect samples for point',
-            currentPoint + 1
-          );
-          samplingStartTime = Date.now();
-          collectSamples(viewportX, viewportY);
-        }, calibrationDelay);
-      }
-
-      function startCalibration() {
-        if (!webgazerInitialized) {
-          console.log('Cannot start calibration - WebGazer not initialized');
-          return;
-        }
-        console.log('Starting calibration process');
-        isCalibrating = true;
-        currentPoint = 0;
-        samplesPerPoint = 0;
-        calibrateBtn.disabled = true; // 在校准过程中禁用按钮
-        webgazer.clearData(); // 清除之前的校准数据
-        calibrationStatus.textContent =
-          'Status: Calibrating... Look at the red dot';
-
-        // 确保校准点可见
-        const calibrationPoint = document.getElementById('calibrationPoint');
-        calibrationPoint.style.cssText = ''; // 清除之前的所有样式
-        calibrationPoint.classList.remove('active'); // 移除之前的active类
-
-        // 立即显示第一个校准点
-        showNextCalibrationPoint();
-      }
-
-      function collectSamples(x, y) {
-        if (!isCalibrating) return;
-
-        const currentTime = Date.now();
-        console.log(
-          `Collecting sample ${
-            samplesPerPoint + 1
-          }/${requiredSamplesPerPoint}, time elapsed: ${
-            currentTime - samplingStartTime
-          }ms`
-        );
-
-        // 检查是否超过最大采样时间
-        if (currentTime - samplingStartTime >= maxTimePerPoint) {
-          console.log('Max sampling time reached for point', currentPoint + 1);
-          samplesPerPoint = 0; // 重置采样计数
-          currentPoint++;
-          showNextCalibrationPoint();
-          return;
-        }
-
-        // 检查是否已收集足够的样本
-        if (samplesPerPoint >= requiredSamplesPerPoint) {
-          console.log('Collected enough samples for point', currentPoint + 1);
-          samplesPerPoint = 0; // 重置采样计数
-          currentPoint++;
-          showNextCalibrationPoint();
-          return;
-        }
-
-        // 获取当前的眼睛图像数据
-        webgazer
-          .getCurrentPrediction()
-          .then((prediction) => {
-            if (prediction && prediction.eyeFeatures) {
-              // 使用眼睛特征数据进行校准
-              webgazer.addGazeData(
-                x,
-                y,
-                prediction.eyeFeatures.left,
-                prediction.eyeFeatures.right
-              );
-              samplesPerPoint++;
-
-              // 更新状态显示
-              calibrationStatus.textContent = `Status: Calibrating... Point ${
-                currentPoint + 1
-              }/${
-                calibrationPoints.length
-              } (${samplesPerPoint}/${requiredSamplesPerPoint})`;
-
-              // 继续收集样本
-              if (isCalibrating) {
-                setTimeout(() => collectSamples(x, y), 100);
-              }
-            } else {
-              console.log('No valid eye features detected, retrying...');
-              // 如果没有检测到眼睛特征，短暂等待后重试
-              if (isCalibrating) {
-                setTimeout(() => collectSamples(x, y), 100);
-              }
-            }
-          })
-          .catch((error) => {
-            console.error('Error getting eye features:', error);
-            if (isCalibrating) {
-              setTimeout(() => collectSamples(x, y), 100);
-            }
-          });
-      }
-
-      // WebGazer initialization
-      let webgazerInitialized = false;
-
-      async function initWebGazer() {
-        if (webgazerInitialized) {
-          console.log('WebGazer already initialized');
-          return;
-        }
-
-        try {
-          console.log('Starting WebGazer initialization...');
-          calibrationStatus.textContent =
-            'Status: Requesting camera permission...';
-
-          // 配置 WebGazer
-          webgazer.setRegression('ridge').setTracker('TFFacemesh');
-
-          // 关闭WebGazer默认的视线点显示
-          webgazer.params.showGazeDot = false;
-
-          // 创建自定义的视线点
-          const gazeDot = document.createElement('div');
-          gazeDot.style.position = 'fixed';
-          gazeDot.style.width = '10px';
-          gazeDot.style.height = '10px';
-          gazeDot.style.backgroundColor = 'red';
-          gazeDot.style.borderRadius = '50%';
-          gazeDot.style.pointerEvents = 'none';
-          gazeDot.style.zIndex = '9999';
-          gazeDot.style.transform = 'translate(-50%, -50%)';
-          gazeDot.style.display = 'none';
-          document.body.appendChild(gazeDot);
-
-          // 设置视线追踪监听器
-          webgazer.setGazeListener((data, timestamp) => {
-            if (data == null || isCalibrating || !isEyeTracking) {
-              gazeDot.style.display = 'none';
-              if (!isEyeTracking) return;
-              resetFisheyeEffect();
-              return;
-            }
-
-            // 显示视线点
-            gazeDot.style.display = 'block';
-            gazeDot.style.left = data.x + 'px';
-            gazeDot.style.top = data.y + 'px';
-
-            // 获取图表容器的位置和尺寸
-            const mainGraphRect = document
-              .querySelector('.main-graph')
-              .getBoundingClientRect();
-
-            // 将视口坐标转换为相对于图表容器的坐标
-            const svgX = data.x - mainGraphRect.left;
-            const svgY = data.y - mainGraphRect.top;
-
-            // 只在视线落在图表区域内时更新鱼眼效果
-            if (
-              svgX >= 0 &&
-              svgX <= mainGraphRect.width &&
-              svgY >= 0 &&
-              svgY <= mainGraphRect.height
-            ) {
-              requestAnimationFrame(() => {
-                updateFisheyeEffect(svgX, svgY);
-              });
-            } else {
-              resetFisheyeEffect();
-            }
-          });
-
-          // 开始 WebGazer
-          await webgazer.begin();
-          console.log('WebGazer.begin() completed');
-
-          // 等待模型加载
-          await new Promise((resolve) => setTimeout(resolve, 2000));
-
-          // 配置显示选项
-          webgazer.showVideo(true);
-          webgazer.showFaceOverlay(true);
-          webgazer.showFaceFeedbackBox(true);
-          webgazer.showPredictionPoints(false); // 关闭默认预测点显示
-
-          // 移动视频元素到正确的容器
-          const videoFeed = document.getElementById('webgazerVideoFeed');
-          const feedback = document.getElementById('feedback');
-
-          // 移动视频容器
-          const videoContainer = document.getElementById(
-            'webgazerVideoContainer'
-          );
-          if (videoContainer && videoFeed) {
-            videoFeed.appendChild(videoContainer);
-          }
-
-          // 移动人脸反馈框
-          const faceFeedbackBox = document.getElementById(
-            'webgazerFaceFeedbackBox'
-          );
-          const faceOverlay = document.getElementById('webgazerFaceOverlay');
-
-          if (faceFeedbackBox && feedback) {
-            feedback.appendChild(faceFeedbackBox);
-          }
-          if (faceOverlay && feedback) {
-            feedback.appendChild(faceOverlay);
-          }
-
-          // 设置初始化标志
-          webgazerInitialized = true;
-          calibrationStatus.textContent = 'Status: Ready for calibration';
-          calibrateBtn.disabled = false;
-
-          console.log('WebGazer initialization completed');
-        } catch (err) {
-          console.error('WebGazer initialization error:', err);
-          calibrationStatus.textContent =
-            'Status: Failed to initialize eye tracking. Please ensure good lighting and face visibility, then refresh the page.';
-          calibrateBtn.disabled = true;
-          webgazerInitialized = false;
-        }
-      }
-
-      // 更新鱼眼效果的函数
-      const updateFisheyeEffect = (x, y) => {
-        if (!fisheye || !fisheyeLens) {
-          console.log('Fisheye or fisheyeLens not initialized');
-          return;
-        }
-
-        // 更新鱼眼镜头位置
-        fisheye.center = [x, y];
-        fisheyeLens.style('display', 'block').attr('cx', x).attr('cy', y);
-
-        // 更新节点位置
-        d3.selectAll('.node').each(function (d) {
-          const transformed = fisheye.transform(d.x, d.y);
-          const distance = Math.sqrt(
-            Math.pow(transformed.x - x, 2) + Math.pow(transformed.y - y, 2)
-          );
-
-          // 在鱼眼范围内的节点添加fisheye类并更新位置
-          d3.select(this)
-            .classed('fisheye', distance <= fisheye.radius)
-            .attr(
-              'transform',
-              `translate(${transformed.x},${transformed.y}) scale(${transformed.z})`
-            );
-        });
-
-        // 更新连线位置
-        d3.selectAll('.links line').each(function (d) {
-          const sourceTransformed = fisheye.transform(d.source.x, d.source.y);
-          const targetTransformed = fisheye.transform(d.target.x, d.target.y);
-          d3.select(this)
-            .attr('x1', sourceTransformed.x)
-            .attr('y1', sourceTransformed.y)
-            .attr('x2', targetTransformed.x)
-            .attr('y2', targetTransformed.y);
-        });
-      };
-
-      // 重置鱼眼效果的函数
-      const resetFisheyeEffect = () => {
-        if (!fisheyeLens) return;
-
-        fisheyeLens.style('display', 'none');
-
-        d3.selectAll('.node')
-          .classed('fisheye', false)
-          .attr('transform', (d) => `translate(${d.x},${d.y})`);
-
-        d3.selectAll('.links line')
-          .attr('x1', (d) => d.source.x)
-          .attr('y1', (d) => d.source.y)
-          .attr('x2', (d) => d.target.x)
-          .attr('y2', (d) => d.target.y);
-      };
-
       // 声明全局变量
       let link, node;
       let simulation;
       let colorScale;
       let fisheye;
       let fisheyeLens;
-      let isEyeTracking = true; // 默认使用眼球追踪
+      let isEyeTracking = true;
+      let sessionReplayData = null;
 
       // 获取SVG容器的尺寸
       const mainSvg = d3.select('.main-graph svg');
@@ -703,7 +273,6 @@
         radius: 100,
         distortion: 2,
         center: [width / 2, height / 2],
-
         transform: function (x, y) {
           const dx = x - this.center[0];
           const dy = y - this.center[1];
@@ -749,6 +318,154 @@
         }
       });
 
+      // Initialize GazeCloud
+      function initGazeCloud() {
+        console.log('Initializing GazeCloud...');
+        document.getElementById('startBtn').disabled = false;
+        document.getElementById('stopBtn').disabled = true;
+        updateStatus('Ready to start');
+
+        // 设置 GazeCloudAPI 回调函数
+        GazeCloudAPI.OnCalibrationComplete = function () {
+          console.log('Calibration Complete');
+          document.getElementById('startBtn').disabled = true;
+          document.getElementById('stopBtn').disabled = false;
+          updateStatus('Eye tracking active');
+
+          // 保存校准数据
+          const calibrationData = GazeCloudAPI.GetCalibrationData();
+          if (calibrationData) {
+            try {
+              localStorage.setItem(
+                'gazeCalibrationData',
+                JSON.stringify(calibrationData)
+              );
+              console.log('Calibration data saved');
+            } catch (error) {
+              console.error('Error saving calibration data:', error);
+            }
+          }
+        };
+
+        GazeCloudAPI.OnCamDenied = function () {
+          console.log('Camera access denied');
+          updateStatus('Camera access denied');
+          document.getElementById('startBtn').disabled = false;
+          document.getElementById('stopBtn').disabled = true;
+        };
+
+        GazeCloudAPI.OnError = function (msg) {
+          console.log('Error: ' + msg);
+          updateStatus('Error: ' + msg);
+          document.getElementById('startBtn').disabled = false;
+          document.getElementById('stopBtn').disabled = true;
+        };
+
+        // 设置实时眼动数据回调
+        GazeCloudAPI.OnResult = function (GazeData) {
+          // 只在眼动追踪模式下处理
+          if (isEyeTracking) {
+            // 检查数据是否有效
+            if (GazeData.state !== 0) {
+              resetFisheyeEffect();
+              return;
+            }
+
+            const mainGraphRect = document
+              .querySelector('.main-graph')
+              .getBoundingClientRect();
+
+            // 获取相对于图表容器的坐标
+            const x = GazeData.docX - mainGraphRect.left;
+            const y = GazeData.docY - mainGraphRect.top;
+
+            // 只在视线落在图表区域内时更新鱼眼效果
+            if (
+              x >= 0 &&
+              x <= mainGraphRect.width &&
+              y >= 0 &&
+              y <= mainGraphRect.height
+            ) {
+              requestAnimationFrame(() => {
+                updateFisheyeEffect(x, y);
+              });
+            } else {
+              resetFisheyeEffect();
+            }
+          }
+        };
+
+        // 禁用点击重校准
+        GazeCloudAPI.UseClickRecalibration = false;
+      }
+
+      // Start eye tracking
+      function startTracking() {
+        console.log('Starting eye tracking...');
+        try {
+          // 尝试加载保存的校准数据
+          const savedCalibrationData = localStorage.getItem(
+            'gazeCalibrationData'
+          );
+          if (savedCalibrationData) {
+            try {
+              const calibrationData = JSON.parse(savedCalibrationData);
+              GazeCloudAPI.SetCalibrationData(calibrationData);
+              console.log('Loaded saved calibration data');
+              updateStatus('Loading saved calibration...');
+            } catch (error) {
+              console.error('Error loading calibration data:', error);
+              updateStatus('Starting new calibration...');
+            }
+          }
+
+          GazeCloudAPI.StartEyeTracking();
+          updateStatus('Starting eye tracking...');
+        } catch (error) {
+          console.error('Error starting eye tracking:', error);
+          updateStatus('Failed to start eye tracking. Please try again.');
+        }
+      }
+
+      // Stop eye tracking
+      function stopTracking() {
+        console.log('Stopping eye tracking...');
+        try {
+          GazeCloudAPI.StopEyeTracking();
+          document.getElementById('startBtn').disabled = false;
+          document.getElementById('stopBtn').disabled = true;
+          updateStatus('Eye tracking stopped');
+          resetFisheyeEffect();
+        } catch (error) {
+          console.error('Error stopping eye tracking:', error);
+          updateStatus('Failed to stop eye tracking. Please try again.');
+        }
+      }
+
+      // Clear calibration data
+      function clearCalibration() {
+        try {
+          localStorage.removeItem('gazeCalibrationData');
+          console.log('Calibration data cleared');
+          updateStatus('Calibration data cleared');
+        } catch (error) {
+          console.error('Error clearing calibration data:', error);
+        }
+      }
+
+      // Update status message
+      function updateStatus(message) {
+        document.getElementById('status').textContent = 'Status: ' + message;
+      }
+
+      // Add event listeners
+      document
+        .getElementById('startBtn')
+        .addEventListener('click', startTracking);
+      document
+        .getElementById('stopBtn')
+        .addEventListener('click', stopTracking);
+
       // 添加切换按钮事件监听器
       const toggleTrackingBtn = document.getElementById('toggleTrackingBtn');
       toggleTrackingBtn.addEventListener('click', function () {
@@ -757,8 +474,65 @@
           ? 'Switch to Mouse Tracking'
           : 'Switch to Eye Tracking';
         this.classList.toggle('active');
+
+        // 如果切换到鼠标模式，停止眼动追踪
+        if (!isEyeTracking && GazeCloudAPI.IsEyeTracking()) {
+          stopTracking();
+        }
         resetFisheyeEffect();
       });
+
+      // 更新鱼眼效果的函数
+      const updateFisheyeEffect = (x, y) => {
+        if (!fisheye || !fisheyeLens) {
+          console.log('Fisheye or fisheyeLens not initialized');
+          return;
+        }
+
+        fisheye.center = [x, y];
+        fisheyeLens.style('display', 'block').attr('cx', x).attr('cy', y);
+
+        d3.selectAll('.node').each(function (d) {
+          const transformed = fisheye.transform(d.x, d.y);
+          const distance = Math.sqrt(
+            Math.pow(transformed.x - x, 2) + Math.pow(transformed.y - y, 2)
+          );
+
+          d3.select(this)
+            .classed('fisheye', distance <= fisheye.radius)
+            .attr(
+              'transform',
+              `translate(${transformed.x},${transformed.y}) scale(${transformed.z})`
+            );
+        });
+
+        d3.selectAll('.links line').each(function (d) {
+          const sourceTransformed = fisheye.transform(d.source.x, d.source.y);
+          const targetTransformed = fisheye.transform(d.target.x, d.target.y);
+          d3.select(this)
+            .attr('x1', sourceTransformed.x)
+            .attr('y1', sourceTransformed.y)
+            .attr('x2', targetTransformed.x)
+            .attr('y2', targetTransformed.y);
+        });
+      };
+
+      // 重置鱼眼效果的函数
+      const resetFisheyeEffect = () => {
+        if (!fisheyeLens) return;
+
+        fisheyeLens.style('display', 'none');
+
+        d3.selectAll('.node')
+          .classed('fisheye', false)
+          .attr('transform', (d) => `translate(${d.x},${d.y})`);
+
+        d3.selectAll('.links line')
+          .attr('x1', (d) => d.source.x)
+          .attr('y1', (d) => d.source.y)
+          .attr('x2', (d) => d.target.x)
+          .attr('y2', (d) => d.target.y);
+      };
 
       // 创建自定义颜色方案
       const customColors = [
@@ -800,7 +574,7 @@
         .force('charge', d3.forceManyBody().strength(-100))
         .force('center', d3.forceCenter(width / 2, height / 2))
         .force('collision', d3.forceCollide().radius(30))
-        .stop(); // 初始时停止模拟，等数据加载后再启动
+        .stop();
 
       // 定义节点颜色函数
       const getNodeColor = (node) => colorScale(node.id.charAt(0));
@@ -923,13 +697,12 @@
         simulation.on('tick', ticked);
 
         // 创建条形图
-        const margin = { top: 20, right: 20, bottom: 30, left: 40 };
+        const margin = { top: 60, right: 40, bottom: 40, left: 60 };
         const barWidth = subWidth - margin.left - margin.right;
         const barHeight = subHeight - margin.top - margin.bottom;
 
         // 创建比例尺
         const x = d3.scaleBand().range([0, barWidth]).padding(0.1);
-
         const y = d3.scaleLinear().range([barHeight, 0]);
 
         const barChart = subSvg
@@ -938,16 +711,22 @@
           .attr('transform', `translate(${margin.left},${margin.top})`);
 
         x.domain(top5Letters.map((d) => d[0]));
-        y.domain([0, d3.max(top5Letters, (d) => d[1])]);
+        y.domain([0, d3.max(top5Letters, (d) => d[1]) * 1.2]); // 增加一些顶部空间
 
         // 添加x轴
         barChart
           .append('g')
           .attr('transform', `translate(0,${barHeight})`)
-          .call(d3.axisBottom(x));
+          .call(d3.axisBottom(x))
+          .selectAll('text')
+          .style('text-anchor', 'middle');
 
         // 添加y轴
-        barChart.append('g').call(d3.axisLeft(y));
+        barChart
+          .append('g')
+          .call(d3.axisLeft(y))
+          .selectAll('text')
+          .style('text-anchor', 'end');
 
         // 添加条形
         const bars = barChart
@@ -998,35 +777,9 @@
           .text((d) => d[1]);
       });
 
+      // Initialize on window load
       window.onload = function () {
-        // 创建并配置 canvas 元素
-        const canvas = document.createElement('canvas');
-        canvas.willReadFrequently = true;
-        document.body.appendChild(canvas);
-
-        initWebGazer()
-          .then(() => {
-            console.log('WebGazer initialized, ready for calibration');
-          })
-          .catch((error) => {
-            console.error('Failed to initialize WebGazer:', error);
-          });
-      };
-
-      // Clean up WebGazer and camera when leaving the page
-      window.onbeforeunload = function () {
-        if (webgazerInitialized) {
-          // 添加初始化检查
-          webgazer.end();
-          webgazerInitialized = false;
-          // 确保所有媒体流都被停止
-          navigator.mediaDevices
-            .getUserMedia({ video: true })
-            .then((stream) => {
-              stream.getTracks().forEach((track) => track.stop());
-            })
-            .catch(() => {});
-        }
+        initGazeCloud();
       };
     </script>
   </body>
