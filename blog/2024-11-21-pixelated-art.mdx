@@ -1,0 +1,389 @@
+---
+slug: pixelated-art
+title: Pixelated Art
+tags: [dataviz, design, pixel]
+---
+
+## Introduction
+
+<iframe
+  width="560"
+  height="315"
+  src="https://www.youtube.com/embed/fKv1Mixv0Hk?si=lCwN9neeF7J0nwne"
+  title="YouTube video player"
+  frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+  referrerpolicy="strict-origin-when-cross-origin"
+  allowfullscreen
+></iframe>
+
+> [Original Website](https://pudding.cool/2024/03/teenagers/)
+
+I am very accustomed to the style of content created by Alvin Chang on The Pudding, particularly his piece "Teens into Adults." There are two main reasons for this: First, I have a strong appreciation for high-quality pixel art. Second, the content of this work is deeply thought-provoking. For example, the YouTube video version of this piece features a comment stating,
+
+`"most teens in 1997 strongly agreed their future would be optimistic" 💀 little did they know….`
+
+Therefore, I undertook some technical experiments.
+
+## Pixelated
+
+### ❎pure compression
+
+<img src="/img/Pixelate Demo.gif" alt="pixelated-art" />
+
+Pixelation is already a well-established technique, with many projects related to image pixelation available on GitHub. Using [`pixelate`](https://gitcode.com/gh_mirrors/pi/pixelate/blob/master/pixelate.js) as an example, I will introduce some of the computational details involved.
+
+```javascript
+(function (root) {
+  window.URL = window.URL || window.webkitURL || window.mozURL;
+
+  function disableSmoothRendering(ctx) {
+    ctx.webkitImageSmoothingEnabled = false;
+    ctx.mozImageSmoothingEnabled = false;
+    ctx.msImageSmoothingEnabled = false;
+    ctx.imageSmoothingEnabled = false;
+    return ctx;
+  }
+
+  function Pixelate(image, opts) {
+    opts = opts || {};
+    this.image = image;
+    this.setAmount(opts.amount);
+
+    var imageLoaded = function () {
+      this.imageUrl = image.src;
+      this.width = image.clientWidth;
+      this.height = image.clientHeight;
+
+      this.canvas = document.createElement('canvas');
+      this.canvas.style.display = 'none';
+      this.canvas.width = this.width;
+      this.canvas.height = this.height;
+
+      this.canvas.style.cssText =
+        'image-rendering: optimizeSpeed;' + // FireFox < 6.0
+        'image-rendering: -moz-crisp-edges;' + // FireFox
+        'image-rendering: -o-crisp-edges;' + // Opera
+        'image-rendering: -webkit-crisp-edges;' + // Chrome
+        'image-rendering: crisp-edges;' + // Chrome
+        'image-rendering: -webkit-optimize-contrast;' + // Safari
+        'image-rendering: pixelated; ' + // Future browsers
+        '-ms-interpolation-mode: nearest-neighbor;'; // IE
+
+      this.ctx = this.canvas.getContext('2d');
+      this.ctx = disableSmoothRendering(this.ctx);
+
+      this.image.parentNode.appendChild(this.canvas, this.image);
+      this.image.onload = null;
+
+      this.pixelImage = new Image();
+      this.pixelImage.onload = function () {
+        this.ready = true;
+        this.render();
+      }.bind(this);
+      this.pixelImage.src = this.imageUrl;
+    }.bind(this);
+
+    if (this.image.complete) {
+      imageLoaded();
+    }
+
+    this.image.onload = imageLoaded;
+
+    return this;
+  }
+
+  Pixelate.prototype.setAmount = function (amount) {
+    this.amount = 1 - (amount || 0);
+    return this;
+  };
+
+  Pixelate.prototype.setWidth = function (width) {
+    var height = (this.height / this.width) * width;
+    this.width = width;
+    this.height = height;
+    this.canvas.width = this.width;
+    this.canvas.height = this.height;
+
+    this.ctx = disableSmoothRendering(this.ctx);
+    return this;
+  };
+
+  Pixelate.prototype.render = function () {
+    if (!this.ready) return this;
+    var w = this.width * (this.amount <= 0 ? 0.01 : this.amount);
+    var h = this.height * (this.amount <= 0 ? 0.01 : this.amount);
+    // render smaller image
+    this.ctx.drawImage(this.pixelImage, 0, 0, w, h);
+    // stretch the smaller image
+    this.ctx.drawImage(this.canvas, 0, 0, w, h, 0, 0, this.width, this.height);
+    this.image.src = this.canvas.toDataURL('image/png');
+    return this;
+  };
+
+  if (typeof exports !== 'undefined') {
+    if (typeof module !== 'undefined' && module.exports) {
+      exports = module.exports = Pixelate;
+    }
+    exports.pixelate = Pixelate;
+  } else if (typeof define === 'function' && define.amd) {
+    define([], function () {
+      return Pixelate;
+    });
+  } else {
+    root.Pixelate = Pixelate;
+  }
+})(this);
+```
+
+- First, the original image is reduced to a smaller size, controlled by the "amount" parameter.
+- Then, this smaller image is resized back to its original dimensions.
+- Since image smoothing is disabled, this process results in a pronounced pixel block effect.
+- The smaller the image (the smaller the "amount"), the larger the pixel blocks become after resizing, leading to a more pronounced pixelation effect.
+
+The operational logic of this library is quite straightforward. Although it may lose a lot of detail when dealing with images that have complex colors, it is sufficient for simple scenarios.
+
+<iframe
+  src="/demo/pixelate/index.html"
+  width="100%"
+  style={{ border: 'none' }}
+  onLoad={(e) => {
+    // Adjust iframe height to match content
+    const iframe = e.target;
+    iframe.style.height =
+      iframe.contentWindow.document.documentElement.scrollHeight + 'px';
+  }}
+></iframe>
+
+Common pixel asset sizes in games are 16px, 32px, 64px, and 128px. Here, we choose 128px to generate the corresponding character assets. Given the high resolution of the original image, it actually requires refinement to ensure that various details are more consistent with the pixel art style.
+
+<div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+  <img
+    src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202501292246278.png?imageSlim"
+    style={{ height: '512px' }}
+  />
+  <img
+    src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202501292315047.png?imageSlim"
+    style={{ height: '512px' }}
+  />
+
+</div>
+
+### ✅ComfyUI
+
+In ComfyUI, one can use shared pixel art workflows available online to generate high-quality results. However, since the images may have slight noise, if further processing or creation is desired, it should be done in image processors like Photoshop or by using Canvas scripts to remove the noise.
+
+<div style={{ display: 'flex', gap: '16px', width: '100%' }}>
+  <div style={{ width: '33%', aspectRatio: '1', overflow: 'hidden' }}>
+    <img
+      src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502012002242.png?imageSlim"
+      style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+    />
+  </div>
+  <div style={{ width: '33%', aspectRatio: '1', overflow: 'hidden' }}>
+    <img
+      src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502012003807.png?imageSlim"
+      style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+    />
+  </div>
+  <div style={{ width: '33%', aspectRatio: '1', overflow: 'hidden' }}>
+    <img
+      src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502012023456.png?imageSlim"
+      style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+    />
+  </div>
+</div>
+<a
+  href="/data/pixel-art-openart.ai.json"
+  download="pixel-art-openart.ai.json"
+  style={{
+    backgroundColor: '#4CAF50',
+    border: 'none',
+    color: 'white',
+    padding: '12px 24px',
+    textAlign: 'center',
+    textDecoration: 'none',
+    display: 'inline-block',
+    fontSize: '16px',
+    borderRadius: '8px',
+    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+    transition: 'all 0.3s ease',
+    cursor: 'pointer',
+    margin: '20px auto',
+  }}
+  onMouseOver={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
+  onMouseOut={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+>
+  <span>Download Workflow</span>
+</a>
+
+### ✅Aseprite + PixelLab
+
+Aseprite is specialized software for pixel art design, while PixelLab is an AI-powered extension of Aseprite. Aseprite is a paid software, and its price is acceptable in my region. Considering my future pixel art projects, I decided to purchase it. PixelLab offers various payment options, but for now, I have opted for the free version for character generation.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502011949301.png?imageSlim)
+
+The image below is the result of its creation.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502011950126.png?imageSlim)
+The created results can be directly used in any project, and with only some simple prompts, they can meet the requirements of many basic scenarios.
+
+## Animated
+
+### Basics
+
+A skilled pixel artist can quickly create basic 4-directional or 8-directional animation frames based on existing character designs. Here, I will introduce some fundamental concepts.
+
+- 6,12 OR 24 but 4 FPS
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202501301442298.png?imageSlim)
+  12 FPS is a well-balanced option, offering beginners the advantage of lower costs while still achieving a smooth animation effect that meets expectations.
+  However, it's important to remember that we are implementing only the basic running motion, which is a completely repetitive activity. Therefore, you can create a 4-frame sprite sheet and repeat it multiple times within one second to achieve a smooth effect.
+
+  <iframe
+    width="560"
+    height="315"
+    src="https://www.youtube.com/embed/J1sFBDQt8J0?si=dPBeT-_GSlxWJwpc&amp;start=50"
+    title="YouTube video player"
+    frameborder="0"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    referrerpolicy="strict-origin-when-cross-origin"
+    allowfullscreen
+  ></iframe>
+
+- 45°
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202501301449497.png?imageSlim)
+  A 45-degree camera angle is an empirical choice, allowing players to observe the front, side, and top of a character, thereby gaining more visual details. Although this perspective technically violates the laws of physics, most players do not find it jarring.
+
+  <iframe
+    width="560"
+    height="315"
+    src="https://www.youtube.com/embed/aios4kDJZsc?si=_i8L_XVZTgYkKQrw&amp;start=35"
+    title="YouTube video player"
+    frameborder="0"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    referrerpolicy="strict-origin-when-cross-origin"
+    allowfullscreen
+  ></iframe>
+
+  :::info
+  For example, in the renowned pixel game "Stardew Valley," you can also see this classic design approach.
+
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202501301453905.png?imageSlim)
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202501301458178.png?imageSlim)
+  :::
+
+- 4-direction OR 8-direction but 1-direction
+
+  Typically, pixel characters require 4-directional or 8-directional movement animations when moving. However, for the visual work mentioned in this text, implementing a single direction is sufficient, significantly reducing the workload needed.
+
+  You can observe that most movement is left/right, and since left and right are essentially mirror images, the limited movement in the vertical direction means that we only need to implement horizontal (X-axis) movement animations. The vertical movement can then be achieved simply by shifting the position.
+
+Alright, the good news is that we only need to draw four frames. However, the bad news is that I am not at all familiar with animation and pixel art.
+However, this is the age of AI, isn't it? After some research, I discovered the following methods:
+
+- ❎Upload a 2D pixel image to be converted into a 3D model using AI. By combining it with free running skeleton animations in Unity and through recording and processing, the desired sprite sheet can be obtained.
+
+  > After some experimentation, I found that its modeling effects are not well-suited for pixel art. To achieve a good result, you must have very clear images of each part of the body.
+
+- ❎Utilize existing pixel AI tools such as PixelLab.
+
+  > <img src="/img/Pixellab Animate Example.gif" />
+  > Although PixelLab provides everything I need, its skeletal animation features
+  > are paid services aimed at professional pixel artists. Since I only intend to
+  > conduct a single test, I might consider avoiding this expense for now and purchase
+  > it later when there's a more intensive demand for work.
+
+- ✅Upload a 2D pixel image, find pre-existing skeleton animation screenshots, and directly generate the sprite sheet using ComfyUI.
+
+  > ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202501301810940.png?imageSlim)
+  > It seems that this is probably the most suitable method for me at the moment—it's free, allows control over movements, and results in minimal precision loss
+
+:::info
+Other pixel animation tools
+
+[Pixel Animator-Pixel Art Animation](https://www.yeschat.ai/gpts-9t55Qx3WHjy-Pixel-Animator)  
+[voidless](https://voidless.dev/image-gen)  
+:::
+
+### Run Cycles
+
+The running motion of a character has a specialized term known as RunCycle. This refers to the requirement that a single running action should be complete and closed-loop, especially in gaming and 3D fields. This means that the end of one action should seamlessly connect to the beginning of the next action, creating a loop for smooth running animation.
+
+Thanks to the sharing within the 2D pixel art community, we can easily find related guidance schemes:
+
+<img src="/img/Run Cycles.gif" />
+
+### Generate
+
+Based on the aforementioned materials, I found relevant resources and tutorials in the ComfyUI open-source community, which saved me a lot of time.
+
+- Excellent running skeletal animation
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502040127347.png?imageSlim)
+- A guide highly aligned with my objectives
+
+  <iframe
+    width="560"
+    height="315"
+    src="https://www.youtube.com/embed/ismWniiT8ew?si=0RPUJc5XkIBaHONk"
+    title="YouTube video player"
+    frameborder="0"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    referrerpolicy="strict-origin-when-cross-origin"
+    allowfullscreen
+  ></iframe>
+
+- A comprehensive beginner's guide to ComfyUI
+  <iframe
+    width="560"
+    height="315"
+    src="https://www.youtube.com/embed/_C7kR2TFIX0?si=68aS93ZvRRVm4pvd"
+    title="YouTube video player"
+    frameborder="0"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    referrerpolicy="strict-origin-when-cross-origin"
+    allowfullscreen
+  ></iframe>
+
+Ultimately, I constructed the workflow as illustrated:
+
+- Utilize IPAdapter to maintain character features
+- Employ ControlNet to apply the pose of each frame in the sprite sheet
+- Select checkpoints tailored for pixel art-specific models
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502040121836.png?imageSlim)
+
+<a
+  href="/data/pixel-sprite-sheet.json"
+  download="pixel-sprite-sheet.json"
+  style={{
+    backgroundColor: '#4CAF50',
+    border: 'none',
+    color: 'white',
+    padding: '12px 24px',
+    textAlign: 'center',
+    textDecoration: 'none',
+    display: 'inline-block',
+    fontSize: '16px',
+    borderRadius: '8px',
+    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+    transition: 'all 0.3s ease',
+    cursor: 'pointer',
+    margin: '20px auto',
+  }}
+  onMouseOver={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
+  onMouseOut={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+>
+  <span>Download Workflow</span>
+</a>
+
+After a simple attempt, I obtained the following results:
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502040201305.png?imageSlim)
+
+<img src="/img/Sprite Run.gif" />
+
+However, there are still some issues:
+
+- The character images generated by the diffusion model differ from the original character.
+  > This is likely an issue with parameter tuning. Adjustments to the IPAdapter parameters are necessary, or Flux could be introduced to strictly maintain character consistency.
+- The generated images only simulate a pixel style and are not strictly pixel art, leading to similar noise issues as before.
+  > Dedicated pixel art processing nodes need to be introduced to eliminate the corresponding noise.
+- The motion transitions are not smooth enough, and there is still a stuttering sensation during running.
+  > This remains a challenge due to the inherent randomness of diffusion models (even with convergence algorithms), making it difficult to ensure natural transitions between frames. It requires introducing unique pixel art optimization techniques, such as smudging. As seen in PixelLab's promotional videos, their animations are relatively smooth, which necessitates a deeper mastery of ComfyUI on my part. For now, I'll temporarily put these issues on hold.
