@@ -1,7 +1,7 @@
 ---
 slug: pixelated-art
 title: Pixelated Art
-tags: [dataviz, design, pixel]
+tags: [Dataviz, Design, Pixel Art, AI, ComfyUI, ControlNet]
 ---
 
 **TLDR**
@@ -178,7 +178,7 @@ Common pixel asset sizes in games are 16px, 32px, 64px, and 128px. Here, we choo
 
 ### ✅ComfyUI
 
-In ComfyUI, one can use shared pixel art workflows available online to generate high-quality results. However, since the images may have slight noise, if further processing or creation is desired, it should be done in image processors like Photoshop or by using Canvas scripts to remove the noise.
+In ComfyUI, one can use shared pixel art workflows available online to generate high-quality results. However, since the images may have slight noise, if further processing or creation is desired, it should be done by using some graphic scripts, someone pixelated custom node,or in image processors like Photoshop to remove the noise.
 
 <div style={{ display: 'flex', gap: '16px', width: '100%' }}>
   <div style={{ width: '33%', aspectRatio: '1', overflow: 'hidden' }}>
@@ -394,3 +394,24 @@ However, there are still some issues:
   > Dedicated pixel art processing nodes need to be introduced to eliminate the corresponding noise.
 - The motion transitions are not smooth enough, and there is still a stuttering sensation during running.
   > This remains a challenge due to the inherent randomness of diffusion models (even with convergence algorithms), making it difficult to ensure natural transitions between frames. It requires introducing unique pixel art optimization techniques, such as smudging. As seen in PixelLab's promotional videos, their animations are relatively smooth, which necessitates a deeper mastery of ComfyUI on my part. For now, I'll temporarily put these issues on hold.
+
+## Improvement
+
+- For issues related to non-strict pixels, I referred to the code from https://github.com/Astropulse/sd-palettize and implemented a custom node in ComfyUI to handle non-strict pixel problems in 512\*512 results.
+
+- For the issue of unsmooth motion, I used a pose sprite sheet with smaller frame divisions from the Civitai community: https://civitai.com/models/56307/character-walking-and-running-animation-poses-8-directions.
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502070708261.png?imageSlim)
+
+However, there is still the problem of losing character details (such as swinging hair while running). I believe the root cause lies in the fact that pixel art inherently loses precision, and in diffusion generation, it is unavoidable to incorrectly process some pixel blocks.
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502070706112.png?imageSlim)
+
+<img src="/img/Sprite Run 20x.gif" />
+
+**Next steps to consider (pending execution):**
+
+- Refer to the complete process in https://civitai.com/models/448101/sprite-sheet-maker, first generate a sprite sheet from high-resolution images, and then use a pixelation script to process the images. However, this requires that the high-resolution images are well-suited for pixel art. From the first point in the pixelation method mentioned above, we already know that directly converting high-resolution images into pixel art using algorithms is almost unusable.
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502070705154.png?imageSlim)
+
+- Attempt to use FaceID for detailed facial features of characters and AnimateDiff for frame interpolation to mitigate the issue of losing character details.
