@@ -158,7 +158,7 @@ The operational logic of this library is quite straightforward. Although it may 
     // Adjust iframe height to match content
     const iframe = e.target;
     iframe.style.height =
-      iframe.contentWindow.document.documentElement.scrollHeight + 'px';
+      iframe.contentWindow.document.body.scrollHeight + 'px';
   }}
 ></iframe>
 
