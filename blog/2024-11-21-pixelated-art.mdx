@@ -4,6 +4,8 @@ title: Pixelated Art
 tags: [Dataviz, Design, Pixel Art, AI, ComfyUI, ControlNet]
 ---
 
+import ModelViewer from '@site/src/components/ModelViewer';
+
 **TLDR**
 This article documents my experimental attempt at creating pixel art animations using AI tools. Through exploring different approaches like ComfyUI, I tried to generate character sprite sheets for a simple running animation. While the results are still preliminary and face several challenges, this experiment provides some insights into combining AI with pixel art creation. The article shares my learning process and the technical workflow I developed, hoping it might be helpful for others interested in similar experiments.
 
@@ -415,3 +417,52 @@ However, there is still the problem of losing character details (such as swingin
 ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502070705154.png?imageSlim)
 
 - Attempt to use FaceID for detailed facial features of characters and AnimateDiff for frame interpolation to mitigate the issue of losing character details.
+
+## 3D render 2D
+
+Recently, I came across a video on YouTube. I was amazed by the smoothness of its animation, as it also used sequential frame patterns. So I decided to study it further.
+
+<iframe
+  width="560"
+  height="315"
+  src="https://www.youtube.com/embed/MUr1iRdMywo?si=nnoEerDlHqi2i3IF"
+  title="YouTube video player"
+  frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+  referrerpolicy="strict-origin-when-cross-origin"
+  allowfullscreen
+></iframe>
+
+The following are the detailed steps of his process:
+
+- Use ControlNet to generate a 2D character in a T-pose.
+
+  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+    <img
+      src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502111100499.jpg?imageSlim"
+      style={{ width: '50%', height: 'auto' }}
+    />
+    <img
+      src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502111100675.png?imageSlim"
+      style={{ width: '50%', height: 'auto' }}
+    />
+  </div>
+
+- Convert it to a 3D model using tripoSR. Even though the precision is low, it doesn't matter, as this will be less noticeable during the final pixelation stage.
+
+  <ModelViewer modelPath="/model/pixelate/model.glb" />
+
+- Export the model in .fbx format using `Blender`.
+- Upload the model to `Mixamo`, perform auto-rigging, and select and apply a running animation model.
+  <img src="/img/Mixamo Tifa Running.gif" />
+- Load the .fbx model with the running animation in Blender and render the sequential frames from a specific camera angle.
+- Use SD to pixelate the sequential frames. I added pixelate to convert it into true pixel.
+- Use FFmpeg to export a GIF.
+  <img src="/img/3DRender2D Pixel Tifa.gif" />
+
+Although the smoothness and character consistency are quite impressive, it remains merely a product of a simple compression algorithm; it is pixelated, but not pixel art. Thus, there are currently two technical challenges:
+
+- When using SD's ControlNet to apply poses, it struggles to maintain character consistency, especially in small pixel areas.
+- There is a lack of a model/algorithm for converting all task images into pixel art.
+
+I hope that one day I can find solutions to these issues.
