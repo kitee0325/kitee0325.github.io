@@ -432,6 +432,7 @@ Recently, I came across a video on YouTube. I was amazed by the smoothness of it
   referrerpolicy="strict-origin-when-cross-origin"
   allowfullscreen
 ></iframe>
+### base case
 
 The following are the detailed steps of his process:
 
@@ -450,7 +451,10 @@ The following are the detailed steps of his process:
 
 - Convert it to a 3D model using tripoSR. Even though the precision is low, it doesn't matter, as this will be less noticeable during the final pixelation stage.
 
-  <ModelViewer modelPath="/model/pixelate/model.glb" />
+  <ModelViewer
+    modelPath="/model/pixelate/tifa.glb"
+    ambientLightIntensity="0.8"
+  />
 
 - Export the model in .fbx format using `Blender`.
 - Upload the model to `Mixamo`, perform auto-rigging, and select and apply a running animation model.
@@ -466,3 +470,59 @@ Although the smoothness and character consistency are quite impressive, it remai
 - There is a lack of a model/algorithm for converting all task images into pixel art.
 
 I hope that one day I can find solutions to these issues.
+
+### another with some improvement
+
+- Select a female anime model from [posemy.art](https://posemy.art/app/) and apply a T-pose to obtain high-quality DWopenpose and Depth original images.
+
+  <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
+    <img
+      src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502192156453.png?imageSlim"
+      alt=""
+      style={{ width: '33%', height: 'auto' }}
+    />
+    <img
+      src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502192157589.png?imageSlim"
+      alt=""
+      style={{ width: '33%', height: 'auto' }}
+    />
+    <img
+      src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502192157149.png?imageSlim"
+      alt=""
+      style={{ width: '33%', height: 'auto' }}
+    />
+  </div>
+  However, the Depth image seems to lack depth information, so I regenerated it in
+  ComfyUI using MiDaS Depth(Left) and Zoe Depth(Right), and ultimately chose the
+  MiDaS Depth, which appears cleaner
+  <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
+    <img
+      src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502192200689.png?imageSlim"
+      alt=""
+      style={{ width: '50%', height: 'auto' }}
+    />
+    <img
+      src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502192200283.png?imageSlim"
+      alt=""
+      style={{ width: '50%', height: 'auto' }}
+    />
+  </div>
+
+- Dual ControlNet using both openpose and Depth was employed to ensure the accuracy of the pose.
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502192216094.png?imageSlim)
+
+- Use the latest Tripo V2.5 for 3D modeling.
+
+  > The model can be made more precise by using the four-directional views of the character. However, since I'm only conducting a basic test, I'll omit this step for now.
+
+  <ModelViewer
+    modelPath="/model/pixelate/anime dragon girl.glb"
+    ambientLightIntensity="0.8"
+  />
+
+- Use [pixel art add-on](https://lucasroedel.gumroad.com/l/pixel_art) in blender instead of pixelate custom node in ComfyUI.
+  <img src="/img/Blender Pixel Art Addon.gif" />
+
+So, that is the result:
+
+<img src="/img/Dragon Girl Run.gif" />

@@ -9,6 +9,9 @@ interface ModelViewerProps {
   canvasWidth?: number;
   canvasHeight?: number;
   rotationSpeed?: number;
+  ambientLightIntensity?: number;
+  directionalLightIntensity?: number;
+  spotLightIntensity?: number;
 }
 
 const Model: React.FC<{
@@ -79,11 +82,27 @@ const ModelViewer: React.FC<ModelViewerProps> = ({
   canvasWidth = 800,
   canvasHeight = 600,
   rotationSpeed,
+  ambientLightIntensity = 0.3,
+  directionalLightIntensity = 1,
+  spotLightIntensity = 0.5,
 }) => {
   return (
     <Canvas style={{ width: canvasWidth, height: canvasHeight }}>
-      <ambientLight intensity={0.5} />
-      <spotLight position={[10, 10, 10]} angle={0.15} penumbra={1} />
+      <ambientLight intensity={ambientLightIntensity} />
+      <directionalLight
+        position={[5, 5, 5]}
+        intensity={directionalLightIntensity}
+        castShadow
+        shadow-mapSize-width={1024}
+        shadow-mapSize-height={1024}
+      />
+      <spotLight
+        position={[10, 10, 10]}
+        angle={0.15}
+        penumbra={1}
+        intensity={spotLightIntensity}
+        castShadow
+      />
       <OrbitControls enablePan={true} enableZoom={true} enableRotate={true} />
       <Suspense fallback={null}>
         <Model
