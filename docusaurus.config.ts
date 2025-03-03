@@ -68,6 +68,11 @@ const config: Config = {
       items: [
         { to: '/blog', label: 'Blog', position: 'left' },
         {
+          href: 'mailto:kitee0325@gmail.com',
+          label: 'Email',
+          position: 'right',
+        },
+        {
           href: 'https://github.com/kitee0325/',
           label: 'GitHub',
           position: 'right',
