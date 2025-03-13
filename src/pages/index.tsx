@@ -1,7 +1,8 @@
 import Layout from '@theme/Layout';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
-import Profile from '../components/Profile';
-import FeatureBlogs from '../components/FeatureBlogs';
+import Profile from '../features/Profile';
+import FeatureBlogs from '../features/FeatureBlogs';
+import ProjectGallery from '../features/ProjectGallery';
 
 export default function Home(): JSX.Element {
   const { siteConfig } = useDocusaurusContext();
@@ -12,6 +13,7 @@ export default function Home(): JSX.Element {
     >
       <Profile />
       <FeatureBlogs />
+      <ProjectGallery />
     </Layout>
   );
 }

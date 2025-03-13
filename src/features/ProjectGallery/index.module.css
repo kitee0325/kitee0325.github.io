@@ -1,0 +1,50 @@
+.project-gallery {
+  margin-top: 6rem;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.project-gallery h2 {
+  font-size: 1.8rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Masonry layout styles */
+.masonry-wrapper {
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.masonry-item {
+  width: 100%;
+  box-sizing: border-box;
+  /* Ensure proper spacing */
+  padding: 0;
+  transition: transform 0.3s ease;
+}
+
+.masonry-item:hover {
+  transform: translateY(-5px);
+  z-index: 1;
+}
+
+/* Add box shadow to the InfoCard component instead */
+.masonry-item:hover :global(.info-card) {
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .project-gallery {
+    padding: 1rem;
+  }
+
+  /* Ensure smaller spacing on mobile */
+  .masonry-item {
+    margin-bottom: 10px;
+  }
+}
