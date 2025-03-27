@@ -23,7 +23,10 @@ const HexGrid: React.FC<HexGridProps> = ({ className }) => {
   const shapeMorphRef = useRef<{
     getInstancePositions: () => Array<{ x: number; y: number }>;
     setInstancesChangeListener: (
-      callback: (positions: Array<{ x: number; y: number }>) => void
+      callback: (
+        positions: Array<{ x: number; y: number }>,
+        exitingPositions: Array<{ x: number; y: number }>
+      ) => void
     ) => void;
   }>(null);
 
@@ -85,13 +88,15 @@ const HexGrid: React.FC<HexGridProps> = ({ className }) => {
 
   // 处理实例位置变化的回调 - 只在创建和销毁时调用
   const handleInstancesChanged = (
-    positions: Array<{ x: number; y: number }>
+    positions: Array<{ x: number; y: number }>,
+    exitingPositions: Array<{ x: number; y: number }>
   ) => {
     if (!zrInstanceRef.current) return;
 
     // 更新所有六边形的缩放
     requestAnimationFrame(() => {
-      updateHexagonsScale(positions);
+      // 传递正常位置和退出中的位置
+      updateHexagonsScale(positions, exitingPositions);
     });
   };
 
@@ -99,32 +104,48 @@ const HexGrid: React.FC<HexGridProps> = ({ className }) => {
   const calculateHexScale = (
     hexX: number,
     hexY: number,
-    morphPositions: Array<{ x: number; y: number }>
+    morphPositions: Array<{ x: number; y: number; isExiting?: boolean }>
   ) => {
     if (morphPositions.length === 0) return 1; // 没有实例时不缩放
 
-    // 计算到最近实例的距离平方
+    // 计算到最近实例的距离平方及其状态
     let minDistanceSq = Infinity;
+    let closestPointIsExiting = false;
+
     for (const pos of morphPositions) {
       const dx = hexX - pos.x;
       const dy = hexY - pos.y;
       const distanceSq = dx * dx + dy * dy;
-      minDistanceSq = Math.min(minDistanceSq, distanceSq);
+
+      if (distanceSq < minDistanceSq) {
+        minDistanceSq = distanceSq;
+        closestPointIsExiting = !!pos.isExiting;
+      }
     }
 
     // 距离超过影响半径时不缩放
     if (minDistanceSq > INFLUENCE_RADIUS_SQ) return 1;
 
-    // 反转距离比例，距离越近，缩放越小，但不小于MIN_SCALE
-    // 这里使用平方根因为我们需要真实距离与INFLUENCE_RADIUS比较
+    // 计算基础缩放比例
     const distanceRatio = Math.sqrt(minDistanceSq) / INFLUENCE_RADIUS;
-    const scale = MIN_SCALE + (1 - MIN_SCALE) * Math.pow(distanceRatio, 0.8);
-    return scale;
+
+    // 根据是否为退出中的位置调整缩放行为
+    if (closestPointIsExiting) {
+      // 退出中的点：随着距离增加缩放值变大（恢复原大小）
+      // 贴近退出点时保持MIN_SCALE，远离时逐渐恢复到1
+      return (
+        MIN_SCALE + (1 - MIN_SCALE) * (1 - Math.pow(1 - distanceRatio, 0.8))
+      );
+    } else {
+      // 普通点：距离越近，缩放越小
+      return MIN_SCALE + (1 - MIN_SCALE) * Math.pow(distanceRatio, 0.8);
+    }
   };
 
   // 批量处理动画更新 - 修改为更直接的方式应用动画
   const updateHexagonsScale = (
-    morphPositions: Array<{ x: number; y: number }>
+    morphPositions: Array<{ x: number; y: number }>,
+    exitingPositions: Array<{ x: number; y: number }> = []
   ) => {
     if (!zrInstanceRef.current) return;
 
@@ -135,6 +156,12 @@ const HexGrid: React.FC<HexGridProps> = ({ className }) => {
     }
     lastAnimationTimestampRef.current = now;
 
+    // 合并所有需要考虑的位置，但给退出中的位置添加权重标记
+    const allPositions = [
+      ...morphPositions.map((pos) => ({ ...pos, isExiting: false })),
+      ...exitingPositions.map((pos) => ({ ...pos, isExiting: true })),
+    ];
+
     // 按缩放值分批处理
     hexagonsRef.current.forEach((hexData, key) => {
       const { group, fillShape, position, currentScale, isVisible } = hexData;
@@ -144,8 +171,8 @@ const HexGrid: React.FC<HexGridProps> = ({ className }) => {
 
       const { x, y } = position;
 
-      // 计算新的缩放值 - 四舍五入以减少不同缩放值数量
-      const rawScale = calculateHexScale(x, y, morphPositions);
+      // 计算新的缩放值 - 考虑退出状态
+      const rawScale = calculateHexScale(x, y, allPositions);
       const newScale = Math.round(rawScale * BATCH_PRECISION) / BATCH_PRECISION;
 
       // 如果缩放值变化不大，跳过动画

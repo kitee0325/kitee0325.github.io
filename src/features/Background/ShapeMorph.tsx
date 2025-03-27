@@ -296,10 +296,17 @@ class ShapeInstance {
   private readonly lifecycleDuration: number = 2000; // 单个形状的生命周期
   private readonly morphDuration: number = 1500; // 形变和颜色过渡时间
   private readonly pauseDuration: number = 500; // 停顿时间
+  private readonly maxTotalLifetime: number = 15000; // 最大总生命周期，防止实例永远不退出
+  private creationTime: number; // 实例创建时间
   private isEntranceComplete: boolean = false; // 是否完成入场动画
   private isExiting: boolean = false; // 是否正在执行出场动画
   private morphAnimationRef: any = null; // 存储morph动画引用
   private currentConfig: ShapeConfig; // 存储当前形状配置
+  public onExitStart: ((position: { x: number; y: number }) => void) | null =
+    null; // 新增：退出开始回调
+  public onEntranceComplete:
+    | ((position: { x: number; y: number }) => void)
+    | null = null; // 新增：入场完成回调
 
   constructor(
     zr: zrender.ZRenderType,
@@ -313,6 +320,7 @@ class ShapeInstance {
     this.currentShapeIndex = 0;
     this.isMorphing = false;
     this.lastMorphTime = 0;
+    this.creationTime = performance.now(); // 记录创建时间
 
     // 随机生成形状总数（3-5个）
     this.totalShapes = Math.floor(random(3, 6));
@@ -366,6 +374,9 @@ class ShapeInstance {
   }
 
   private startEntranceAnimation(): void {
+    // 记录入场动画开始时间
+    const entranceStartTime = performance.now();
+
     // Create opacity animation
     const opacityAnimation = this.path.animate('style', false);
 
@@ -391,15 +402,58 @@ class ShapeInstance {
         this.isEntranceComplete = true;
         this.lastMorphTime = performance.now();
         this.morphAnimationRef = null;
+
+        // 触发入场完成回调
+        if (this.onEntranceComplete) {
+          this.onEntranceComplete(this.position);
+        }
       })
       .start();
+
+    // 设置安全超时，确保入场动画不会卡住
+    setTimeout(() => {
+      if (!this.isEntranceComplete) {
+        console.warn('Entrance animation timeout, forcing completion');
+        this.isEntranceComplete = true;
+        this.lastMorphTime = performance.now();
+
+        // 触发入场完成回调
+        if (this.onEntranceComplete) {
+          this.onEntranceComplete(this.position);
+        }
+
+        // 清理可能的存留动画引用
+        if (this.morphAnimationRef) {
+          if (this.morphAnimationRef.stop) {
+            this.morphAnimationRef.stop();
+          }
+          this.morphAnimationRef = null;
+        }
+      }
+    }, this.morphDuration * 1.5); // 给予1.5倍动画时间的宽限
   }
 
   private startExitAnimation(): void {
     if (this.isExiting) return;
     this.isExiting = true;
 
-    // Create opacity animation for exit
+    // 触发退出开始回调
+    if (this.onExitStart) {
+      this.onExitStart(this.position);
+    }
+
+    // 先停止任何现有动画
+    if (this.morphAnimationRef) {
+      if (this.morphAnimationRef.stop) {
+        this.morphAnimationRef.stop();
+      }
+      this.morphAnimationRef = null;
+    }
+
+    // 清理正在进行的形变，如果有的话
+    this.isMorphing = false;
+
+    // 创建opacity动画for exit
     const opacityAnimation = this.path.animate('style', false);
 
     // Get current style including all properties
@@ -408,7 +462,7 @@ class ShapeInstance {
     opacityAnimation
       .when(0, {
         ...currentStyle,
-        opacity: 1,
+        opacity: currentStyle.opacity || 1,
       })
       .when(this.morphDuration, {
         ...currentStyle,
@@ -418,6 +472,9 @@ class ShapeInstance {
     // Store animation reference for cleanup
     this.morphAnimationRef = opacityAnimation;
 
+    // 记录退出动画开始时间
+    const exitStartTime = performance.now();
+
     opacityAnimation
       .duration(this.morphDuration)
       .done(() => {
@@ -425,13 +482,23 @@ class ShapeInstance {
         this.cleanup();
       })
       .start();
+
+    // 设置安全超时，确保即使动画回调失败也能清理资源
+    setTimeout(() => {
+      if (this.isExiting && !this.path.ignore) {
+        console.warn('Exit animation timeout, forcing cleanup');
+        this.cleanup();
+      }
+    }, this.morphDuration * 1.5); // 给予1.5倍动画时间的宽限
   }
 
   // 清理资源的方法
   private cleanup(): void {
     // 确保所有动画引用被清理
-    if (this.morphAnimationRef && this.morphAnimationRef.stop) {
-      this.morphAnimationRef.stop();
+    if (this.morphAnimationRef) {
+      if (this.morphAnimationRef.stop) {
+        this.morphAnimationRef.stop();
+      }
       this.morphAnimationRef = null;
     }
 
@@ -443,6 +510,10 @@ class ShapeInstance {
 
     // 从渲染器中移除
     this.zr.remove(this.path);
+
+    // 确保状态一致
+    this.isExiting = true;
+    this.isMorphing = false;
   }
 
   // 清理所有资源的方法
@@ -464,11 +535,36 @@ class ShapeInstance {
   }
 
   update(currentTime: number): boolean {
+    // 检查总生命周期是否超时，强制退出
+    const totalLifetime = currentTime - this.creationTime;
+    if (totalLifetime > this.maxTotalLifetime && !this.isExiting) {
+      this.startExitAnimation();
+      return false;
+    }
+
     // 入场动画完成后才开始形变
     if (this.isEntranceComplete && !this.isMorphing && !this.isExiting) {
       const elapsed = currentTime - this.lastMorphTime;
       if (elapsed >= this.lifecycleDuration) {
         this.startMorphing();
+      }
+    }
+
+    // 检测动画是否卡住 - 如果变形动画持续时间超过了预期的两倍，强制重置状态
+    if (this.isMorphing && !this.isExiting) {
+      const morphingElapsed = currentTime - this.lastMorphTime;
+      // 如果变形动画运行时间超过预期的两倍，强制重置
+      if (morphingElapsed > this.morphDuration * 2) {
+        console.warn('Animation timeout detected, resetting state');
+        // 强制重置动画状态
+        if (this.morphAnimationRef) {
+          if (this.morphAnimationRef.stop) {
+            this.morphAnimationRef.stop();
+          }
+          this.morphAnimationRef = null;
+        }
+        this.isMorphing = false;
+        this.lastMorphTime = currentTime;
       }
     }
 
@@ -540,10 +636,15 @@ class ShapeInstance {
     });
 
     // 如果有正在进行的动画，先取消它
-    if (this.morphAnimationRef && this.morphAnimationRef.stop) {
-      this.morphAnimationRef.stop();
+    if (this.morphAnimationRef) {
+      if (this.morphAnimationRef.stop) {
+        this.morphAnimationRef.stop();
+      }
       this.morphAnimationRef = null;
     }
+
+    // 设置动画开始时间以用于超时检测
+    const morphStartTime = performance.now();
 
     // 调用morphPath进行变形(from→to)
     this.morphAnimationRef = zrender.morph.morphPath(this.path, newShape, {
@@ -578,9 +679,13 @@ class ShapeInstanceManager {
   private readonly maxInstances: number = 5; // 减少最大实例数量以降低性能压力
   private lastCreationTime: number = 0;
   private onInstancesChanged:
-    | ((positions: Array<{ x: number; y: number }>) => void)
+    | ((
+        positions: Array<{ x: number; y: number }>,
+        exitingPositions: Array<{ x: number; y: number }>
+      ) => void)
     | null = null;
   private instancePositions: Array<{ x: number; y: number }> = []; // 缓存所有实例位置
+  private exitingPositions: Array<{ x: number; y: number }> = []; // 新增：退出中的实例位置
   private hasPositionsChanged: boolean = false; // 跟踪位置是否有变化
   private lastUpdateTime: number = 0; // 上次更新的时间
   private readonly updateInterval: number = 100; // 位置更新间隔，毫秒
@@ -657,6 +762,19 @@ class ShapeInstanceManager {
       this.height,
       position
     );
+
+    // 添加退出和入场回调
+    instance.onExitStart = (pos) => {
+      // 添加到退出中的位置
+      this.exitingPositions.push({ ...pos });
+      this.hasPositionsChanged = true;
+    };
+
+    instance.onEntranceComplete = (pos) => {
+      // 入场完成时通知变化
+      this.hasPositionsChanged = true;
+    };
+
     this.instances.push(instance);
 
     // 直接添加新实例的位置到位置缓存
@@ -665,13 +783,17 @@ class ShapeInstanceManager {
   }
 
   // 只在需要时更新位置缓存
-  private updatePositionsCache(currentTime: number): void {
-    // 仅当位置有变化且自上次更新已过足够时间时才通知变化
+  private updatePositionsCache(
+    currentTime: number,
+    forceUpdate: boolean = false
+  ): void {
+    // 如果强制更新或者位置有变化且自上次更新已过足够时间时才通知变化
     if (
-      this.hasPositionsChanged &&
-      currentTime - this.lastUpdateTime >= this.updateInterval
+      forceUpdate ||
+      (this.hasPositionsChanged &&
+        currentTime - this.lastUpdateTime >= this.updateInterval)
     ) {
-      // 已经保持了instancePositions的更新，此处只需通知
+      // 传递退出中的位置信息
       this.notifyInstancesChanged();
       this.lastUpdateTime = currentTime;
       this.hasPositionsChanged = false;
@@ -684,26 +806,47 @@ class ShapeInstanceManager {
       const probability = this.calculateCreationProbability();
       if (Math.random() < probability) {
         this.createInstance();
+        // 新实例创建后强制更新位置缓存
+        this.updatePositionsCache(currentTime, true);
       }
       this.lastCreationTime = currentTime;
     }
 
     // 更新实例前先保存当前数量
     const initialCount = this.instances.length;
+    let instanceRemoved = false;
 
     // 使用索引遍历以避免在过滤过程中创建新数组
     for (let i = this.instances.length - 1; i >= 0; i--) {
       const instance = this.instances[i];
       if (instance.update(currentTime)) {
-        // 如果实例需要被移除
+        // 如果实例需要被移除，从实例列表和位置缓存中删除
         this.instances.splice(i, 1);
+
+        // 从普通位置列表中移除
+        const position = this.instancePositions[i];
         this.instancePositions.splice(i, 1);
+
+        // 同时从退出位置列表中移除（如果存在）
+        const exitingIndex = this.exitingPositions.findIndex(
+          (p) => p.x === position.x && p.y === position.y
+        );
+        if (exitingIndex !== -1) {
+          this.exitingPositions.splice(exitingIndex, 1);
+        }
+
         this.hasPositionsChanged = true;
+        instanceRemoved = true;
       }
     }
 
-    // 检查并更新位置缓存（定期更新）
-    this.updatePositionsCache(currentTime);
+    // 如果有实例被移除，立即强制更新位置缓存
+    if (instanceRemoved) {
+      this.updatePositionsCache(currentTime, true);
+    } else {
+      // 正常检查并更新位置缓存
+      this.updatePositionsCache(currentTime);
+    }
   }
 
   // 清理所有实例
@@ -718,12 +861,15 @@ class ShapeInstanceManager {
 
   // 设置实例变化的监听器
   setInstancesChangeListener(
-    callback: (positions: Array<{ x: number; y: number }>) => void
+    callback: (
+      positions: Array<{ x: number; y: number }>,
+      exitingPositions: Array<{ x: number; y: number }>
+    ) => void
   ): void {
     this.onInstancesChanged = callback;
 
     // 如果已有实例，立即通知
-    if (this.instances.length > 0) {
+    if (this.instances.length > 0 || this.exitingPositions.length > 0) {
       this.notifyInstancesChanged();
     }
   }
@@ -731,7 +877,8 @@ class ShapeInstanceManager {
   // 通知实例变化
   private notifyInstancesChanged(): void {
     if (this.onInstancesChanged) {
-      this.onInstancesChanged(this.instancePositions);
+      // 同时传递正常位置和正在退出的位置
+      this.onInstancesChanged(this.instancePositions, this.exitingPositions);
     }
   }
 
@@ -743,6 +890,11 @@ class ShapeInstanceManager {
   getInstances(): ShapeInstance[] {
     return this.instances;
   }
+
+  // 新增方法：获取退出中的位置
+  getExitingPositions(): Array<{ x: number; y: number }> {
+    return this.exitingPositions;
+  }
 }
 
 // React Component
@@ -750,7 +902,10 @@ const ShapeMorph = React.forwardRef<
   {
     getInstancePositions: () => Array<{ x: number; y: number }>;
     setInstancesChangeListener: (
-      callback: (positions: Array<{ x: number; y: number }>) => void
+      callback: (
+        positions: Array<{ x: number; y: number }>,
+        exitingPositions: Array<{ x: number; y: number }>
+      ) => void
     ) => void;
   },
   ShapeMorphProps
@@ -768,11 +923,14 @@ const ShapeMorph = React.forwardRef<
     // 实现帧率控制，只有经过了足够的时间间隔才更新
     const elapsed = currentTime - lastUpdateTimeRef.current;
     if (elapsed >= updateIntervalRef.current) {
+      // 计算实际经过的时间，用于确保动画速度一致性
+      const actualElapsed = elapsed;
+
       // 更新时间戳
       lastUpdateTimeRef.current =
         currentTime - (elapsed % updateIntervalRef.current);
 
-      // 执行实例更新
+      // 执行实例更新，传递实际经过时间
       managerRef.current.update(currentTime);
     }
 
@@ -849,7 +1007,10 @@ const ShapeMorph = React.forwardRef<
       return managerRef.current?.getInstancePositions() || [];
     },
     setInstancesChangeListener: (
-      callback: (positions: Array<{ x: number; y: number }>) => void
+      callback: (
+        positions: Array<{ x: number; y: number }>,
+        exitingPositions: Array<{ x: number; y: number }>
+      ) => void
     ) => {
       if (managerRef.current) {
         managerRef.current.setInstancesChangeListener(callback);
