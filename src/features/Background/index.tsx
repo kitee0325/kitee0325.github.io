@@ -11,7 +11,6 @@ const HexGrid: React.FC<HexGridProps> = ({ className }) => {
   const zrInstanceRef = useRef<zrender.ZRenderType | null>(null);
   const staticCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const offscreenCanvasRenderedRef = useRef<boolean>(false);
-  const lastAnimationTimestampRef = useRef<number>(0);
   const animationFrameIdRef = useRef<number | null>(null);
   const hexBatchesRef = useRef<
     Record<
@@ -35,7 +34,6 @@ const HexGrid: React.FC<HexGridProps> = ({ className }) => {
   const TRANSITION_DURATION = 1500; // 过渡时间
   const INFLUENCE_RADIUS = 300; // 影响半径
   const INFLUENCE_RADIUS_SQ = INFLUENCE_RADIUS * INFLUENCE_RADIUS; // 预计算平方值
-  const ANIMATION_THROTTLE = 100; // 动画节流时间(ms)
   const BATCH_PRECISION = 100; // 批处理精度 (例如: 100表示保留2位小数)
 
   // 六边形集合及其关联数据 - 重构为Map对象，按行列索引，便于快速查找
@@ -149,13 +147,6 @@ const HexGrid: React.FC<HexGridProps> = ({ className }) => {
   ) => {
     if (!zrInstanceRef.current) return;
 
-    // 实现动画节流 - 避免过于频繁的更新
-    const now = Date.now();
-    if (now - lastAnimationTimestampRef.current < ANIMATION_THROTTLE) {
-      return;
-    }
-    lastAnimationTimestampRef.current = now;
-
     // 合并所有需要考虑的位置，但给退出中的位置添加权重标记
     const allPositions = [
       ...morphPositions.map((pos) => ({ ...pos, isExiting: false })),
@@ -195,7 +186,7 @@ const HexGrid: React.FC<HexGridProps> = ({ className }) => {
     });
 
     // 刷新渲染
-    zrInstanceRef.current.refresh();
+    zrInstanceRef.current.refreshImmediately();
   };
 
   // 创建颜色渐变 - 使用坐标比例
@@ -497,7 +488,8 @@ const HexGrid: React.FC<HexGridProps> = ({ className }) => {
         // 创建六边形组
         const hexGroup = new zrender.Group();
         (hexGroup as any).attr({
-          position: [x, y],
+          x,
+          y,
         });
 
         // 创建填充六边形
@@ -604,57 +596,43 @@ const HexGrid: React.FC<HexGridProps> = ({ className }) => {
 
   // 处理窗口大小变化 - 优化重新渲染流程
   useEffect(() => {
-    // 为resize添加节流
-    let resizeTimeout: number | null = null;
-
     const handleResize = () => {
-      // 清除之前的timeout
-      if (resizeTimeout !== null) {
-        window.clearTimeout(resizeTimeout);
-      }
+      if (zrInstanceRef.current && containerRef.current) {
+        const width = window.innerWidth;
+        const height = window.innerHeight;
 
-      // 设置新的timeout，避免过于频繁的resize操作
-      resizeTimeout = window.setTimeout(() => {
-        if (zrInstanceRef.current && containerRef.current) {
-          const width = window.innerWidth;
-          const height = window.innerHeight;
+        // 重置缓存标志
+        offscreenCanvasRenderedRef.current = false;
 
-          // 重置缓存标志
-          offscreenCanvasRenderedRef.current = false;
+        // 重新渲染静态边框
+        renderOffscreenBorders(width, height);
 
-          // 重新渲染静态边框
-          renderOffscreenBorders(width, height);
+        // 清除现有六边形
+        zrInstanceRef.current.clear();
+        hexagonsRef.current.clear();
 
-          // 清除现有六边形
-          zrInstanceRef.current.clear();
-          hexagonsRef.current.clear();
+        // 调整ZRender尺寸
+        zrInstanceRef.current.resize({
+          width,
+          height,
+        });
 
-          // 调整ZRender尺寸
-          zrInstanceRef.current.resize({
-            width,
-            height,
-          });
+        // 重新创建六边形网格
+        initHexGrid(width, height);
 
-          // 重新创建六边形网格
-          initHexGrid(width, height);
-
-          // 更新缩放
-          if (shapeMorphRef.current) {
-            const positions = shapeMorphRef.current.getInstancePositions();
-            if (positions.length > 0) {
-              updateHexagonsScale(positions);
-            }
+        // 更新缩放
+        if (shapeMorphRef.current) {
+          const positions = shapeMorphRef.current.getInstancePositions();
+          if (positions.length > 0) {
+            updateHexagonsScale(positions);
           }
         }
-      }, 200); // 200ms节流
+      }
     };
 
     window.addEventListener('resize', handleResize);
     return () => {
       window.removeEventListener('resize', handleResize);
-      if (resizeTimeout !== null) {
-        window.clearTimeout(resizeTimeout);
-      }
     };
   }, []);
 

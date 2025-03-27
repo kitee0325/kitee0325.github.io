@@ -370,6 +370,12 @@ class ShapeInstance {
       style: baseStyle,
     });
 
+    // 设置变换原点为固定中心点
+    path.attr({
+      originX: position.x,
+      originY: position.y,
+    });
+
     return { path, style: baseStyle };
   }
 
@@ -407,6 +413,11 @@ class ShapeInstance {
         if (this.onEntranceComplete) {
           this.onEntranceComplete(this.position);
         }
+
+        // 入场动画完成后立即触发第一次形变，而不是等待update方法检测
+        if (this.currentShapeIndex < this.totalShapes - 1 && !this.isExiting) {
+          this.startMorphing();
+        }
       })
       .start();
 
@@ -428,6 +439,11 @@ class ShapeInstance {
             this.morphAnimationRef.stop();
           }
           this.morphAnimationRef = null;
+        }
+
+        // 入场动画超时完成后也立即触发第一次形变
+        if (this.currentShapeIndex < this.totalShapes - 1 && !this.isExiting) {
+          this.startMorphing();
         }
       }
     }, this.morphDuration * 1.5); // 给予1.5倍动画时间的宽限
@@ -543,7 +559,14 @@ class ShapeInstance {
     }
 
     // 入场动画完成后才开始形变
-    if (this.isEntranceComplete && !this.isMorphing && !this.isExiting) {
+    // 由于我们现在在入场动画回调中触发了第一次形变
+    // 这里只处理后续的形变（当currentShapeIndex > 0时）
+    if (
+      this.isEntranceComplete &&
+      !this.isMorphing &&
+      !this.isExiting &&
+      this.currentShapeIndex > 0
+    ) {
       const elapsed = currentTime - this.lastMorphTime;
       if (elapsed >= this.lifecycleDuration) {
         this.startMorphing();
@@ -614,6 +637,12 @@ class ShapeInstance {
       centerY: fixedPosition.y,
       maxSize,
       style: newStyle,
+    });
+
+    // 设置变换原点为固定中心点，与源形状一致
+    newShape.attr({
+      originX: fixedPosition.x,
+      originY: fixedPosition.y,
     });
 
     // 添加新形状到渲染器
