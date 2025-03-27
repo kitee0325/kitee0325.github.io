@@ -25,8 +25,6 @@
     "@types/react-responsive-masonry": "^2.6.0",
     "@types/three": "^0.169.0",
     "clsx": "^2.0.0",
-    "d3": "^7.9.0",
-    "gsap": "^3.12.7",
     "katex": "^0.16.11",
     "prism-react-renderer": "^2.3.0",
     "react": "^18.0.0",

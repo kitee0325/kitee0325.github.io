@@ -1,12 +1,13 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import * as zrender from 'zrender';
 import ShapeMorph from './ShapeMorph';
+import BrowserOnly from '@docusaurus/BrowserOnly';
 
 interface HexGridProps {
   className?: string;
 }
 
-const HexGrid: React.FC<HexGridProps> = ({ className }) => {
+const HexGridComponent: React.FC<HexGridProps> = ({ className }) => {
   const containerRef = useRef<HTMLCanvasElement>(null);
   const zrInstanceRef = useRef<zrender.ZRenderType | null>(null);
   const staticCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -671,6 +672,11 @@ const HexGrid: React.FC<HexGridProps> = ({ className }) => {
       </div>
     </>
   );
+};
+
+// Export the component wrapped in BrowserOnly
+const HexGrid: React.FC<HexGridProps> = (props) => {
+  return <BrowserOnly>{() => <HexGridComponent {...props} />}</BrowserOnly>;
 };
 
 export default HexGrid;
