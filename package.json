@@ -20,16 +20,21 @@
     "@mdx-js/react": "^3.0.0",
     "@react-three/drei": "^9.114.6",
     "@react-three/fiber": "^8.17.10",
+    "@types/d3": "^7.4.3",
+    "@types/gsap": "^3.0.0",
     "@types/react-responsive-masonry": "^2.6.0",
     "@types/three": "^0.169.0",
     "clsx": "^2.0.0",
+    "d3": "^7.9.0",
+    "gsap": "^3.12.7",
     "katex": "^0.16.11",
     "prism-react-renderer": "^2.3.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
     "react-katex": "^3.0.1",
     "react-responsive-masonry": "^2.7.1",
-    "three": "^0.169.0"
+    "three": "^0.169.0",
+    "zrender": "^5.6.1"
   },
   "devDependencies": {
     "@docusaurus/module-type-aliases": "^3.6.2",
