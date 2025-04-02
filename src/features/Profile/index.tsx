@@ -1,6 +1,8 @@
 import styles from './index.module.css';
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import React, { useState, useEffect } from 'react';
+import { translate } from '@docusaurus/Translate';
+import useBaseUrl from '@docusaurus/useBaseUrl';
 
 interface TextWithStyle {
   text: string;
@@ -59,36 +61,57 @@ const TypingEffect: React.FC<{ texts: TextWithStyle[] }> = ({ texts }) => {
 function HomepageProfile() {
   const { siteConfig } = useDocusaurusContext();
   const { title: name } = siteConfig;
+  const profileImage = useBaseUrl('/img/profile.png');
   const roles: TextWithStyle[] = [
     {
-      text: 'Visualization Engineer.',
+      text: translate({
+        id: 'profile.role.visualization',
+        message: 'Visualization Engineer.',
+      }),
       style: {
         backgroundImage: 'linear-gradient(135deg, #00c6ff 0%, #0072ff 100%)',
       },
     },
     {
-      text: 'Full Stack Developer.',
+      text: translate({
+        id: 'profile.role.fullstack',
+        message: 'Full Stack Developer.',
+      }),
       style: {
         backgroundImage: 'linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%)',
       },
     },
     {
-      text: 'Noob Designer.',
+      text: translate({
+        id: 'profile.role.designer',
+        message: 'Noob Designer.',
+      }),
       style: {
         backgroundImage: 'linear-gradient(135deg, #ff9966 0%, #ff5e62 100%)',
       },
     },
   ];
+
+  const greeting = translate({
+    id: 'profile.greeting',
+    message: `Hi👋! There is ${name}.`,
+  });
+
+  const prefix = translate({
+    id: 'profile.prefix',
+    message: 'A',
+  });
+
   return (
     <section className={styles.profile}>
       <div className={styles['profile-text']}>
-        <h1>Hi👋! There is {name}.</h1>
+        <h1>{greeting}</h1>
         <h1>
-          A <TypingEffect texts={roles} />
+          {prefix} <TypingEffect texts={roles} />
         </h1>
       </div>
       <div className={`${styles['profile-img']} ${styles.glitch}`}>
-        <img src="/img/profile.png" alt={name} />
+        <img src={profileImage} alt={name} />
       </div>
     </section>
   );
