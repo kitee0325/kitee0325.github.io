@@ -1,0 +1,132 @@
+---
+slug: stanford-cs448b-06-interaction
+title: 斯坦福 CS448B 06 交互
+tags: [数据可视化, 斯坦福, 课程, CS448B]
+---
+
+import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
+
+**TLDR**
+
+本文包含我对斯坦福 CS448B（数据可视化）课程的笔记，特别关注第六讲关于交互的内容。我将讨论交互在数据可视化中的重要性、背后的原则，并探索各种数据可视化技术，包括使用指导元素、表达性、有效性、对比和模式感知的支持、数据分组和排序、数据转换、减少认知负担以及一致性。我还将介绍各种图表类型，如折线图、柱状图、堆叠面积图等，提供示例并讨论它们的设计考虑因素。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251535986.png?imageSlim)
+{/* truncate */}
+
+## 原文
+
+<object
+  data="/stanford-cs448b/Lec06-interaction.pdf"
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href="/stanford-cs448b/Lec06-interaction.pdf">下载 PDF</a>.
+</object>
+
+## 笔记
+
+### 课前思考
+
+- 如何平衡细节与全局视图？如何决定视图中数据是过多还是过少？
+- 在 VDQI 阅读中提到，我们可以通过两种方式增加数据密度：增加数据点数量或减小图表大小...什么情况下建议减小图表大小来增加密度？...是否有任何量化指标来评估可视化的可解释性？
+- 从可访问性角度考虑，我想知道是否有通过触觉和音频手段来促进微观-宏观阅读的方法？
+- 更广泛地说，微观层面上的糟糕设计选择在什么情况下会遮蔽宏观层面上获得的洞察类型？
+- 什么时候适合排除异常数据点？对于挑战者号发射测试的数据集，异常值就是一切。所有数据都容易出现某种程度的变异，所以我们应该对异常值给予多大的重视？
+
+人与机器之间的交互需要`相互理解`或`共享理解`
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/ObsidianPasted%20image%2020230811135835.png)
+
+### 评估鸿沟
+
+用户意图与可行动作之间的差异。
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251514138.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251513837.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251513723.png?imageSlim)
+
+### 执行鸿沟
+
+人们必须付出的努力，以解释系统状态并确定期望和意图得到满足的程度。
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251515377.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251515186.png?imageSlim)
+
+### 早期系统
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251518982.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251518322.png?imageSlim)
+
+对相似行和列进行分组：
+
+- 选择具有特定视觉特征的行。移至矩阵边缘
+- 将相似行移近，相反行移至底部。（创建两个对立的组和一个中间组）
+- 对列重复操作（仅在某些情况下）
+- 迭代
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251520948.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251524066.png?imageSlim)
+[BERTIFIER](https://www.aviz.fr/bertifier_app/help.html)
+
+### 指点
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251529639.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251529537.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251529361.png?imageSlim)
+Voronoi 图
+
+### 高亮显示
+
+将用户注意力集中在一个图表内数据的子集上 [来自 Wills 95]
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251533880.png?imageSlim)
+
+### 刷选与联动
+
+选择（"刷选"）数据子集  
+在其他视图中查看所选数据  
+视图必须通过元组（匹配数据点）或查询（匹配范围或值）链接
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251534023.png?imageSlim)
+
+### 棒球统计
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251535986.png?imageSlim)
+
+### 交叉过滤
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251535439.png?imageSlim)
+
+### 动态查询
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251538963.png?imageSlim)
+
+3D 动态查询
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251540596.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251540607.png?imageSlim)
+
+### 优缺点
+
+优点
+
+- 控件对新手和专家都有用
+- 快速探索数据的方法
+
+缺点
+
+- 简单查询
+- 大量控件
+- 显示的数据量受屏幕空间限制
+
+### 总结
+
+好的可视化取决于任务
+
+> 选择合适的交互技术
+
+基本交互技术
+
+> 选择、刷选与联动、动态查询

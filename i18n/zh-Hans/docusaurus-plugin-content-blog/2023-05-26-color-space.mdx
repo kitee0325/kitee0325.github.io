@@ -1,0 +1,126 @@
+---
+slug: color-space
+title: 色彩空间
+tags: [数据可视化, 色彩, 色彩空间]
+---
+
+import ModelViewer from '@site/src/components/ModelViewer';
+
+**TLDR**
+
+本文探讨了色彩空间的概念、其多样性和特性。它深入研究了作为所有其他色彩空间参考标准的基础 CIE 1931 色彩空间。通过交互式可视化和视频解释，我们将研究不同色彩空间的定义方式及其在色彩表示和复制中的实际应用。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411111442060.png?imageSlim)
+{/* truncate */}
+
+## 色彩空间
+
+<iframe
+  src="https://facelessuser.github.io/coloraide/demos/3d_models.html"
+  width="100%"
+  height="900px"
+  style={{ border: 'none' }}
+/>
+
+> 源自 https://github.com/facelessuser/coloraide/
+
+- 为什么存在如此多种不同的色彩空间？
+- 每种色彩空间的特性是什么？
+
+<iframe
+  width="560"
+  height="315"
+  src="https://www.youtube.com/embed/srRI7yMjGz0?si=AVLpBfHHGH3dJIDe"
+  title="YouTube video player"
+  frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+  referrerpolicy="strict-origin-when-cross-origin"
+  allowfullscreen
+></iframe>
+
+### 定义
+
+**色彩空间描述了一个特定的、可测量的、固定的可能颜色和亮度值的范围。**
+
+更大的色彩空间意味着可以准确捕获和/或复制更广泛的颜色。  
+但如何明确定义像颜色这样难以把握的东西呢？  
+令人困惑的答案是，一个色彩空间只能参照另一个色彩空间来定义。
+
+那么，哪个是基础标准呢？
+
+:::tip
+1931 年，[国际照明委员会](https://cie.co.at/)，即 CIE（源自法语"Commission internationale de l'éclairage"）基于人类感知定义了一个包罗万象的色彩空间，使用从一小组测试对象进行的实验中获得的平均数据。近一个世纪后，这个空间，即 CIE 1931，仍然是描述所有其他色彩空间的标准参考。
+
+<iframe
+  width="560"
+  height="315"
+  src="https://www.youtube.com/embed/SDLHsGVeR2Y?si=qg05OtN_7ECftGFT"
+  title="YouTube video player"
+  frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+  referrerpolicy="strict-origin-when-cross-origin"
+  allowfullscreen
+></iframe>
+:::
+
+### 色彩空间
+
+任何色彩空间都可以通过正确的数学方法转换为任何其他色彩空间。
+
+但当从较大的空间转换为较小的空间时，将出现所谓的"超出色域"的值，这些值无法在源空间中复制。有多种方法可以处理这些值，但无法避免它们。你无法欺骗数学和物理学。
+
+#### RGB
+
+<ModelViewer modelPath="/model/rgb/scene.glb" />
+
+RGB 基于红色、绿色和蓝色颜色分量（通道）值。通常，这些分量直接用于获取和显示颜色。例如，当显示彩色图像缓冲区时，第一个通道被路由到显示器的第一个输出通道（通常是红色），第二个通道到第二个通道（通常是绿色），第三个通道到第三个通道（通常是蓝色）。  
+RGB 色彩空间可以被看作是一个具有红色、绿色和蓝色轴的立方体。位于原点[0, 0, 0]的颜色被认为是黑色，而位于[255, 255, 255]（对于 8 位缓冲区）的颜色被认为是白色。所有其他颜色都可以表示为这个范围内红色、绿色和蓝色值的组合。  
+采集和显示设备可以不同地呈现 RGB 数据。由于 RGB 映射到这些设备，它是一个设备依赖的色彩空间。  
+理论上，有多少种色彩设备就有多少种 RGB 色彩空间。尽管总会有一些差异，但色彩设备通常遵循某些国际认可的标准。为了解释色彩空间数据，MIL 使用标准 RGB 规范（sRGB），这些规范由国际电工委员会（IEC）项目组 61966-2-1 定义。
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411111609803.png?imageSlim)
+[同色异谱（颜色）](<https://en.wikipedia.org/wiki/Metamerism_(color)>)。我们可以使用任何光谱组合来模拟任何颜色，但当我们选择使用上面显示的窄带 RGB 光谱组合时，我们就是在 RGB 色彩空间中工作。
+
+#### HSL
+
+> 如果一个计算机图形学学生只拥有红色、绿色和蓝色灯光来创建复杂的色调，他/她可能会感到困惑。例如，我应该使用什么组合来获得这种确切程度的青绿色？我应该如何使它看起来"更亮"或"更白"？我应该添加多少红色使它看起来更"自然"？
+
+HSL 建立在 RGB 色彩模型的基础上，但基于色相、饱和度和亮度颜色分量（通道）值。由于这些分量通常更加直观，HSL 可以被视为一种旨在模仿人类描述颜色方式的色彩空间。与 RGB 一样，HSL 也是设备依赖的。  
+在 RGB 中，每种颜色都是红色、绿色和蓝色的混合，这可能使确定特定颜色的确切分量值变得困难。然而，在 HSL 中，颜色的色相作为单独的分量（H）存储，它在圆形色盘上表示为角度位置。其他分量仅控制颜色的纯度（S）和亮度（L），可用于改变颜色的质量，但不改变颜色的基本色相。在下图中，亮度分量从双锥体的一个点延伸到另一个点，从黑色（0%亮度）到白色（100%亮度）。中心圆盘的颜色位于 50%亮度处。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410211845010.png?imageSlim)
+使用 HSL 模型，通道的独立性使得颜色操作变得更加简单。大多数允许交互式颜色操作的应用程序都使用 HSL 表示颜色。例如，您可以仅使用色相（颜色）通道执行颜色匹配，使用 McolControl()并将 M_BAND_MODE 设置为 M_COLOR_BAND_0。这可以解决某些问题，例如匹配深橙色和亮橙色，这在 RGB 中可能很困难。此外，如果您的图像具有非均匀照明、阴影或高光，独立于亮度匹配色相可能很有用。
+
+#### HSV
+
+<ModelViewer modelPath="/model/hsv/scene1.glb" />
+
+HSV 类似于 HSL，不同之处在于第三个分量称为明度，并表示亮度，就好像 HSL 模型的白点已经压缩到中心圆盘。在下图中，该模型显示为一个简单的圆锥体，色相（H）位于圆形盘周围，饱和度（S）从中心向外增加。明度（V）分量范围从黑色（圆盘下方圆锥体的最远点）到白色（圆盘的中心）。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410211846501.png?imageSlim)
+在这个模型中，100%亮度（或明度）对应于最大的色彩丰富度，与 HSL 相比具有直观优势，HSL 在仅 50%亮度时表示最丰富的颜色。  
+HSV 色彩空间反映了创建色调（添加白色）或阴影（添加黑色）时油漆颜色如何变化，这在直觉上很容易理解。与 HSL 一样，独立的通道允许交互式操作。
+
+#### CIELAB
+
+<ModelViewer modelPath="/model/cielab/scene.glb" />
+
+CIELAB（或 LAB）基于颜色的亮度（L）、在红色和绿色之间的位置（A）以及在黄色和蓝色之间的位置（B）。与 RGB 和 HSL 不同，LAB 旨在独立于设备，并作为一种独特的色彩模型开发，旨在使用从视觉实验中获取的统计数据完全表示人类对颜色的解释。LAB 中的颜色差异与人类感知成比例变化。例如，如果两种颜色的距离为 5，它们看起来的差异大约是距离为 1 的两种颜色的 5 倍。LAB 被设计为感知均匀，使其成为测量色差的良好空间。  
+由于 LAB 基于色彩感知，其数学模型更好地表示人类如何区分颜色，色差更有意义。这可以在以下示例中看到，您必须选择哪种颜色，A 或 B，更接近颜色 X。
+在数学上，在 RGB 色彩空间中，颜色 A 是最接近的颜色。然而，直觉上颜色 B 更接近，这也是 LAB 色彩空间中距离数学上所表示的。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410211847218.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410211847739.png?imageSlim)
+
+使用 CIELAB 而非 RGB 可能更好，因为与 HSL 一样，您可以在 CIELAB 中舍弃亮度（通道 L），只使用通道 A 和通道 B 进行颜色匹配。此外，对于视觉上相似的颜色，特别是对于微小的色差，CIELAB 可能更加强大。例如，当在具有类似红色色调的色彩样本中匹配红色目标时，CIELAB 可能优于 RGB 和 HSL。
+
+在 CIELAB 中，距离已由国际照明委员会（CIE）标准化。CIELAB 中的色差 1 对应于人类可以感知的最小可能色差。
+
+#### HCT
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411111442060.png?imageSlim)
+
+[色彩与设计的科学 - Material Design](https://m3.material.io/blog/science-of-color-design)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410211830373.png?imageSlim)
+
+您可以使用[Material Theme Builder](https://material-foundation.github.io/material-theme-builder/)在 HCT 空间中生成颜色。
+
+您可以使用[Material Color Utilities](https://github.com/material-foundation/material-color-utilities)在 HCT 空间中处理颜色。

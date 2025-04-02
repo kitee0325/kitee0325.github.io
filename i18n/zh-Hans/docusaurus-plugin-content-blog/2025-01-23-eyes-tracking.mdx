@@ -1,0 +1,130 @@
+---
+slug: eyes-tracking
+title: 眼动追踪
+tags: [交互, 数据可视化]
+---
+
+**TLDR**
+
+本文探讨了一种适用于复杂网络可视化的新型交互方法，该方法结合了鱼眼变形效果与眼动追踪技术。这种方法允许用户通过目光控制鱼眼效果，自然地探索密集的节点-链接图，同时保持鼠标可用于其他交互。这对于组织关系可视化尤其有用，用户需要在特定连接的概览和详细视图之间切换。
+
+<img src="/img/D3 Fish Eyes.gif" alt="eyesTrack" />
+{/* truncate */}
+
+## 引言
+
+在我的职业生涯中，我经常遇到类似图中所示的可视化场景，特别是在"组织关系可视化"等案例中。在这类可视化中，主图通常包含大量节点和边缘，用户可以通过缩放和平移操作关注特定区域。当用户点击某个节点时，该节点及其相关连接会被高亮显示，同时相应的详细信息会显示在辅助视图中，如侧边的子图和详情面板。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202501250944706.png?imageSlim)
+
+我观察到的一个持续挑战是，虽然主图中密集的节点和边缘网络提供了良好的宏观层面概览，但这使得检查单个节点之间的复杂关系变得困难。尽管各种技术如聚类和边缘捆绑可以改善可视化的清晰度，但它们仍然不能提供一种完全直观的方式来探索这些关系。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202501250959212.png?imageSlim)
+最近，我发现了两项对我来说新的技术，它们可以显著增强此类关系图的交互体验，特别是在关系图方面。第一个是 AntV 的组件，称为`fisheye`（鱼眼），它使用户能够放大关系图的特定部分，揭示隐藏的节点和边缘。第二个是眼动追踪技术。
+
+<img src="/img/AntV Fish Eyes.gif" alt="fisheye" />
+
+在发现这两项技术后，我自然而然地想到将它们结合起来：使用眼动追踪来控制鱼眼效果，同时保留 AntV 现有的基于鼠标的交互。在这种增强的交互模型中，眼动追踪会控制主图中的鱼眼效果，改善探索复杂多图链接的体验。同时，鼠标仍可用于其他交互，如在辅助图表中选择条形以高亮显示主图中相应的节点。鱼眼效果会在用户目光落在主图上的任何地方自动激活，创造更自然、更直观的探索体验。
+
+## 演示
+
+:::tip
+
+# 眼动追踪可视化指南
+
+为获得更好的体验，您可以通过点击下方按钮在新窗口中打开此演示。这将给您提供更多屏幕空间和更好的性能。
+
+<button
+  onClick={() => {
+    const isDev = window.location.hostname === 'localhost';
+    const url = isDev
+      ? 'http://localhost:3000/demo/eyesTrack/index.html'
+      : 'https://kitee0325.github.io/demo/eyesTrack/index.html';
+    window.open(url, '_blank');
+  }}
+  style={{
+    padding: '12px 24px',
+    backgroundColor: '#4CAF50',
+    color: 'white',
+    border: 'none',
+    borderRadius: '5px',
+    cursor: 'pointer',
+    marginBottom: '20px',
+    fontSize: '16px',
+    lineHeight: '24px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: '48px',
+  }}
+>
+  <span style={{ margin: 0 }}>在新窗口中打开</span>
+</button>
+
+1. **初始设置**
+
+   - 出现提示时允许相机访问
+   - 等待眼动追踪初始化
+   - 确保良好的光线和面部可见度
+
+2. **眼动追踪过程**
+
+   - 准备好后点击"开始眼动追踪"按钮
+   - 如果没有保存的校准数据，完成校准过程
+   - 如果有可用的先前校准，系统将自动加载
+   - 如果追踪似乎不准确，使用"清除保存的校准"按钮
+   - 点击"停止眼动追踪"结束会话
+
+3. **主要可视化功能**
+
+   - 角色关系图（左侧面板）
+   - 前 5 个首字母统计（右上方）
+   - 控制面板（右下方）
+
+4. **交互方法**
+
+   - 在眼动追踪模式下，使用眼睛触发鱼眼效果
+   - 切换到鼠标追踪模式进行基于鼠标的交互
+   - 悬停在节点上查看角色名称
+   - 拖动节点调整图表布局
+   - 鼠标悬停在条形上高亮相关角色
+
+5. **视觉反馈**
+
+   - 鱼眼镜头跟随您的目光/鼠标位置
+   - 被看着/悬停时节点和文本放大
+   - 连接的关系被强调
+   - 与条形图交互时高亮相关节点
+
+6. **提示**
+   - 校准期间保持稳定的头部位置
+   - 如果追踪变得不准确，使用"清除保存的校准"
+   - 必要时切换到鼠标追踪模式
+   - 关闭页面前停止眼动追踪
+
+:::
+
+<iframe
+  src="/demo/eyesTrack/index.html"
+  width="100%"
+  style={{ border: 'none' }}
+  onLoad={(e) => {
+    // Adjust iframe height to match content
+    const iframe = e.target;
+    iframe.style.height =
+      iframe.contentWindow.document.documentElement.scrollHeight + 'px';
+  }}
+></iframe>
+
+:::info
+
+<img src="/img/Eye Tracking Visualization.gif" alt="eyesTrack" />
+
+最初，我使用了 WebGazer.js 视觉追踪库。然而，它的默认追踪模式使用鼠标位置作为辅助校准点，导致当您的鼠标在面板右侧而您正在看左侧的主图时，出现显著的追踪差异。后来，我切换到 GazeRecorder，大大改善了结果。不幸的是，GazeRecorder 不能商用，因为它不是完全开源的；它是一个仅向研究人员开放免费试用的 SDK。
+
+这对我来说是一次非常有趣的实验，因为它在我设想的交互场景中按预期工作。此外，我在 D3.js 中复制了 AntV 的 fishEye 组件，对其变换算法有了基础理解。
+
+未来，我可能需要回到 WebGazer.js 并调整其参数，以实现类似 GazeRecorder 的结果。但现在，我将保持它现有的状态。
+
+<img src="/img/D3 Fish Eyes.gif" alt="eyesTrack" />
+上图所示的效果由鼠标移动控制。
+
+:::

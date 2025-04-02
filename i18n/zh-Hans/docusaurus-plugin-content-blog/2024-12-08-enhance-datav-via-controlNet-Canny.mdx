@@ -1,0 +1,85 @@
+---
+slug: enhance-datav-via-controlNet-Canny
+title: 通过ControlNet-Canny增强数据可视化
+tags: [AI, ComfyUI, ControlNet, 数据可视化]
+---
+
+**TLDR**
+本文探讨了如何使用 ControlNet-Canny 增强数据可视化，灵感来源于历史上的拟动物地图。通过利用 ComfyUI 和 ControlNet 等 AI 工具，我们可以在保持数据完整性的同时，为图表注入主题元素，创建更具吸引力和上下文相关性的可视化。实验展示了一种现代方法，借鉴了古老的制图技术，通过创意视觉表达使数据更具表现力和意义。
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502040643646.png?imageSlim)
+
+{/* truncate */}
+
+## 拟动物地图
+
+你可能曾无意中发现某个地图区域与现实世界中的物体非常相似，比如互联网上流行的梗图：  
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502040638521.png?imageSlim)
+
+事实上，有一种特殊的制图方法称为拟动物地图（Zoomorphic Maps）。在 16 至 17 世纪，受当地领导人委托的制图师使用这种地图技术来向人们传达特定区域的象征意义。例如，他们可能将居民描绘成未开化的野蛮人或残酷的战争发起者。
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502040643646.png?imageSlim)
+
+> **19 世纪欧洲拟动物地图**
+
+> _"在'动物欧洲'（L'Europe Animale）中，德国是一只准备袭击的狡猾狼，而在钓鱼地图中，这个国家被其军国主义统治者威廉二世皇帝拟人化，他正眺望远方。巨大的俄罗斯熊和沙皇尼古拉斯也同样令人生畏。所有这些敌意的最终结果当然就是第一次世界大战"_
+
+## ControlNet-Canny
+
+前面提到的制图技术现在已成为过去，但它确实为制图学提供了有价值的指导。具体来说，它涉及用特定内容填充图表，以在特定环境中实现更有效的表达。
+
+最近接触到**ComfyUI**后，我一直在考虑也许使用 ControlNet 可以高效且低成本地实现这一点。让我们从简单的开始，为基本图表赋予环境主题。
+
+<div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
+  <img
+    src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502141456220.png?imageSlim"
+    alt=""
+    style={{ width: '50%', height: 'auto' }}
+  />
+  <img
+    src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502141456699.png?imageSlim"
+    alt=""
+    style={{ width: '50%', height: 'auto' }}
+  />
+</div>
+
+<div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
+  <img
+    src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502141503062.png?imageSlim"
+    alt=""
+    style={{ width: '50%', height: 'auto' }}
+  />
+  <img
+    src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502141503668.png?imageSlim"
+    alt=""
+    style={{ width: '50%', height: 'auto' }}
+  />
+</div>
+
+可以观察到，在处理清晰的视觉几何形状时，**ControlNet**能够准确保留形状的特征。在这里，我使用了一个受**宫崎骏**动画启发的 LoRA 主题来专门定制视觉风格。已经可以看到一些基本效果，尽管它们还不够精致。实际上，我只使用了一些简单的提示词，如*森林、湖泊和天空*，没有提供完整的创意描述。因此，仍有改进空间。
+
+现在让我们回到**拟动物地图**的主题。你可以轻易感受到这实际上是一项非常复杂的任务。它涉及在定义的不规则形状内绘制，内容需要与边缘无缝匹配且不失真，同时还要传达预期的情感影响。即使对于技术娴熟的设计师来说，在短时间内完成这样的任务也具有挑战性。目前，Stable Diffusion 也无法完美实现这一点，但它可能提供一些基础性的帮助。
+
+仅仅提供地图轮廓并期望得到结果显然是不现实的，因为 Stable Diffusion 的当前能力不支持这一点。但是，它可能有助于可视化你的一些创意想法。例如，你可以提供一个简单的草图，从中生成内容，然后基于生成的内容创建更详细的轮廓，并继续迭代地生成内容。通过这种**螺旋式的迭代改进**方法，可能达到满意的结果。
+
+## 尝试
+
+经过简短的尝试，取得了以下结果。虽然还有许多细节需要改进，但轮廓已经达到了我的期望。
+
+<div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
+  <img
+    src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502141654019.jpg?imageSlim"
+    alt=""
+    style={{ width: '33%', height: 'auto' }}
+  />
+  <img
+    src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502141654328.png?imageSlim"
+    alt=""
+    style={{ width: '33%', height: 'auto' }}
+  />
+  <img
+    src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502141654106.png?imageSlim"
+    alt=""
+    style={{ width: '33%', height: 'auto' }}
+  />
+</div>

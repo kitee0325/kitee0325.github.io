@@ -1,0 +1,653 @@
+---
+slug: extending-ECharts-global-roaming
+title: 扩展 ECharts 全局漫游功能
+tags: [数据可视化, ECharts, 插件]
+---
+
+import Link from '@docusaurus/Link';
+
+**TLDR**
+
+本文探讨如何扩展 ECharts 的全局漫游功能。虽然 ECharts 通过 dataZoom 为笛卡尔坐标系图表提供了漫游功能，但关系型图表缺乏完整的全局漫游支持。我们将研究 ECharts 当前的单系列漫游实现，并开发一个解决方案来实现所有图表类型的全局漫游功能。
+
+<img src="/img/Roam Example.gif" />
+{/* truncate */}
+
+## 任务
+
+尽管 ECharts 通过其丰富的配置选项提供了数百种可视化功能，但一些常见功能，如漫游功能，仍然未被满足。在 ECharts 中，缩放和移动图表（以下统称为漫游）可以通过两种方式实现。对于使用笛卡尔坐标系的图表（如折线图和柱状图），ECharts 通过 dataZoom 组件实现了漫游功能。
+
+<img src="/img/ECharts DataZoom Example.gif" />
+
+然而，对于关系型图表（如桑基图和旭日图——没有线条的关系图），全局漫游功能并未得到完全支持。目前，只在最常见的关系图（Graph）类型中实现了单系列漫游。
+
+<img src="/img/ECharts Roaming Example.gif" />
+
+## 原始漫游解决方案
+
+让我们简要了解 ECharts 如何在关系图中实现单系列漫游支持。
+
+在这里，我们假设您已经阅读了文章 <Link to="/blog/ECharts-overview#design-philosophy">ECharts 概览</Link>，并对 ECharts 的基本结构有所了解。
+
+图表将每个图表分为两个主要文件：模型（model）和视图（view）。视图文件负责渲染视觉显示、更新和事件绑定。在每个视图文件中，有一个用于收集和初始化各种变量的 init 函数，以及一个执行主要绘图操作和基本事件绑定的核心 render 函数。
+
+```typescript
+// chart/graph/GraphView.ts
+
+init(ecModel: GlobalModel, api: ExtensionAPI) {
+    const symbolDraw = new SymbolDraw();
+    const lineDraw = new LineDraw();
+    const group = this.group;
+
+    this._controller = new RoamController(api.getZr());
+    this._controllerHost = {
+        target: group
+    } as RoamControllerHost;
+
+    group.add(symbolDraw.group);
+    group.add(lineDraw.group);
+
+    this._symbolDraw = symbolDraw;
+    this._lineDraw = lineDraw;
+
+    this._firstRender = true;
+}
+
+render(seriesModel: GraphSeriesModel, ecModel: GlobalModel, api: ExtensionAPI) {
+
+    // some render code
+    this._updateController(seriesModel, ecModel, api);
+    // ...
+}
+
+_updateController(
+    seriesModel: GraphSeriesModel,
+    ecModel: GlobalModel,
+    api: ExtensionAPI
+) {
+    const controller = this._controller;
+    const controllerHost = this._controllerHost;
+    const group = this.group;
+
+    controller.setPointerChecker(function (e, x, y) {
+        const rect = group.getBoundingRect();
+        rect.applyTransform(group.transform);
+        return rect.contain(x, y)
+            && !onIrrelevantElement(e, api, seriesModel);
+    });
+
+    if (!isViewCoordSys(seriesModel.coordinateSystem)) {
+        controller.disable();
+        return;
+    }
+    controller.enable(seriesModel.get('roam'));
+    controllerHost.zoomLimit = seriesModel.get('scaleLimit');
+    controllerHost.zoom = seriesModel.coordinateSystem.getZoom();
+
+    controller
+        .off('pan')
+        .off('zoom')
+        .on('pan', (e) => {
+            roamHelper.updateViewOnPan(controllerHost, e.dx, e.dy);
+            api.dispatchAction({
+                seriesId: seriesModel.id,
+                type: 'graphRoam',
+                dx: e.dx,
+                dy: e.dy
+            });
+        })
+        .on('zoom', (e) => {
+            roamHelper.updateViewOnZoom(controllerHost, e.scale, e.originX, e.originY);
+            api.dispatchAction({
+                seriesId: seriesModel.id,
+                type: 'graphRoam',
+                zoom: e.scale,
+                originX: e.originX,
+                originY: e.originY
+            });
+            this._updateNodeAndLinkScale();
+            adjustEdge(seriesModel.getGraph(), getNodeGlobalScale(seriesModel));
+            this._lineDraw.updateLayout();
+            // Only update label layout on zoom
+            api.updateLabelLayout();
+        });
+}
+
+```
+
+在图关系图系列中，平移和缩放功能主要分为 Pan 和 Zoom 事件，两者都由 roamHelper 实现。
+
+```typescript
+// component/helper/RoamHelper.ts
+import Element from 'zrender/src/Element';
+
+interface ControllerHost {
+  target: Element;
+  zoom?: number;
+  zoomLimit?: { min?: number; max?: number };
+}
+
+/**
+ * For geo and graph.
+ */
+export function updateViewOnPan(
+  controllerHost: ControllerHost,
+  dx: number,
+  dy: number
+) {
+  const target = controllerHost.target;
+  target.x += dx;
+  target.y += dy;
+  target.dirty();
+}
+
+/**
+ * For geo and graph.
+ */
+export function updateViewOnZoom(
+  controllerHost: ControllerHost,
+  zoomDelta: number,
+  zoomX: number,
+  zoomY: number
+) {
+  const target = controllerHost.target;
+  const zoomLimit = controllerHost.zoomLimit;
+
+  let newZoom = (controllerHost.zoom = controllerHost.zoom || 1);
+  newZoom *= zoomDelta;
+  if (zoomLimit) {
+    const zoomMin = zoomLimit.min || 0;
+    const zoomMax = zoomLimit.max || Infinity;
+    newZoom = Math.max(Math.min(zoomMax, newZoom), zoomMin);
+  }
+  const zoomScale = newZoom / controllerHost.zoom;
+  controllerHost.zoom = newZoom;
+  // Keep the mouse center when scaling
+  target.x -= (zoomX - target.x) * (zoomScale - 1);
+  target.y -= (zoomY - target.y) * (zoomScale - 1);
+  target.scaleX *= zoomScale;
+  target.scaleY *= zoomScale;
+
+  target.dirty();
+}
+```
+
+roamHelper 的逻辑非常简单。它基于从鼠标事件接收到的变量，更新 ControllerHost 中收集的图形元素的世界坐标矩阵。绑定鼠标事件的对象和更新世界坐标的对象是一致的，这符合预期。
+
+如果我们想要实现全局漫游功能，首先需要将 ControllerHost 中的目标图形元素替换为全局图形元素，这通常是一个包含所有图形的组对象。然后，我们需要监听整个画布的鼠标事件，并更新全局组的世界坐标矩阵。ECharts 内部的渲染引擎 Zrender 将自动将父元素坐标矩阵的变化应用到子元素。
+
+## 扩展 ECharts
+
+ECharts 提供了许多扩展接口。对于全局漫游，我们将其定义为一个组件，可以使用 ECharts 提供的 `use` API 进行注册。
+
+### 全局漫游模型
+
+在 Model 中，主要关注与数据相关的操作，通常包括定义对外暴露的配置选项和处理后续渲染所需的数据。全局漫游的主要逻辑位于 View 文件中，因此这里主要定义配置选项。
+
+```typescript
+// component/roam/RoamModel.ts
+
+export interface RoamOption extends ComponentOption, RoamOptionMixin {
+  mainType?: 'roam';
+
+  /**
+   * Roam is designed for view rather than cartesian2d coordinates
+   * Additional processing needed to make roam work with cartesian2d
+   * while keeping consistent behavior across coordinate systems
+   */
+  adaptAxis?: boolean;
+
+  /**
+   * Zoom behavior varies significantly across devices
+   * This ratio parameter helps normalize zoom sensitivity
+   */
+  zoomRatio?: number;
+
+  panRatio?: number;
+  /** Pan direction, defaults to 'xy' for bidirectional panning
+   *
+   * - 'xy': Pan in both directions simultaneously
+   * - 'x': Pan only horizontally
+   * - 'y': Pan only vertically
+   * - 'x|y': Allow either horizontal or vertical panning, auto-detected
+   */
+  panDirection: 'x|y' | 'x' | 'y' | 'xy';
+
+  // Whether to restrict roaming within canvas bounds, default true
+  roamLimit?: boolean;
+
+  // Disable horizontal panning, default false
+  banPanX?: boolean;
+
+  // Disable vertical panning, default false
+  banPanY?: boolean;
+
+  // Disable zooming, default false
+  banZoom?: boolean;
+}
+
+class RoamModel<
+  Opts extends RoamOption = RoamOption
+> extends ComponentModel<Opts> {
+  [x: string]: any;
+
+  static type = 'roam';
+
+  type = RoamModel.type;
+
+  static defaultOption: RoamOption = {
+    roam: true,
+    zoom: 1,
+    center: ['50%', '50%'],
+    adaptAxis: false,
+    panRatio: 1,
+    panDirection: 'xy',
+    zoomRatio: 1,
+    roamLimit: true,
+    banPanX: false,
+    banPanY: false,
+    banZoom: false,
+  };
+}
+
+export default RoamModel;
+```
+
+### 全局漫游视图
+
+```typescript
+// component/roam/RoamView.ts
+
+init(ecModel: GlobalModel, api: ExtensionAPI) {
+    this.ecModel = ecModel;
+    this.api = api;
+    this.__controller = new RoamController(api.getZr());
+    this.__seriesControllerHosts = [];
+}
+
+render(roamModel: RoamModel, ecModel: GlobalModel, api: ExtensionAPI, payload: Payload): void {
+  this.roamModel = roamModel;
+  this.__initCenterAndZoom(payload);
+
+  if (!this.__initRendered) {
+    this.__initRendered = true;
+
+    /**
+     * Initialize event objects
+     * Must be placed in render because group cannot be obtained in init
+     */
+    this.__seriesGroupArr = this.__getSeriesGroupArr();
+    this.__axesGroupArr = this.__getAxesGroupArr();
+    this.__seriesControllerHosts = this.__seriesGroupArr.map(
+      d =>
+        ({
+          target: d,
+          // Currently X and Y do not support independent scaling, so X scaling is treated as global scaling factor
+          zoom: d.transform ? d.transform[0] : 1,
+          zoomLimit: roamModel.get('scaleLimit')!
+        } as unknown as ControllerHost)
+    );
+    this.__axesControllerHosts = this.__axesGroupArr.map(
+      d =>
+        ({
+          target: d,
+          zoom: d.transform ? d.transform[0] : 1,
+          zoomLimit: roamModel.get('scaleLimit')!,
+          axes: (d as any).__ecComponentInfo?.mainType
+        } as unknown as ControllerHost)
+    ) as AxesControllerHost[];
+  }
+
+  /**
+   * Bind roam events
+   */
+  this.__controllerHandler(roamModel);
+}
+
+
+private __getSeriesGroupArr() {
+    const zrIns = this.api.getZr();
+    const { storage } = zrIns;
+    const seriesGroupArr: graphic.Group[] = [];
+    storage.getRoots().forEach(root => {
+      const mainType = (root as any).__ecComponentInfo?.mainType ?? null;
+      if (RoamView.seriesType.includes(mainType)) {
+        seriesGroupArr.push(root as graphic.Group);
+      }
+    });
+    return seriesGroupArr;
+}
+
+private __getAxesGroupArr() {
+    const zrIns = this.api.getZr();
+    const { storage } = zrIns;
+    const axesGroupArr: graphic.Group[] = [];
+    storage.getRoots().forEach(root => {
+      const mainType = (root as any).__ecComponentInfo?.mainType ?? null;
+      if (RoamView.axesType.includes(mainType)) {
+        axesGroupArr.push(root as graphic.Group);
+      }
+    });
+    return axesGroupArr;
+}
+
+```
+
+请注意，与 ECharts 源代码不同，我们不在此处的 init 函数中收集图形元素。这是因为组件和图表之间通常存在网状依赖关系。ECharts 内部使用权重来确保被依赖的组件或图表不会在生命周期中后执行，这会导致依赖的组件或图表出现渲染异常。由于这涉及更深层次的源代码，我们依靠生命周期确保 Roam 最后运行，而不是使用原生的权重设置。这确保了 roam 始终能够收集画布上所有已初始化的图形元素。
+
+确实，这个解决方案并不完美，但它可以用 20%的开发工作量解决 80%的问题。
+
+对于更新世界坐标的核心部分，我们将其提取到一个通用的帮助器中，并根据各种场景将其划分为不同的帮助器。在最终应用更新时，每个类别应用其相应的帮助器来更新坐标。
+
+坐标更新的整体逻辑保持不变，只是添加了一些配置选项并对某些组件进行了特殊处理。
+
+例如，在蜂群图中，我们通过布局实现关系图和笛卡尔坐标系之间的交互，并使用不同类别的帮助器实现笛卡尔坐标系的缩放。这允许通过漫游组件进行统一漫游，而无需额外适配 DataZoom 组件。
+
+```typescript
+// component/roam/roamHelper.ts
+export function doUpdateSeriesViewOnPanAndZoom(
+  controllerHost: ControllerHost,
+  {
+    dx = 0,
+    dy = 0,
+    zoomDelta = 1,
+    zoomX = 0,
+    zoomY = 0,
+    dirty = true,
+  }: {
+    dx?: number;
+    dy?: number;
+    zoomDelta?: number;
+    zoomX?: number;
+    zoomY?: number;
+    dirty?: boolean;
+  },
+  animation?: boolean | ElementAnimateConfig
+) {
+  const { target, zoomLimit } = controllerHost;
+
+  // pan
+  let x = target.x + dx;
+  let y = target.y + dy;
+
+  // zoom
+  let { scaleX } = target;
+  let { scaleY } = target;
+  const originControllerHostZoom = controllerHost.zoom;
+  if (typeof zoomDelta === 'number') {
+    controllerHost.zoom = controllerHost.zoom || 1;
+    let newZoom = controllerHost.zoom;
+    newZoom *= zoomDelta;
+
+    if (zoomLimit) {
+      const zoomMin = zoomLimit.min || 0;
+      const zoomMax = zoomLimit.max || Infinity;
+      newZoom = Math.max(Math.min(zoomMax, newZoom), zoomMin);
+    }
+    const zoomScale = newZoom / controllerHost.zoom;
+    controllerHost.zoom = newZoom;
+
+    target.stopAnimation();
+
+    // Keep the mouse center when scaling
+    x -= (zoomX - target.x) * (zoomScale - 1);
+    y -= (zoomY - target.y) * (zoomScale - 1);
+    scaleX *= zoomScale;
+    scaleY *= zoomScale;
+  }
+
+  const originX = target.x;
+  const originY = target.y;
+  const originScaleX = target.scaleX;
+  const originScaleY = target.scaleY;
+
+  if (!animation) {
+    target.x = x;
+    target.y = y;
+    target.scaleX = scaleX;
+    target.scaleY = scaleY;
+
+    if (dirty) {
+      target.dirty();
+    }
+  } else {
+    target.animateTo(
+      { x, y, scaleX, scaleY },
+      animation === true ? {} : animation
+    );
+  }
+
+  return () => {
+    target.x = originX;
+    target.y = originY;
+    target.scaleX = originScaleX;
+    target.scaleY = originScaleY;
+    controllerHost.zoom = originControllerHostZoom;
+  };
+}
+```
+
+```typescript
+// component/roam/asexRoamHelper.ts
+export function doUpdateAxesViewOnPanAndZoom(
+  controllerHost: AxesControllerHost,
+  {
+    dx = 0,
+    dy = 0,
+    zoomDelta = 1,
+    zoomX = 0,
+    zoomY = 0,
+    dirty = true,
+  }: {
+    dx?: number;
+    dy?: number;
+    zoomDelta?: number;
+    zoomX?: number;
+    zoomY?: number;
+    dirty?: boolean;
+  },
+  animation?: boolean | ElementAnimateConfig
+) {
+  const { target, zoomLimit, axes } = controllerHost;
+  // Store original zoom for restoration
+  const originControllerHostZoom = controllerHost.zoom;
+  // Calculate zoomScale
+  controllerHost.zoom = controllerHost.zoom || 1;
+  let newZoom = controllerHost.zoom;
+  newZoom *= zoomDelta;
+  if (zoomLimit) {
+    const zoomMin = zoomLimit.min || 0;
+    const zoomMax = zoomLimit.max || Infinity;
+    newZoom = Math.max(Math.min(zoomMax, newZoom), zoomMin);
+  }
+
+  const zoomScale = newZoom / controllerHost.zoom;
+  // Keep the mouse center when scaling
+  controllerHost.zoom = newZoom;
+
+  // Specify transform functions for different types of elements
+  const zoomFnMap = {
+    axisLine: getAxisLineZoomTransform,
+    splitLine: getLineZoomTransform,
+    tick: getLineZoomTransform,
+    label: getLabelZoomTransform,
+  };
+
+  // Collect elements by category
+  const elementArr: {
+    type: 'axisLine' | 'splitLine' | 'tick' | 'label';
+    el: GraphicType.Line | GraphicType.Text;
+  }[] = [];
+
+  // Collect various contents
+  target.traverse((d) => {
+    if (!d.anid) {
+      return;
+    }
+
+    // Axis line
+    if (d.anid === 'line') {
+      elementArr.push({
+        type: 'axisLine',
+        el: d as unknown as GraphicType.Line,
+      });
+      return;
+    }
+
+    // Split lines and axis lines
+    if (d.anid.includes('line')) {
+      elementArr.push({
+        type: 'splitLine',
+        el: d as unknown as GraphicType.Line,
+      });
+      return;
+    }
+
+    // tick
+    if (d.anid.includes('tick')) {
+      elementArr.push({
+        type: 'tick',
+        el: d as unknown as GraphicType.Line,
+      });
+      return;
+    }
+
+    // label
+    if (d.anid.includes('label')) {
+      elementArr.push({
+        type: 'label',
+        el: d as unknown as GraphicType.Text,
+      });
+    }
+  });
+
+  // Record initial values
+  const originTransform: {
+    el: GraphicType.Line | GraphicType.Text;
+    x: number;
+    y: number;
+    scaleX: number;
+    scaleY: number;
+  }[] = [];
+
+  // Calculate transform variables for pan and zoom of different elements
+  elementArr.forEach((d) => {
+    const { type, el } = d;
+
+    // Record original values
+    originTransform.push({
+      el,
+      x: el.x,
+      y: el.y,
+      scaleX: el.scaleX,
+      scaleY: el.scaleY,
+    });
+
+    // Calculate transforms to be applied
+    const panTransform = getElementPanTransform(axes, dx, dy);
+    const zoomTransform = zoomFnMap[type](
+      el as any,
+      zoomScale,
+      zoomX,
+      zoomY,
+      axes
+    );
+    const transform = {
+      x: panTransform.x + zoomTransform.x,
+      y: panTransform.y + zoomTransform.y,
+      scaleX: zoomTransform.scaleX,
+      scaleY: zoomTransform.scaleY,
+    };
+
+    if (!animation) {
+      el.x += transform.x;
+      el.y += transform.y;
+      el.scaleX *= transform.scaleX;
+      el.scaleY *= transform.scaleY;
+    } else {
+      el.animateTo(transform, animation === true ? {} : animation);
+    }
+  });
+
+  if (!animation && dirty) {
+    target.dirty();
+  }
+
+  return () => {
+    controllerHost.zoom = originControllerHostZoom;
+    originTransform.forEach((d) => {
+      const { el } = d;
+      el.x = d.x;
+      el.y = d.y;
+      el.scaleX = d.scaleX;
+      el.scaleY = d.scaleY;
+    });
+  };
+}
+
+function getElementPanTransform(
+  axes: 'xAxis' | 'yAxis',
+  dx: number,
+  dy: number
+) {
+  return {
+    x: axes === 'xAxis' ? dx : 0,
+    y: axes === 'yAxis' ? dy : 0,
+  };
+}
+
+function getAxisLineZoomTransform(
+  axisLine: GraphicType.Line,
+  zoomScale: number,
+  zoomX: number,
+  zoomY: number,
+  axes: 'xAxis' | 'yAxis'
+) {
+  return {
+    x: axes === 'xAxis' ? (axisLine.x - zoomX) * (zoomScale - 1) : 0,
+    y: axes === 'yAxis' ? (axisLine.y - zoomY) * (zoomScale - 1) : 0,
+    scaleX: axes === 'xAxis' ? zoomScale : 1,
+    scaleY: axes === 'yAxis' ? zoomScale : 1,
+  };
+}
+
+function getLineZoomTransform(
+  splitLine: GraphicType.Line,
+  zoomScale: number,
+  zoomX: number,
+  zoomY: number,
+  axes: 'xAxis' | 'yAxis'
+) {
+  return {
+    x:
+      axes === 'xAxis'
+        ? (splitLine.x + splitLine.shape.x1 - zoomX) * (zoomScale - 1)
+        : 0,
+    y:
+      axes === 'yAxis'
+        ? (splitLine.y + splitLine.shape.y1 - zoomY) * (zoomScale - 1)
+        : 0,
+    scaleX: 1,
+    scaleY: 1,
+  };
+}
+
+function getLabelZoomTransform(
+  label: GraphicType.Text,
+  zoomScale: number,
+  zoomX: number,
+  zoomY: number,
+  axes: 'xAxis' | 'yAxis'
+) {
+  return {
+    x: axes === 'xAxis' ? (label.x - zoomX) * (zoomScale - 1) : 0,
+    y: axes === 'yAxis' ? (label.y - zoomY) * (zoomScale - 1) : 0,
+    scaleX: 1,
+    scaleY: 1,
+  };
+}
+```
+
+## 最终结果
+
+<img src="/img/Roam Example.gif" />

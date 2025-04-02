@@ -1,0 +1,151 @@
+---
+slug: stanford-cs448b-16-visNLP
+title: 斯坦福 CS448B 16 可视化与自然语言处理
+tags: [数据可视化, 斯坦福, 课程, CS448B]
+---
+
+import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
+
+**TLDR**
+
+本文包含我对斯坦福 CS448B（数据可视化）课程的笔记，特别关注第十六讲关于可视化与自然语言处理的内容。我将讨论将文本与可视化链接的重要性、理解读者如何整合图表和标题、视觉问答以及自然语言界面。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141420316.png?imageSlim)
+{/* truncate */}
+
+## 原文
+
+<object
+  data="/stanford-cs448b/Lec16-visNLP.pdf"
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href="/stanford-cs448b/Lec16-visNLP.pdf">下载 PDF</a>.
+</object>
+
+## 笔记
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141417913.png?imageSlim)
+全球价值链贸易在 1990 年代迅速增长，但在 2008 年全球金融危机后陷入停滞
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141418912.png?imageSlim)
+**问题**：1990 年至 2008 年期间，全球价值链份额上升了多少？
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141420316.png?imageSlim)
+
+> "文字和图像应该结合在一起。"
+>
+> <p style={{ textAlign: 'right' }}>--塔夫特，1983</p>
+
+### 将文本与可视化链接
+
+> 通过链接文本和表格促进文档阅读
+>
+> <p style={{ textAlign: 'right' }}>--Kim等，2018</p>
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141426929.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141426656.png?imageSlim)
+
+**第 1 阶段**：表格结构提取
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141427300.png?imageSlim)
+
+**第 2 阶段**：将句子文本与表格单元格匹配
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141428801.png?imageSlim)
+
+**第 3 阶段**：基于规则的匹配优化
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141428878.png?imageSlim)
+
+#### 流程评估
+
+语料库
+
+- Pew 研究报告
+- ACL 和 CVPR 论文
+- Kong 等（2014）
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141437563.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141438667.png?imageSlim)
+
+#### 用户研究
+
+假设：我们的界面有助于阅读包含表格的文档
+
+受试者内设计研究  
+14 名成年志愿者，均为英语流利者  
+任务：用/不用我们的界面注释引用关系
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141440902.png?imageSlim)
+
+### 理解读者如何整合图表和标题
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141441841.png?imageSlim)
+
+读者是更依赖图表还是标题来获取要点？
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141441361.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141442198.png?imageSlim)
+
+<hr />
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141445072.png?imageSlim)
+
+当文本和可视化强调不匹配时，读者更依赖图表，可能会错过标题中的信息
+
+### 视觉问答
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141445799.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141446223.png?imageSlim)
+
+#### 预备性研究
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141447371.png?imageSlim)
+
+解释描述了计算答案的过程  
+半数解释引用了图表的视觉特征
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141448796.png?imageSlim)
+
+#### 图表问答流程和生成解释
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141449760.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141449544.png?imageSlim)
+
+:::tip 示例
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141450548.png?imageSlim)
+:::
+
+#### 用户研究
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141451193.png?imageSlim)
+
+- 16 名参与者
+- 20 组图表-问题-答案-解释组合（每种解释类型 5 个）
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141452560.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141452548.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141453991.png?imageSlim)
+
+### 自然语言界面
+
+<object
+  data="/paper/Eviza-A Natural Language Interface for Visual Analysis.pdf"
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href="/paper/Eviza-A Natural Language Interface for Visual Analysis.pdf">
+    下载 PDF
+  </a>
+  .
+</object>

@@ -1,0 +1,274 @@
+---
+slug: stanford-cs448b-09-perception
+title: 斯坦福 CS448B 09 感知
+tags: [数据可视化, 斯坦福, 课程, CS448B]
+---
+
+import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
+
+**TLDR**
+
+本文包含我对斯坦福 CS448B（数据可视化）课程的笔记，特别关注第九讲关于感知的内容。我将讨论感知在数据可视化中的重要性、背后的原则，并探索各种数据可视化技术，包括使用指导元素、表达性、有效性、对比和模式感知的支持、数据分组和排序、数据转换、减少认知负担以及一致性。我还将介绍各种图表类型，如折线图、柱状图、堆叠面积图等，提供示例并讨论它们的设计考虑因素。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/ObsidianPasted%20image%2020230811151332.png)
+{/* truncate */}
+
+## 原文
+
+<object
+  data="/stanford-cs448b/Lec09-perception.pdf"
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href="/stanford-cs448b/Lec09-perception.pdf">下载 PDF</a>.
+</object>
+
+## 笔记
+
+### [Mackinlay](https://www.tableau.com/research/people/jock-mackinlay)
+
+- 有效性标准
+  如果一个视觉编码的信息比另一个视觉编码的信息更容易被感知，那么这个视觉编码就比另一个更有效。
+
+- 编码排名
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251618167.png?imageSlim)
+
+:::info 注释
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/ObsidianPasted%20image%2020230811151332.png)
+:::
+
+### 检测
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251620336.png?imageSlim)
+
+可察觉差异（JND）是能被检测到的刺激中最小的差异。也被称为[韦伯定律](https://en.wikipedia.org/wiki/Weber%E2%80%93Fechner_law)。
+
+<InlineMath math="ΔS = k\frac{ΔI}{I}" />
+
+- 比率比幅度更重要
+- 刺激中的大多数连续变化都以离散步骤被感知
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251628662.png?imageSlim)
+
+颜色和值中的信息：
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251630296.png?imageSlim)
+
+16 世纪标准化的尺寸
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251631567.png?imageSlim)
+
+### 估计幅度
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian20230822212812.png)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian20230822212823.png)
+
+[史蒂文斯幂律](https://en.wikipedia.org/wiki/Stevens%27s_power_law)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian20230822212941.png)
+
+| 感觉     | 指数                        |
+| -------- | --------------------------- |
+| 响度     | 0.6                         |
+| 亮度     | 0.33                        |
+| 气味     | 0.55 (咖啡) - 0.6 (庚烷)    |
+| 味道     | 0.6 (糖精) -1.3 (盐)        |
+| 温度     | 1.0 (冷) – 1.6 (热)         |
+| 振动     | 0.6 (250 Hz) – 0.95 (60 Hz) |
+| 持续时间 | 1.1                         |
+| 压力     | 1.1                         |
+| 重量     | 1.45                        |
+| 电击     | 3.5                         |
+
+表观幅度缩放
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202403142054082.png?imageSlim)
+
+绝对符号缩放
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202403142055458.png?imageSlim)
+
+<InlineMath math="r=k*v" />
+Flannery 缩放 ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202403142056594.png?imageSlim)
+
+<InlineMath math="r=k*v^{0.57}" />
+
+分级符号 ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202403142056926.png?imageSlim)
+
+分级球体地图
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202403142057822.png?imageSlim)
+
+### Cleveland 和 McGill
+
+<object
+  data="/paper/ClevelandMcGill1984.pdf"
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href="/paper/ClevelandMcGill1984.pdf">下载 PDF</a>.
+</object>
+
+:::info 注释
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202403142058710.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202403142058773.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202403142059073.png?imageSlim)
+
+- 理解图形感知：该论文探讨了人类如何感知和解释图形信息，提供了对图形感知的基础理解。这包括研究人们如何准确有效地解码不同类型的图表，如条形图、饼图和散点图。
+- 感知任务的准确性：Cleveland 和 McGill 的实验揭示了不同的图形表示在传达信息时有不同的准确度。例如，基于位置的编码（如条形图中的条形长度）通常比基于面积或角度的编码（如饼图中的扇形）解释得更准确。
+- 设计原则：基于他们的发现，他们提出了几个设计原则，以提高数据可视化的有效性。一个关键建议是使用位置编码而非面积或角度编码，以提高数据解释的准确性。
+- 实验方法：他们使用严格的实验方法测试不同图形表示的性能，为该领域的未来研究设定了标准。这种实证方法为各种可视化技术的有效性提供了量化证据。
+
+总的来说，Cleveland 和 McGill 的工作强调了在设计数据可视化时考虑人类感知能力的重要性。他们的研究指导了更有效和可解释的图形方法的发展，影响了数据可视化领域的学术研究和实际应用。
+:::
+
+### 相对幅度估计
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202403142100262.png?imageSlim)
+
+### 前注意力处理 vs. 注意力处理
+
+- 有多少个 3
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202403142100119.png?imageSlim)
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202403142101897.png?imageSlim)
+
+- 视觉突显：颜色
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202403142101512.png?imageSlim)
+
+- 视觉突显：形状
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202403142102803.png?imageSlim)
+
+- 特征结合
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202403142103037.png?imageSlim)
+
+**前注意力特征**
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202403142103430.png?imageSlim)
+
+更多前注意力特征
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202403142104739.png?imageSlim)
+
+### [特征整合理论](https://en.wikipedia.org/wiki/Feature_integration_theory)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251715015.png?imageSlim)
+
+### 多属性
+
+- 一维：亮度
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251717297.png?imageSlim)
+
+- 一维：形状
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251716828.png?imageSlim)
+
+- 相关维度：形状或亮度
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251717908.png?imageSlim)
+
+- 正交维度：形状和亮度
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251718645.png?imageSlim)
+
+:::info 注释
+**加速分类**
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251718936.png?imageSlim)
+
+- 冗余增益  
+  当另一维度提供冗余信息时，阅读一个维度的便利性增加
+- 过滤干扰  
+  在关注一个维度的同时，忽略另一个维度的困难
+
+**维度类型**
+
+- 整体型  
+  有过滤干扰和冗余增益
+- 可分离型  
+  没有干扰或增益
+- 配置型  
+  只有干扰，没有冗余增益
+- 非对称型  
+  一个维度可从另一个分离，反之则不然
+  :::
+
+- 相关维度：大小和值
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251721335.png?imageSlim)
+
+- 正交维度：高度、宽度
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251721209.png?imageSlim)
+
+- 方向和大小（单一标记）
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251722688.png?imageSlim)
+  你能看出温度或降水量吗？
+  两者之间有相关性吗？
+
+- 形状和大小
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251723552.png?imageSlim)
+  看到一个形状在多个大小上比看到一个大小在多个形状上更容易？
+
+:::info 注释
+整体-可分离总结
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251724029.png?imageSlim)
+
+:::
+
+### 格式塔
+
+原则
+
+- 图形/背景
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251726280.png?imageSlim)
+- 接近性
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251726357.png?imageSlim)
+- 相似性
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251727273.png?imageSlim)
+- 对称性
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251727907.png?imageSlim)
+- 连通性
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251727865.png?imageSlim)
+- 连续性
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251728980.png?imageSlim)
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251728601.png?imageSlim)
+- 闭合性
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251729482.png?imageSlim)
+- 共同命运
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251729304.png?imageSlim)
+- 透明度
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251730817.png?imageSlim)
+
+### 分层：网格线
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409261732814.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409261733238.png?imageSlim)
+
+### 分层：颜色和线宽
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409261733227.png?imageSlim)
+
+### 小型多图
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409261734404.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409261734785.png?imageSlim)
+
+### Rensink 的演示
+
+<video width="100%" height="auto" controls>
+  <source
+    src="/stanford-cs448b/Change blindness demonstration.mp4"
+    type="video/mp4"
+  />
+  您的浏览器不支持视频标签。
+</video>
+
+:::info 注释
+在[这里](https://www2.psych.ubc.ca/~rensink/flicker/download/index.html)找到更多关于变化盲视演示的例子
+:::
+
+### 总结
+
+选择有效的视觉编码需要了解视觉感知知识。
+
+视觉特征/属性
+
+- 单个属性通常是前注意力的。
+- 多个属性可能是可分离的，通常是整体的。
+
+[格式塔原则](https://www.interaction-design.org/literature/topics/gestalt-principles)提供更高层次的设计指南。  
+我们并不总是能看到所有存在的东西。

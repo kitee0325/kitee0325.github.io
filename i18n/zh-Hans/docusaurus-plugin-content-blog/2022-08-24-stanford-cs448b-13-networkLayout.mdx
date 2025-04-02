@@ -1,0 +1,384 @@
+---
+slug: stanford-cs448b-13-networkLayout
+title: 斯坦福 CS448B 13 图布局
+tags: [数据可视化, 斯坦福, 课程, CS448B]
+---
+
+import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
+
+**TLDR**
+
+本文包含我对斯坦福 CS448B（数据可视化）课程的笔记，特别关注第十三讲关于图网络布局的内容。我将讨论树布局、节点-链接图布局、生成树布局、Sugiyama 风格图布局、层次边缘捆绑、力导向布局、备选布局方法、属性驱动布局的重要性及总结。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091456512.png?imageSlim)
+{/* truncate */}
+
+## 原文
+
+<object
+  data="/stanford-cs448b/Lec13-networkLayout.pdf"
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href="/stanford-cs448b/Lec13-networkLayout.pdf">下载 PDF</a>.
+</object>
+
+## 笔记
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091456512.png?imageSlim)
+
+### 树布局
+
+具有层次结构的图  
+连通图，有 N-1 条边  
+节点作为父节点和子节点
+
+#### 缩进
+
+线性列表，缩进编码深度
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091507365.png?imageSlim)
+
+- 项目沿垂直间隔的行排列
+- 缩进显示父/子关系
+- 通常用于界面
+- 宽度/深度争夺空间
+- 经常需要滚动
+
+<hr />
+
+- 可视化大型层次结构：
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091514761.png?imageSlim)
+- 单焦点（手风琴）列表：  
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091515827.png?imageSlim)
+  在二维空间中分离宽度和深度
+  一次只关注单一路径
+
+#### 节点-链接图
+
+通过线/曲线连接的节点
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091509155.png?imageSlim)
+
+- 节点分布在空间中，通过线连接
+- 使用二维空间分离宽度和深度
+- 空间用于传达层次方向
+- 通常朝向权威或一般性
+
+<hr />
+
+- 基本递归方法
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091519431.png?imageSlim)
+  根据叶节点数量重复划分子树空间  
+  树的宽度沿一个维度  
+  深度沿另一个维度  
+  **问题：宽度呈指数增长**
+- Reingold & Tilford 的更整洁布局
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091520850.png?imageSlim)
+  目标：最大化密度和对称性。  
+   最初为二叉树设计，由 Walker 扩展以涵盖一般情况。  
+   Buchheim 等人对这一扩展进行了修正，实现了线性时间算法
+
+  设计考虑因素：
+
+  - 清晰编码深度层级
+  - 无边交叉
+  - 同构子树绘制相同
+  - 保持顺序和对称性
+  - 紧凑布局（不浪费空间）
+
+  算法：
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091524993.png?imageSlim)
+
+  - 初始自下而上（后序）树遍历
+
+    1. 根据深度设置 y 坐标
+    2. 将 x 坐标初始化为零
+
+  - 在每个父节点，合并左右子树
+
+    1. 将右子树尽可能靠近左侧移动
+    2. 通过维护子树轮廓高效计算
+    3. 使父节点居中于子节点之上
+    4. 记录右子树位置偏移的"移位"
+
+  - 最终自上而下（前序）遍历设置 x 坐标
+
+    1. 累加移位总和
+
+<hr />
+
+**径向布局**
+
+- 极坐标系中的节点-链接图
+- 半径编码深度，根位于中心
+- 角度扇区分配给子树（递归方法）
+- 这里也可以应用 Reingold-Tilford 方法
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091619893.png?imageSlim)
+
+节点-链接图的问题：  
+规模
+
+1. 树的宽度通常呈指数增长
+2. 即使使用更整洁的布局，也很快用完空间
+
+可能的解决方案
+
+1. 过滤
+2. 焦点+上下文
+3. 滚动或平移
+4. 缩放
+5. 聚合
+
+<hr />
+
+**双曲布局**
+
+在双曲空间中布局，然后投影到欧几里得平面  
+为什么？与树的宽度类似，双曲平面呈指数扩展  
+也可以在 3D 中计算，投影到球体
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091626413.png?imageSlim)
+
+**Degree-of-Interest 树**
+
+空间受限的多焦点树布局
+
+<video width="100%" height="auto" controls>
+  <source
+    src="/stanford-cs448b/Degree-of-Interest Tree with extras.mp4"
+    type="video/mp4"
+  />
+  您的浏览器不支持视频标签。
+</video>
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091641597.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091641505.png?imageSlim)
+在每个块的基础上剔除"不感兴趣"的节点，直到一个层级上的所有块都适合边界
+使子块在父节点下居中
+
+#### 封闭图
+
+通过封闭表示层次结构
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091510234.png?imageSlim)
+
+使用空间封闭编码结构  
+俗称树形图  
+优点
+
+- 提供整个树的单一视图
+- 更容易发现大/小节点
+
+问题
+
+- 难以准确读取深度
+
+<hr />
+
+**包布局**
+
+节点表示为有大小的圆形
+嵌套显示父子关系  
+问题：
+
+- 空间利用效率低
+- 父节点大小具有误导性
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091638845.png?imageSlim)
+
+<hr />
+
+**树图**
+
+强调节点值通过面积编码的层次可视化  
+分割二维空间，使叶节点大小与数据值成比例  
+首个布局算法由 Shneiderman 等人于 1990 年提出，重点是显示硬盘上的文件大小
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091646281.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091646422.png?imageSlim)
+
+<hr />
+
+**矩形树图**
+
+贪心优化，目标是方形矩形
+在兄弟节点内分割；当比例变差时交替
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091648018.png?imageSlim)
+https://vega.github.io/vega/examples/treemap/
+
+为什么是方形？
+1:1 宽高比的假定好处
+
+1. 最小化周长，减少边框墨水。
+2. 更容易用鼠标光标选择。  
+   通过实证研究和 Fitt 定律验证！
+3. 相似的宽高比更容易比较。  
+   ~~看起来直观，但这是真的吗？~~  
+   极端比例和只有方形更不准确。  
+   平衡比例更好？目标黄金比例？
+
+:::info 注释
+人们对面积大小的感知并不敏感，难以获得详细比例；他们只能粗略区分大小。如果宽高比随机，可能偶尔导致误判。
+:::
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091652543.png?imageSlim)
+
+1. 方形比较误差更高！
+2. 方形化之所以有效，是因为它未能达到其目标？
+
+<hr />
+
+**Voronoi 图**
+
+具有任意多边形形状和边界的树形图  
+使用迭代加权的  
+Voronoi 镶嵌以获得与值成比例面积的单元格
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091655059.png?imageSlim)
+
+#### 分层
+
+分层和对齐
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091511784.png?imageSlim)
+
+树布局速度快：O(n) 或 O(n log n)，支持交互的实时布局
+
+### 节点-链接图布局
+
+#### 生成树布局
+
+- 许多图形类似树或有用的生成树
+  > 网站，社交网络
+- 在图的生成树上使用树布局
+  > 通过 BFS / DFS 创建的树  
+  > 最小/最大生成树
+- 快速树布局允许以交互速率重新计算图布局
+- 启发式方法可能进一步改进布局
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101705499.png?imageSlim)
+
+#### Sugiyama 风格图布局
+
+UNIX 操作系统  
+的演变  
+基于下降的  
+层次分层
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101707939.png?imageSlim)
+
+反转某些边以消除循环  
+在层次层中分配节点 -> 最长路径分层
+
+> 创建虚拟节点来"填充"缺失的层
+
+在层内排列节点，最小化边交叉
+
+> 布线边缘 – 如需要，布局样条曲线
+
+#### 生成层次化布局
+
+Sugiyama 风格布局强调层次
+然而，图中的循环可能产生误导。
+长边可能妨碍邻近感知。
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101709751.png?imageSlim)
+
+### 层次边缘捆绑
+
+#### 具有邻接关系的树
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101710342.png?imageSlim)
+
+内圈使用径向树布局  
+镜像到外部  
+用层次边缘捆绑替换内部树
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101711627.png?imageSlim)
+
+**沿层次结构捆绑边缘**
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101711386.png?imageSlim)
+
+增加边缘张力
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101712217.png?imageSlim)
+
+### 力导向布局
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101712053.png?imageSlim)
+
+节点 = 带有空气阻力的带电粒子
+
+边缘 = 弹簧
+
+<BlockMath math="F=q_i*q_j / d_{ij}^2" />
+<BlockMath math="F=-b*v_i" />
+<BlockMath math="F=k*(L-d_{ij})" />
+
+D3 的力布局使用 Verlet 速度积分
+假设统一质量 m 和时间步长 Δt：
+
+<BlockMath math="F = ma → F = a → F = Δv / Δt → F = Δv " />
+
+> 力简化为速度偏移！
+
+重复计算力，更新节点位置  
+朴素方法 O(<InlineMath math="N^2"/>)  
+使用四叉树或 k-d 树加速到 O(<InlineMath math="NlogN"/>)  
+每个时间步长的力的数值积分
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101725946.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101725228.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101726558.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101726986.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101726613.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101726174.png?imageSlim)
+
+### 备选布局
+
+线性节点布局，圆弧显示连接。  
+布局质量对节点顺序敏感！
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101727829.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101728646.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101728708.png?imageSlim)
+
+### 属性驱动布局
+
+大型节点-链接图变得混乱！  
+我们是否可以利用其他结构？  
+想法：使用数据属性执行布局
+
+> 例如，基于节点值的散点图
+
+动态查询和/或刷选可用于探索连接性
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101729839.png?imageSlim)
+
+"Skitter"布局
+
+- 互联网连接
+- 径向散点图
+
+角度 = 经度
+
+- 地理位置
+
+半径 = 度
+
+- 连接数
+- （节点的统计数据）
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101731358.png?imageSlim)
+
+### 总结
+
+- 树布局
+  - 缩进 / 节点-链接 / 封闭 / 层
+  - 如何解决规模问题？
+    > 过滤和焦点 + 上下文技术
+- 图布局
+  - 生成树上的树布局
+  - 层次"Sugiyama"布局
+  - 优化（力导向布局）
+  - 属性驱动布局

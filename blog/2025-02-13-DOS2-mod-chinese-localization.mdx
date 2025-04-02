@@ -1,0 +1,134 @@
+---
+slug: dos2-mod-chinese-localization
+title: DOS2 Mod Chinese Localization
+tags: [Game, Localization]
+---
+
+**TLDR**
+
+This article provides a detailed guide on how to localize Odinblade's series of class MODs for DOS2 into Chinese. The main steps include:
+
+1. Using LSLib Toolkit to unpack the MOD's PAK files
+2. Locating and translating localization files in the MOD, including content in Public/Localization and Mods/Localization
+3. Using The Divinity Engine2 editor for deeper localization work, handling text not included in standard localization files
+4. Repackaging and publishing the localization MOD
+
+Through this method, the author successfully provided complete Chinese localization support for Odinblade's series of class MODs, gaining approximately 3000 subscribers.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504012200428.png?imageSlim)
+{/* truncate */}
+
+## Introduction
+
+Around December of last year, I started playing **Divinity: Original Sin 2 (DOS2)** again with my gaming partner, Larian Studios' work before Baldur's Gate 3. Despite Baldur's Gate 3's extraordinary achievements, becoming one of only four games to achieve the grand slam (TGA, Golden Joystick, D.I.C.E, Game Developers Choice Awards) alongside The Elder Scrolls V: Skyrim, The Legend of Zelda: Breath of the Wild, and Elden Ring, DOS2 remains a benchmark for CRPGs.
+
+<div style={{ display: 'flex', gap: '20px' }}>
+  <img
+    src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504012011687.png?imageSlim"
+    alt="DOS2 Screenshot 1"
+    style={{ width: '50%' }}
+  />
+  <img
+    src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504012011645.png?imageSlim"
+    alt="DOS2 Screenshot 2"
+    style={{ width: '50%' }}
+  />
+</div>
+
+DOS2 has a massive MOD community, with over 50,000 MODs on Steam Workshop. Among the most highly rated is the Odinblade series of class MODs, which expands the original 8 classes and introduces 2 new classes, boasting approximately 500,000 subscribers and growing. In my opinion, this MOD's status is comparable to Terraria's Calamity mod, both significantly influencing the base game with extensive content while maintaining balanced gameplay mechanics.
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504012014628.png?imageSlim)
+
+I was eager to try it out, but there was no Chinese localization available on the Workshop. I could only find scattered Chinese translations for various classes on Chinese gaming forums like 3DM and Bahamut. When I downloaded and started playing, I found that the Chinese translations were merely functional, only translating skill names and descriptions, while many item names, status descriptions, and NPC dialogues remained in English. This didn't meet my expectations, and I was curious about why previous translators had left so much content untranslated.
+
+Therefore, I decided to improve these translations myself.
+
+## MOD Localization Process
+
+### Unpacking
+
+When you click the subscribe button in the Workshop, Steam automatically downloads the MOD to your game directory. Subsequently, every time you open the game, Steam automatically checks for differences between the Workshop MOD version and your local MOD version to perform automatic updates. When we open DOS2's MOD folder, typically located at: `%USERPROFILE%\Documents\Larian Studios\Divinity Original Sin 2 Definitive Edition\Mods`, you'll see numerous `PAK` files, each corresponding to a MOD. `PAK` is actually a compressed file format, and we only need to extract the `PAK` file to get the MOD's original files. For extraction, we can use [LSLib Toolkit](https://github.com/LSLib/LSLib-Toolkit).
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504012027913.png?imageSlim)
+
+The second tab provides simple compression and decompression functions. After we extract the MOD, make our changes to the MOD files, we can repack it into a PAK file and replace it back in the MOD folder, thus completing the MOD update.
+
+### Localization Overview
+
+Let's take an example from the Odinblade series of classes to examine its file structure after extraction.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504012040578.png?imageSlim)
+
+#### File Structure
+
+We can see there are mainly two folders: `Mods` and `Public`. All resource files are located in `Public`, such as root templates, UI, sound effects, skill configuration files, etc.; while `Mods` mainly contains the MOD's core code files, such as skill effect logic, test scenes, NPC dialogues, etc. Under these folders are folders named in the structure of `[MODName_MODID]`, which is DOS2's standard MOD structure.
+
+For localization, we mainly focus on the `Localization` folders under `Mods` and `Public`. In the `Localization` folder under `Public`, after unpacking the `PAK`, we only have the original binary `lsb` files. We need to use LSLib Toolkit to convert them into `lsx` files. Opening the `lsx` file, we see it uses tag language to describe atomic text resources like skill names, skill descriptions, and skill states. Each atomic resource has two unique tags: `UUID` is semantic for developers, while the `Handle` field is machine-encoded. In the `Localization` folder under `Mods`, there are configuration files for various languages, such as `zh`, `en`, `rus`, etc.
+
+#### Configuration File Localization
+
+From the MOD's file structure perspective, we only need to translate the content in the `Localization` folder under the `Mods` folder, which means creating a target localization folder (like `zh`), then copying the `english.xml` file from the `en` directory and renaming it to the target language (like `chinese.xml`), then translating the `chinese.xml` file. Finally, repack it back into a `PAK` file, and DOS2 will select the corresponding localization file in `Mods` based on your local language settings.
+
+However, it's not that simple. This requires MOD creators to have completely extracted all entries in the MOD into the `english.xml` folder, and each entry must have the correct `contentuid`, otherwise DOS2 won't be able to correctly identify the entries, leading to localization failure. In reality, MOD creators focus more on the MOD's functional content, and for individual MOD creators, it's difficult to ensure they fully follow DOS2's localization standards when designing MODs. Therefore, only translating content in `Mods/Localization` will result in incomplete localization.
+
+#### Original File Localization
+
+From the Chinese translation files downloaded from gaming forums like 3DM, we can see that previous MOD translators had already noticed such issues, so they shifted their translation target from `english.xml` to the content in `Public/Localization`, performing Chinese localization by directly modifying atomic text resources, which was actually a significant improvement. For non-technical workers, understanding tag syntax and compressing/decompressing files can be technical challenges.
+
+Through this step, in Odinblade's class series, we can ensure all skill names and descriptions are completely localized.
+However, when you open the game, you'll still find localization issues in the following scenarios: item names (like skill books), NPC dialogues (yes, Odinblade introduced new skill book vendor NPCs for each class), status descriptions (like frostbite caused by skills).
+
+So unfortunately, the content in `Public/Localization` is still incomplete.
+
+#### MOD Editor Localization
+
+To solve the above problems, you need a deeper understanding of the MOD itself, not only accurately locating where untranslated text might appear in the game but also understanding the transmission chain of atomic text, otherwise even after completing localization editing, it might not take effect. To better understand the MOD, you need to use DOS2's official MOD editor **The Divinity Engine2 (DE2)**, which covers the entire lifecycle of MOD development, testing, and publishing. This editor comes with the game installation, but to make it work, you also need to download the `Data` DLC, which contains most of the editor's content, such as material templates, NPC templates, and other resources.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504012121625.png?imageSlim)
+
+Larian officially provides [WIKI documentation](https://docs.larian.game/The_Divinity_Engine_2) for MOD development, through which you can more accurately understand how DE2 works.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504012131389.png?imageSlim)
+
+Before this, we need to move the previously extracted `Public` and `Mods` folders to DOS2's game directory so that DE2 can correctly identify the MOD files.
+
+Move the `$MODNAME_MODID` folders under `Public` and `Mods` to the `[Your Steam Game Directory]\steamapps\common\Divinity Original Sin 2\DefEd\Data\` directory's corresponding folders, and also copy the `mate.lsx` file from `Public` to the corresponding `Project` folder. The final structure should look like this:
+
+```
+Divinity Original Sin 2\DefEd\Data\
+├── Public
+│   ├── $MODNAME_MODID
+└── Mods
+    ├── $MODNAME_MODID
+└── Projects
+    ├── $MODNAME_MODID
+        ├── mate.lsx
+```
+
+Now, let's open the DE2 editor. You need to select the corresponding MOD and test scene before entering the DE2 editor.
+For the complex functions of the DE2 editor, as a localization translator, you only need to focus on two submenus shown in the image below:
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504012136636.png?imageSlim)
+
+The first is the **Localization Menu**, where MOD creators list atomic text and create localizations, which is also the content we mentioned earlier under `Public/Localization`. So, if MOD creators haven't completely filled in the content here, localization can't be completed properly. Now you understand why modifying only the content under `Public/Localization` still leaves untranslated issues.
+
+The second is the **Status Notebook**, which you can also understand as an atomic text notebook, recording the MOD data exported by MOD creators during development. This is also a data structure convention in DE2, where you can see most of the text resources introduced by the author.
+
+So here we discover that localization actually goes through multiple layers of forwarding, from [the most original game resources] to [the `LSB` files provided by DE2's localization support], to [the outermost `english.xml` file], with layers connected through `handle` mapping.
+
+So for the previously mentioned untranslated resources, you can fix them in the following ways:
+
+1. Open the extracted MOD folder in your IDE, globally search for untranslated text and locate it. If it's in `.lua` or other MOD logic code, you can modify it directly. Although this isn't DOS2's localization standard, it's low-cost and effective.
+2. If you can't find it in the IDE, you need to locate the relevant resources in DE2's resource browser and find the `handle` in the status description interface, then globally locate it in the IDE based on the `handle`.
+3. If you've already performed localization but it's not taking effect, check each layer of the localization forwarding chain we mentioned above. Occasionally, you might even need to assign a `handle` to a resource yourself to make the forwarding chain work. `handle` can be generated using [Baldur's Gate 3's MOD tools](https://github.com/ShinyHobo/BG3-Modders-Multitool). Although the probability is small, make sure your newly assigned `handle` is unique before using it.
+   ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504012152872.png?imageSlim)
+
+### MOD Publishing
+
+After completing all the above content, if you're familiar enough, you can check the localization progress in DE2's test scenes and resource manager. You can also directly open DOS2 to verify. Yes, even if the MOD isn't in the `%USERPROFILE%\Documents\Larian Studios\Divinity Original Sin 2 Definitive Edition\Mods` folder, as long as you move it to DOS2's game directory as described above, it can be used normally in DOS2.
+
+After ensuring everything is correct, you can publish the MOD in DE2. To distinguish it from the original MOD, you need to create a new blank project in DE2, then fill the project with your translated MOD content, namely the `Public` and `Mods` folders, and fill in the MOD's name, ID, version, author, description, and other information in the `meta.lsx` file in the `Project` folder. As a localization author, please ensure there's no copyright infringement and remember to include the original author's information.
+
+Before publishing, you also need to provide MOD icons, screenshots, and other content, which can be freely created by the localization developer.
+
+I chose to add localization identifiers directly to the original MOD icon:
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504012200428.png?imageSlim)
+
+Meanwhile, my localization MOD has gained approximately 3000 subscribers.
+
+I'm very happy to receive positive feedback from players on Chinese gaming forums, which is truly gratifying.

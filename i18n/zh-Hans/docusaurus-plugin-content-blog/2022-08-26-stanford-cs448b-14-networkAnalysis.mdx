@@ -1,0 +1,281 @@
+---
+slug: stanford-cs448b-14-networkAnalysis
+title: 斯坦福 CS448B 14 图分析
+tags: [数据可视化, 斯坦福, 课程, CS448B]
+---
+
+import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
+
+**TLDR**
+
+本文包含我对斯坦福 CS448B（数据可视化）课程的笔记，特别关注第十四讲关于图分析的内容。我将讨论中心性、社区结构和模拟网络模型的重要性。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101739126.png?imageSlim)
+{/* truncate */}
+
+## 原文
+
+<object
+  data="/stanford-cs448b/Lec14-networkAnalysis.pdf"
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href="/stanford-cs448b/Lec14-networkAnalysis.pdf">下载 PDF</a>.
+</object>
+
+## 笔记
+
+- 疾病
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101736631.png?imageSlim)
+
+- 交通
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101737721.png?imageSlim)
+
+- 演员和电影（二分图）
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101738621.png?imageSlim)
+
+### 网络特征分析
+
+它看起来是什么样子？
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101739051.png?imageSlim)
+
+<hr />
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101739126.png?imageSlim)
+
+- 规模？
+- 密度？
+- 中心性？
+- 聚类？
+- 连通分量？
+- 团？
+- 网络基元？
+- 平均路径长度？  
+  ...
+
+### 中心性
+
+事物之间的距离有多远？  
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101741038.png?imageSlim)
+
+#### 距离：最短路径
+
+最短路径（测地线路径）
+
+- 连接两个节点的最短链接序列
+- 不总是唯一的
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101742629.png?imageSlim)
+
+- A 和 C 通过 2 条最短路径连接
+- A –E –B -C
+- A –E –D -C
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101743264.png?imageSlim)
+
+从 2 到 3 的最短路径：1
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101743350.png?imageSlim)
+
+从 2 到 3 的最短路径？
+
+<hr />
+**最重要的节点？**
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101744263.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101745324.png?imageSlim)
+
+#### 度中心性（无向）
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101746623.png?imageSlim)
+
+<BlockMath math="C_D = d(n_i)=A_{i+}=\sum_jA_{ij}" />
+
+#### 归一化度中心性
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101749359.png?imageSlim)
+
+<BlockMath math="C_D(i) = \frac{d(i)}{N-1}" />
+
+<hr />
+
+什么时候度不足够？
+
+不能捕捉
+
+- 在群体间充当中介的能力
+- 网络中任何地方产生的信息到达你的可能性
+
+<hr />
+
+#### 介数中心性
+
+假设节点使用最直接（最短）路径进行通信，有多少对节点必须通过目标节点传递信息？
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101752068.png?imageSlim)
+
+##### 示例
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101753749.png?imageSlim)
+
+##### 定义
+
+<BlockMath math="C_B(i)=\sum_{j,k \neq i,j&lt;k}g_{jk}(i)/g_{jk}" />
+
+<InlineMath math="g_{jk}" /> 连接 jk 的最短路径数量
+
+<InlineMath math="g_{jk}(i)" /> 节点 i 所在的路径数量。
+
+归一化：
+
+<BlockMath math="C_B'(i)=C_B(i)/[(n-1)(n-2)/2]" />
+
+不包括顶点本身的顶点对数量。
+
+<hr />
+
+什么时候 Cd、Cb 不足够？
+
+不能捕捉
+
+> 网络中任何地方产生的信息到达你的可能性
+
+#### 接近度中心性
+
+##### 定义
+
+接近图的中心
+
+接近度中心性：
+
+<BlockMath math="C_C(i)=[\sum_{j=1,j \neq i}^Nd(i,j)]^{-1}" />
+
+归一化接近度中心性
+
+<BlockMath math="C_C'(i)=(C_C(i))/(N-1)=\frac{N-1}{\sum_{j=1,j \neq i}^Nd(i,j)}" />
+
+##### 示例
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101804290.png?imageSlim)
+
+### 社区结构
+
+它有多密集？
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101836676.png?imageSlim)
+
+<BlockMath math="density=e/e_{max}" />
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101837508.png?imageSlim)
+最大可能边数：
+
+- 有向图：<InlineMath math="e_{max}=n*(n-1)" />
+- 无向图：<InlineMath math="e_{max}=n*(n-1)/2" />
+
+<hr />
+
+是否所有部分都连接起来？
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101839547.png?imageSlim)
+
+<hr />
+
+连通分量 - 有向图
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101840321.png?imageSlim)
+
+强连通分量
+
+- 分量中的每个节点都可以通过遵循有向链接从分量中的其他每个节点到达
+  - B C D E
+  - A
+  - G H
+  - F
+
+弱连通分量
+
+- 每个节点都可以通过沿任意方向的链接从其他每个节点到达
+  - A B C D E
+  - G H F
+
+<hr />
+
+社区发现（聚类）
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101841561.png?imageSlim)
+
+<hr />
+
+层次聚类
+
+过程：
+
+- 计算所有顶点对的亲和权重 W
+- 开始：N 个断开的顶点
+- 按权重递减顺序在集群对之间添加边（一次一个）（使用最近距离比较集群）
+- 结果：嵌套组件
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101851299.png?imageSlim)
+
+<hr />
+
+聚类树状图
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101852888.png?imageSlim)
+
+<hr />
+
+介数聚类
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101852843.png?imageSlim)
+
+Girvan 和 Newman 2002 迭代算法：
+
+- 计算所有边的 <InlineMath math="C_b" />
+- 移除边 i，其中 <InlineMath math="C_b(i) == max(C_b)" />
+- 重新计算介数
+
+### 模拟网络模型
+
+#### 小世界网络
+
+Milgram (1967)
+
+- 美国社交网络中的平均路径长度
+- 约 6 跳分隔任意两个人
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101855758.png?imageSlim)
+
+Watts 和 Strogatz 1998
+在原本结构化的图中添加少量随机链接使网络成为小世界
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410101856936.png?imageSlim)
+
+#### 定义小世界现象
+
+<BlockMath math="C_{network}>>C{random graph}" />
+<BlockMath math="l_{network} \approx ln(N)" />
+
+模式：
+
+- 高聚类性
+- 低平均最短路径
+
+示例
+
+- 秀丽隐杆线虫的神经网络
+- 语言的语义网络
+- 演员合作图
+- 食物网
+
+### 总结
+
+结构分析
+
+- 中心性
+- 社区结构
+- 模式发现
+
+广泛适用于各个领域

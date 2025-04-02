@@ -1,0 +1,43 @@
+---
+slug: paper-reading-TimeOntheHorzon
+title: 论文阅读 TimeOntheHorzon
+tags: [数据可视化, 论文, 数据可视化设计]
+---
+
+import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
+
+**TLDR**
+
+本文包含我对论文"Time on the Horizon: A New Visual Design for Time-Series Data"（水平线上的时间：时间序列数据的新视觉设计）的笔记。我将讨论问题陈述、评估标准、作者的方法以及案例研究。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411131606372.png?imageSlim)
+{/* truncate */}
+
+## 论文
+
+<object
+  data="/paper/Time on the Horizon.pdf"
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href="/paper/Time on the Horizon.pdf">下载 PDF</a>.
+</object>
+
+## 笔记
+
+本论文提出了一种优秀的视觉设计：水平线图（Horizon graph）。这种设计解决了当多个单维流图并排显示时单维的纵横比过高的问题。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411131557313.png?imageSlim)
+
+方法：
+
+1. 使用明显的阶梯色彩分割数值
+   ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411131605403.png?imageSlim)
+2. 正负值共享垂直空间（节省 1/2 高度）
+   ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411131605182.png?imageSlim)
+3. 折叠色带（节省 1/3 高度）
+   ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411131606017.png?imageSlim)
+
+**总计使用原始高度的 1/6**
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411131606372.png?imageSlim)

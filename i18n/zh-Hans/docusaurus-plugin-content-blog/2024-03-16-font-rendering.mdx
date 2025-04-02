@@ -1,0 +1,190 @@
+---
+slug: font-rendering
+title: 字体渲染
+tags: [字体, 设计]
+---
+
+**TLDR**
+
+本文包含我关于字体渲染的笔记。
+
+<img src="/img/variable fonts.gif" />
+{/* truncate */}
+
+## 渲染
+
+在日常前端开发工作中，经常会遇到同一种字体在不同设备上显示不一致的问题。相同的文本内容在不同设备上的相同软件中可能会显示不一致，甚至在同一设备上的不同软件中也会有所不同。
+
+### 渲染引擎
+
+这种现象的根本原因实际上是不同的软件和系统使用不同的字体渲染引擎。
+
+每个操作系统都包含一个文本渲染引擎——有时甚至有多个引擎可供选择。每个浏览器控制使用哪个渲染引擎。因此，在同一操作系统上，两个浏览器可能会因为使用不同的渲染引擎而产生外观截然不同的文本。除此之外，不同版本的操作系统和不同版本的浏览器之间的渲染引擎也常常不同。此外，默认的字体平滑设置因操作系统和操作系统版本而异，并且可以被用户的浏览器首选项覆盖。
+
+多年来，GDI 一直是 Windows 中唯一的字体引擎。2000 年 1 月，微软扩展了 GDI 以利用 LCD 屏幕的优势。这一扩展被称为 ClearType——一种用于字体引擎的子像素定位和抗锯齿形式，随着 LCD 的普及，为人们提供了有限的选项来根据自己的偏好调整字体。
+
+虽然 ClearType 是对 Windows GDI 字体渲染的受欢迎改进，但许多挑剔的用户认为 Linux 或 Mac 字体渲染更为优越——更清晰、更不易疲劳、更平滑，更接近于印刷页面上的文本。
+
+随着 GDI++ 和 GDIPlus 工作的停止，MacType 接手并添加了许多功能。MacType 现在是一个稳定的、高度可配置的选项，可以在大多数 Windows 软件中替换字体，为那些关心改进字体的人提供更好的选择。
+
+DirectWrite 于 2009 年 7 月随 Windows 7 首次发布，旨在取代 GDI 和 GDI+。它比 GDI 有几个技术优势，包括更好的国际语言支持和高级排版支持。
+
+然而，当 DirectWrite 最初发布时，许多人感到困惑，认为 DirectWrite 字体看起来比 GDI/ClearType 更差，尤其是因为其他主要字体引擎（FreeType 和 Apple 的）都已经成熟且在视觉上更优越。从技术角度来看，DirectWrite 是向前迈进的一步，但从视觉角度来看，它是退步，实际上失去了 GDI 的一些功能，比如子像素抗锯齿。
+
+微软自己在 2013 年 1 月发布 Office 2013 时也表现出对新平台缺乏信心。这个版本既不使用 GDI 也不使用 DirectWrite（当时已有五年多）。相反，Office 2013 使用了自己的字体渲染方法，不遵循任何已建立的标准。
+
+![image.png](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202402291108585.png?imageSlim)
+
+![image.png](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202402291348491.png?imageSlim)
+
+### 预览
+
+您可以清楚地看到相同字体在不同字体渲染引擎中的渲染结果，上面使用的是 `FacitWeb` 字体，下面使用的是 `Minion Pro` 字体。
+
+coreText:
+![image.png](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202402291425191.png?imageSlim)
+
+DirectWrite:
+![image.png](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202402291425978.png?imageSlim)
+
+GDI（ClearType）:
+![image.png](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202402291426380.png?imageSlim)
+
+GDI（Standard anti-aliasing）:
+![image.png](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202402291427764.png?imageSlim)
+
+GDI:
+![image.png](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202402291427634.png?imageSlim)
+
+### 渲染策略
+
+理想的渲染结果：
+![image.png](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202402291350506.png?imageSlim)
+
+第一代使用黑白：
+![image.png](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202402291350689.png?imageSlim)
+
+第二代使用灰度：
+![image.png](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202402291350098.png?imageSlim)
+
+第三代使用子像素抗锯齿：
+![image.png](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202402291351641.png?imageSlim)
+
+子像素渲染与 LCD 屏幕结合得很好。
+![image.png](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202402291351175.png?imageSlim)
+
+不同的操作系统有不同的渲染策略。
+
+Windows（微软）：
+
+为了保持兼容性，Windows 系统为应用程序和系统本身提供了广泛的选择。最终结果是，Windows 上的文本阅读体验不统一——有些区域看起来很好，而其他区域则难以查看。这与 Windows 整体生态系统密切相关，该系统需要支持各种屏幕和分辨率。此外，前面提到的子像素渲染技术本质上与 LCD 屏幕的物理特性相关。不同的 LCD 像素布局需要特定的适配，这增加了微软改进这种体验的成本。
+
+:::info
+浏览器支持
+![image.png](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202402291352658.png?imageSlim)
+:::
+
+MAC（苹果）：
+
+在 Mac OS 系统上，所有浏览器都使用 Quartz 渲染引擎（2D 图形）和 Core Text（文本渲染）技术，据说这两者都非常可靠。TrueType 和 PostScript 字体以相同的方式渲染，使用子像素渲染技术，故意忽略提示。这是这两种字体类型之间的主要概念差异。Mac OS 平等对待 PS 和 TrueType 字体，无论它们的特性有什么不同。Mac OS 的字体渲染技术不试图理解构成字体的笔画和特征。因此，字母形状不会被解释，防止变形。此外，苹果似乎应用了一些复杂的自动化措施来增强渲染效果，尽管这些自我增强技术没有文档记录，让我们不了解其背后的细节。Mac 上另一个具有挑战性且不可控的现象是字体倾向于渲染得更重。这种差异在文本字体大小上尤为明显，同样的字体在 Mac OS 上看起来更粗，在 Windows 上看起来更轻。
+
+:::info
+苹果认为，（字体渲染）算法的目标应该是尽可能地保留字体的原始设计，即使这会导致一些轻微的模糊。
+
+微软则认为，字符形状应该与像素对齐以防止模糊并增强可读性，即使这意味着扭曲字体的结构。
+:::
+
+Windows 传统上在 DirectWrite 之前使用重提示，而 DirectWrite 禁用了水平提示。相比之下，Mac OS X 根本不使用提示信息，只在垂直方向上应用一些自动提示。
+
+Windows 对小字体大小禁用抗锯齿，仅对较大字体启用垂直抗锯齿和 DirectWrite。相反，Mac OS X 只在非常小的字体大小下禁用抗锯齿；在大多数情况下，它是启用的。
+
+在 DirectWrite 之前，Windows 不支持子像素定位，而 Mac OS X 一直提供这一功能，主要影响间距。
+
+:::info
+更令人惊讶的是，为 LCD 优化的子像素渲染技术实际上是在 1977 年 Apple II 的图形显示中发明的，比微软宣布 ClearType 早整整 22 年。Apple II 的设计者、该技术专利持有人史蒂夫·沃兹尼亚克对于谁真正发明了这项技术提供了以下回应：
+
+> "回到 1976 年，我对 Apple II 高分辨率图形系统的设计利用了 NTSC 彩色视频信号的一个特性（称为'色彩副载波'），它创建了可用颜色从左到右的水平分布。巧合的是，这与现代 LCD 显示面板使用的 R-G-B 彩色子像素分布完全类似。因此，早在二十多年前，Apple II 图形程序员就使用这种'子像素'技术来有效提高 Apple II 显示器的水平分辨率。"
+
+:::
+
+### 字体族支持
+
+![image.png](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202402291118203.png?imageSlim)
+
+### 字体格式
+
+- TrueType 字体 (.ttf)  
+  [TrueType overview - Typography | Microsoft Learn](https://learn.microsoft.com/en-us/typography/truetype/)  
+  TrueType 是由苹果在 20 世纪 80 年代中期发明的，作为 Adobe 的 PostScript Type 1 的竞争对手，后来被授权给微软。
+- OpenType 字体 (.otf, .ttf, .ttc)  
+  [OpenType fonts features | Adobe Type](https://www.adobe.com/products/type/opentype.html)  
+  OpenType 字体是由 Adobe 和微软共同开发的，旨在通过整合更大的基本字符集、增强的排版行为和更健壮的数据结构来改进微软的 TrueType 字体。这包括小型大写字母、旧式数字以及更详细的形状，如字形和连字。OpenType 字体是单文件格式，可缩放到任何大小，并且在所有大小上都清晰。它们可以在 Macintosh 和 Windows 平台上使用，无需转换。设计师受益于 OpenType，因为它具有更大的字符集，并支持自动字符替换和连字支持等功能。
+- PostScript (.pfb, .pfm, .ofm)  
+  [Adobe PostScript](https://www.adobe.com/products/postscript.html)  
+  PostScript 是一种最初由 Adobe Systems 开发的编程语言，用于将轮廓字体的结构和打印指令传达给数字打印机。今天生产的任何新 Adobe PostScript 语言设备都是设备独立的，并支持所有三种字体标准。PostScript 字体平滑、详细且高质量，非常适合专业质量的印刷，如书籍、杂志和其他印刷品，如包装设计。PostScript 语言在 PDF 技术中的固有集成使其在出版业中无处不在。
+- Web 开放字体格式
+  [The Web Open Font Format (WOFF) - CSS: Cascading Style Sheets | MDN (mozilla.org)](https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_fonts/WOFF)
+
+### 提示
+
+![image.png](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202402291409020.png?imageSlim)
+字体渲染中的提示是一种用于增强矢量字体在低分辨率屏幕上的可读性和清晰度的技术。矢量字体由数学公式定义，这些公式可以在高分辨率显示器上很好地再现精细的字体细节。然而，当在低分辨率设备上显示时，这些矢量的边缘可能会变得模糊。
+
+提示通过调整和优化字体字符的形状以更好地与设备的像素网格对齐，从而改善这一点，从而产生更清晰的显示结果。具体来说，提示通过以下方法工作：
+
+将字符对齐到像素网格：提示将字符的边缘沿着设备的像素网格对齐，减少模糊和锯齿边缘，确保文本在小尺寸下仍然清晰可辨。
+调整字符间距：提示可以调整字符之间的间距，以增强文本的可读性和一致性。
+改善笔画权重：通过控制字符的不同笔画在像素网格上的渲染方式，提示防止细线在低分辨率屏幕上消失或显得过于粗壮。
+这种技术通常由字体设计师在字体开发过程中手动设置，或由字体渲染引擎自动实现。因此，它显著提高了字体在不同屏幕和大小上的一致性和可读性。
+
+没有提示 => 有提示：
+![image.png](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202402291432680.png?imageSlim)
+
+> [Google Fonts Glossary: Hinting](https://fonts.google.com/knowledge/glossary/hinting)  
+> [Why is Arial Font the Go-to Choice for Graphic Designers? - Logomakerr.AI Blog | Logo, Branding, Business](https://logomakerr.ai/blog/arial-font-logo/)
+
+### 转换轮廓
+
+文本轮廓化是指将文本字体转换为矢量路径的过程。这在设计和印刷行业非常常见，主要用于确保当文件在其他设备或软件上打开时，文本样式能够准确显示。一旦轮廓化，文本不再作为文本可编辑，而是成为图形元素，从而避免了由于缺失或不兼容的字体而导致的显示问题。
+
+例如，当设计师提供包含文本的 SVG 格式的水印时，如果文本未轮廓化，将其转换为图像可能会导致文本被渲染为字体。这可能导致在不同操作系统上产生不同的渲染结果。通过轮廓化文本，设计师确保了水印在各种平台和设备上的外观一致性，因为它被视为图形而非可编辑文本。
+
+## 字体族
+
+在前端开发中，font-family 是 CSS 中最常用的属性之一。然而，为什么它被称为 font-family 而不是类似 font-name 的名称呢？
+
+实际上，当设计字体时，字体开发者会针对各种样式进行调整，如斜体和不同的粗细，每种粗细都是单独的字体文件。通常，设计师只提供正常粗细的字体文件。当你在 CSS 中设置 font-weight 时，它实际上并不调用其他字体粗细文件；相反，浏览器本身处理文本。如果你最初使用的是 Heavy 粗细的字体文件，然后将 font-weight 设置为 100，实际显示的仍然是 Heavy。是的，浏览器对字体的处理发生在一个非常有限的范围内。如果你的开发场景需要高保真度的字体渲染，你应该直接通过 font-family 来指定字体粗细，而不是设置 font-weight。这种方法可以避免由于不同浏览器采用不同的字体处理策略而导致最终渲染结果的差异。然而，这也会导致网页上字体的静态资源请求增大。在这种情况下，你可能会考虑使用字体子集来减小静态资源的大小。
+
+上：浏览器处理的
+下：原生粗体字体文件
+![image.png](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202402291514771.png?imageSlim)
+
+:::info
+回退机制：
+如果指定的粗细值不可用，以下规则决定实际渲染的粗细：
+
+- 如果指定的粗细在 400 和 500 之间（包括这两个值）：
+  - 在指定值和 500 之间按升序寻找可用的粗细。
+  - 如果没有找到匹配项，按降序寻找小于指定值的可用粗细。
+  - 如果没有找到匹配项，按升序寻找大于 500 的可用粗细。
+- 如果指定值小于 400，按降序寻找小于指定值的可用粗细。如果没有找到匹配项，按升序寻找大于指定值的可用粗细（从最小可能开始，然后最大）。
+- 如果指定值大于 500，按升序寻找大于指定值的可用粗细。如果没有找到匹配项，按降序寻找小于指定值的可用粗细（从最大可能开始，然后最小）。
+
+这些策略意味着，如果一种字体只有正常和粗体选项，那么指定 100-500 的粗细将呈现为正常，指定 501-900 的粗细将呈现为粗体。
+
+:::
+
+## 可变字体
+
+可变字体是 OpenType 字体规范的一种演进，它使单个文件中可以包含一种字体的许多不同变体，而不是为每种宽度、粗细或样式使用单独的字体文件。它们让你可以通过 CSS 和单个 @font-face 引用访问给定字体文件中包含的所有变体。
+
+过去，一种字体会被制作成几个独立的字体，每个字体代表一种特定的宽度/粗细/样式组合。因此，你会有单独的文件用于'Roboto Regular'、'Roboto Bold'和'Roboto Bold Italic'——这意味着你可能最终会有 20 或 30 个不同的字体文件来表示一个完整的字体（对于还有不同宽度的大型字体，可能会是这个数字的几倍）。
+
+在这样的情况下，要在网站上使用字体作为正文，你至少需要四个文件：常规、斜体、粗体和粗斜体。如果你想添加更多的粗细，比如为标题使用较轻的或为额外强调使用较重的，那将意味着更多的文件。这导致更多的 HTTP 请求，以及更多的数据被下载（通常每个文件约 20k 或更多）。
+
+使用可变字体，所有这些排列都可以包含在一个文件中。该文件比单个字体大，但在大多数情况下，比你可能为正文加载的 4 个文件更小或大约相同大小。选择可变字体的优势在于，你可以访问所有可用的粗细、宽度和样式范围，而不是仅限于你以前会单独加载的几个。
+
+这允许使用常见的排版技术，例如为了在每种大小上获得更好的可读性，为不同大小的标题设置不同的粗细，或为数据密集型显示使用稍窄的宽度。作为比较，在杂志的排版系统中，在整个出版物中使用 10-15 种或更多不同的粗细和宽度组合是很典型的——给出了比目前在网络上典型的（或者确实出于性能原因实际的）更广泛的样式范围。
+
+<img src="/img/variable fonts.gif" />
+[GSAP 3 ETC Variable Font Wave (codepen.io)](https://codepen.io/Chokcoco/pen/BamYMYg)

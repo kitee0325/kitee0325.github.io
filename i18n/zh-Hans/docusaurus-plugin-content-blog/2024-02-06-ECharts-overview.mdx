@@ -1,0 +1,191 @@
+---
+slug: ECharts-overview
+title: ECharts 概览
+tags: [数据可视化, ECharts]
+---
+
+**TLDR**
+
+在过去两年中，我的工作涉及基于 ECharts 构建图表组件。这段经历让我对可视化组件库有了基本的了解。本文主要从时间线、特性和架构三个角度介绍 ECharts。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281458431.png?imageSlim)
+{/* truncate */}
+
+## 时间线
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281457826.png?imageSlim)
+
+## 特性
+
+### 丰富的图表类型
+
+ECharts 支持折线系列、柱状图系列、散点系列、饼图、K 线图系列、箱线图系列用于统计、地图系列、热力图系列、线图系列用于方向性信息、关系图系列用于关系、矩形树图系列、旭日图系列、平行坐标系用于多维数据、漏斗图系列和仪表盘系列。使用 ECharts 可以轻松创建这些可视化类型的组合。
+
+除了内置的图表类型外，ECharts 还为用户提供了自定义系列，以创建更具体的图表类型。使用时，只需传递 renderItem 回调函数，并根据数据返回您希望绘制的任何图形元素。ECharts 支持原生交互性，因此无需进一步配置。
+
+### 多种可直接使用的数据格式
+
+ECharts v4.0 的内置 dataset 属性支持不同的数据格式，包括二维表、键值对象等。可以使用 encode 属性轻松修改数据映射结构。这使得开发图表变得更加直观，节省了通常用于编写数据转换算法的时间。它还节省了内存，因为不同组件可以依赖一个数据集，而不是多个副本。
+
+> ECharts 支持 TypedArray，TypedArray 比标准数组使用更少的内存，并且与垃圾回收配合得更好。对于大型数据可视化，TypedArray 显著提高了性能。
+
+### 大规模数据可视化
+
+EChart v4.0 的增量渲染技术和其他优化使其能够可视化数百万个数据点。即使在这些大规模可视化中，缩放和平移等交互仍然表现良好。
+
+使用这么多数据点通常非常消耗内存。ECharts 从 v4.0 开始支持流数据，允许您使用 WebSocket 渲染尽可能多的数据。即使在完整数据集尚未加载完成时，也可以渲染数据。
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411261530671.png?imageSlim)
+
+<iframe
+  width="560"
+  height="315"
+  src="https://www.youtube.com/embed/oVo2qvBZsws?si=aTcKTo3mun84vdXp"
+  title="YouTube video player"
+  frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+  referrerpolicy="strict-origin-when-cross-origin"
+  allowfullscreen
+></iframe>
+
+### 移动端优化
+
+ECharts 已针对移动交互进行了精心优化，例如在小屏幕上进行缩放和平移。PC 用户仍然可以使用鼠标滚轮执行相同的交互。
+
+打包工具使 ECharts 在移动端拥有小巧的包大小，可选的 SVG 渲染引擎进一步减少了内存使用。
+
+### 多种渲染方式和跨平台支持
+
+ECharts 支持使用 Canvas、SVG（v4.0+）和 VML 元素进行渲染。VML 与旧版 IE 兼容；SVG 减少了移动端的内存消耗；而 Canvas 可以轻松处理大型数据可视化和特殊渲染效果。
+
+### 交互式数据探索
+
+交互是理解数据的关键。在初始视图中，ECharts 提供了一个概览，可以通过缩放、平移和过滤提供更详细的信息。
+
+可以启用可选元素以增强交互性。图例、visualMap、dataZoom、tooltip、brush 和其他现成的组件允许用户在多个维度上与数据交互。
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411261541143.png?imageSlim)
+
+### 多维数据支持
+
+ECharts 3 加强了对多维数据的支持。除了常见的多维数据可视化元素，如用于传统散点图的平行坐标外，输入数据也可以在多个维度上渲染。通过视觉映射组件 visualMap 提供的直观功能，不同维度可以映射到颜色、大小、透明度、阴影等。
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411261542181.png?imageSlim)
+
+### 动态数据
+
+底层数据集的变化将实时反映在图表上。实现动态数据很简单，只需像往常一样导入数据，ECharts 将自动找出两组数据之间的差异，然后使用适当的动画来表示数据变化。时间轴组件也可以在其他时间维度上呈现数据。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411261543609.png?imageSlim)
+
+### 特殊效果
+
+ECharts 为所有数据类型的可视化提供了引人注目的效果，无论是点、线还是地理信息。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411261544041.png?imageSlim)
+
+## 架构
+
+ECharts 是一个基于渲染引擎 ZRender 的长期、复杂且大规模的可视化图表项目。实际上，维护这两个库的开发人员几乎是相同的。尽管开发人员有意将两者分开，让 ZRender 处理渲染、动画和跨平台功能等较低级别的任务，而 ECharts 封装与可视化相关的组件、图表、主题和其他功能。然而，ZRender 的部分代码是专门为 ECharts 适配的。
+
+ECharts 是一个高度复杂的项目，需要很长的学习曲线才能完全理解和利用它：
+
+1. 鉴于其早期创立，它包含了处理旧浏览器问题的代码，如手动实现许多早期 JavaScript polyfills。
+2. 开发团队多元化，包括官方开发人员和社区成员。每个图表和组件都提供了众多功能。尽管组件接口统一，但每个开发人员对个别组件的设计方法可能不同，导致看似相似的组件在兼容性上存在差异。
+3. 可视化使用场景极其复杂，涉及图表堆叠、添加或删除组件以及功能耦合。不可能完全适应每一个潜在场景。ECharts 已有效支持大多数场景，但仍有一些情况它无法完全满足。
+
+<object
+  data="/paper/ECharts A declarative framework for rapid construction of web-based visualization.pdf"
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href="/paper/ECharts A declarative framework for rapid construction of web-based visualization.pdf">
+    下载 PDF
+  </a>
+  .
+</object>
+**ECharts 工作流程图** ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281458431.png?imageSlim)
+**基本架构图** ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281458416.png?imageSlim)
+**Zrender MVC 架构图** ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281459739.png?imageSlim)
+
+## 设计理念
+
+### Zrender
+
+让我们通过饼图的例子来说明 ZRender 如何解决渲染问题。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281507290.png?imageSlim)
+
+如果直接使用 canvas 绘制（部分代码）：
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281508657.png?imageSlim)
+
+如果直接使用 SVG 绘制（部分代码）：
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281509443.png?imageSlim)
+
+所以你已经意识到，即使对于相当熟练的 JS 开发人员，从头开始绘制图形也非常耗时。这就是为什么有必要抽象图形的原因。实际上，许多 2D 渲染引擎都有相同的想法。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281512492.png?imageSlim)
+
+你可以在 Zrender 的源代码中看到如何绘制扇形。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281513813.png?imageSlim)
+以及它如何集成到 ECharts 中的饼图。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281514369.png?imageSlim)
+
+此外，ZRender 还管理跨设备交互问题。它将不同设备上的交互封装到统一的 API 中，使高层开发人员能够避免处理低级事件问题。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281517994.png?imageSlim)
+
+- 渲染引擎的隔离（Canvas/SVG/VML/...）
+- 图形元素抽象和状态维护（Element/Group/Layer/..）
+- 用户交互的封装（鼠标事件/触摸/手势/拖拽/...）
+- 动画（帧管理/缓动/...）
+- 图形的坐标系变换（transform），包括判断、曲线
+- 其他基础工具（eventful/color/array diff/SVG 路径转换器/...）
+
+### ECharts
+
+<iframe
+  width="800px"
+  height="450px"
+  src="//player.bilibili.com/player.html?isOutside=true&aid=80709923&bvid=BV1TJ411s7pj&cid=138131018&p=1"
+  scrolling="no"
+  border="0"
+  frameborder="no"
+  framespacing="0"
+  allowfullscreen="true"
+></iframe>
+从上面可以看出，ZRender
+已经处理了图形渲染、跨平台事件管理、动画和其他相关任务的基础知识。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281616066.png?imageSlim)
+然而，可视化场景通常很复杂，简单的图形抽象可能无法满足日常可视化需求。例如，在下图中，你可以看到许多图形元素，即使基于
+ZRender 开发，仍需要大量工作。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281620167.png?imageSlim)
+因此，我们仍然需要更高级别的抽象。在 ECharts
+中，图形元素的常见组合被进一步抽象为两大类：Chart（图表）和 Component（组件）。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281624564.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281638389.png?imageSlim)
+在 ECharts
+中，图表使用称为"options"的配置来绘制。用户可以修改这些选项，并通过再次调用
+setOption 来更新图表。每次调用 setOption 时，新选项默认与先前选项合并。ECharts
+还提供了一些默认事件，如点击图例。随着事件的引入，有必要管理图表的状态。当用户点击图例时，首先触发默认图例事件，如果用户随后悬停在图表元素上，可能会触发自定义用户事件。在这种情况下，应保留图例事件的效果。因此，ECharts
+还引入了 Model（模型）和 View（视图）的概念。Model 用于存储状态和数据，而 View
+负责渲染。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281645888.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281646130.png?imageSlim)
+
+例如，如何实现点击饼图扇区并弹出的功能？  
+最直接的方法是监听点击事件，然后更新图形元素的位置。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281649363.png?imageSlim)
+然而，这种方法可能会导致一些问题。用户只是更新视图中的内容，而没有对模型中的状态进行任何更改。因此，如果用户下次调用 setOption 更新内容，重新渲染将导致弹出效果消失。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281655145.png?imageSlim)
+
+另一个例子是实现一个功能，即点击图例项同时更新图例和饼图扇区，使图例项模糊，饼图扇区消失？  
+这意味着，处理图例事件时，你必须意识到 ECharts 实例当前包含一个饼图，并且它与图例相关联。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281658031.png?imageSlim)
+在 ECharts 2.0 及更早版本中，ECharts 通过注册消息中心来处理这些交互。这种方法有助于避免每个图表和组件之间的耦合。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281703687.png?imageSlim)
+在 ECharts 2.0 及更早版本中，ECharts 通过注册消息中心来处理交互。然而，这仍然没有消除每个图表监听图例事件的需求。由于 ECharts 是一个易于扩展的组件库，未来可能会引入更多通用组件，这可能导致额外的冗余开发工作。
+
+再举一个例子。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281709721.png?imageSlim)
+在如图所示的复杂网状事件流中，仅依靠注册事件需要相当大的努力来解开交互之间的堆叠关系。这是一项相当复杂的任务，容易出现人为错误。
+
+因此，从 ECharts 3.0 开始，使用单向流处理方法来解决这个问题。它利用"完整执行工作流程"结合"考虑所有系列和组件"来有效管理交互。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281713630.png?imageSlim)
+回到第一个点击饼图扇区弹出的例子，上述处理工作流将所有复杂交互整合到一个相对统一的模型中。这确保了处理的一致性。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411281714613.png?imageSlim)

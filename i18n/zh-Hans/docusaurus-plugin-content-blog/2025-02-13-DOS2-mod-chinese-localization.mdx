@@ -1,0 +1,134 @@
+---
+slug: dos2-mod-chinese-localization
+title: 神界原罪2MOD中文本地化
+tags: [游戏, 本地化]
+---
+
+**TLDR**
+
+本文详细介绍了如何为 神界原罪 2 的 Odinblade 系列职业 MOD 进行中文本地化。主要步骤包括：
+
+1. 使用 LSLib Toolkit 解包 MOD 的 PAK 文件
+2. 定位并翻译 MOD 中的本地化文件，包括 Public/Localization 和 Mods/Localization 中的内容
+3. 使用 The Divinity Engine2 编辑器进行更深入的本地化工作，处理未在标准本地化文件中包含的文本
+4. 重新打包并发布本地化 MOD
+
+通过这种方式，作者成功为 Odinblade 系列职业 MOD 提供了完整的中文本地化支持，获得了约 3000 的订阅量。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504012200428.png?imageSlim)
+{/* truncate */}
+
+## 介绍
+
+去年十二月左右，我开始重新和我的游戏伙伴一起游玩**神界原罪 2(DOS2)**，拉瑞安工作室在博德之门 3 之前的作品。尽管博德之门 3 已经取得了非凡的成就，与上古卷轴 5、塞尔达传说荒野之息、艾尔登法环共同成为仅有的四款大满贯(TGA、金摇杆、D.I.C.E、游戏开发者选择奖)游戏。但 DOS2 仍然是 CRPG 的标杆之作。
+
+<div style={{ display: 'flex', gap: '20px' }}>
+  <img
+    src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504012011687.png?imageSlim"
+    alt="DOS2 Screenshot 1"
+    style={{ width: '50%' }}
+  />
+  <img
+    src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504012011645.png?imageSlim"
+    alt="DOS2 Screenshot 2"
+    style={{ width: '50%' }}
+  />
+</div>
+DOS2 有着非常庞大的 MOD 社区，在 Steam 创意工坊中存在超过 50,000 个 MOD，其中好评最多的是
+Odinblade 系列的职业 mod，扩展了原有的 8 个职业并引入了 2 个新职业，总计拥有 500,000
+数量级的订阅者，并且还在持续增长。在我看来该 MOD 的地位与泰拉瑞亚的灾厄模组相当，均以非常夸张的内容量影响着游戏本体，同时没有带来额外的数值异常。
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504012014628.png?imageSlim)
+
+因此我迫不及待的想尝试他，但创意工坊中没有中文本地化，仅在中国国内的游戏论坛 3DM、巴哈姆特中可以找到零零散散的各职业汉化。当我下载并开始游玩时，实际发现汉化版本仅仅是可用的状态，仅翻译了技能名称和技能描述，很多物体名称、状态描述、NPC
+对话仍然掺杂着英文。这不符合我的预期，且我很好奇为什么之前的汉化者们会遗留如此多的未翻译内容。
+
+所以，我决定自己开始完善这些内容。
+
+## MOD 本地化流程
+
+### 解包
+
+当你在创意工坊中点下订阅按钮，Steam 会自动将 MOD 下载到你的游戏目录中，后续每次你打开该游戏时，Steam 都会自动检测创意工坊的 MOD 版本与你本地 MOD 版本的区别，从而进行自动更新。当我们打开 DOS2 的 MOD 文件夹，一般位于：`%USERPROFILE%\Documents\Larian Studios\Divinity Original Sin 2 Definitive Edition\Mods`，你会看到大量的 `PAK` 文件，每个 `PAK` 文件对应一个 MOD，`PAK` 实际上是一种压缩文件格式，我们只需要将 `PAK` 文件解压，就可以得到 MOD 的原始文件，关于解压我们可以使用 [LSLib Toolkit](https://github.com/LSLib/LSLib-Toolkit)。
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504012027913.png?imageSlim)
+
+在第二个标签中可以简单的进行压缩和解压功能。当我们解压 MOD 后，对其中的 MOD 文件更改完毕后，可以重新压缩为 PAK 文件，然后替换回 MOD 文件夹中，这样就完成了 MOD 的更新。
+
+### 本地化概述
+
+在此我们任意挑选一个 MOD 进行解压并浏览其文件结构，以 Odinblade 系列中的一个职业为例。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504012040578.png?imageSlim)
+
+#### 文件结构
+
+可以看到其中主要有 `Mods` 和 `Public` 两个文件夹，所有资源类的文件均位于 `Public` 中，比如根模板、UI、音效、技能配置文件等；而 `Mods` 中则主要存放了 MOD 的主要代码文件，比如技能生效逻辑、测试场景、NPC 对话等。这俩个文件夹下则是命名为`[MOD 名称_MODID]`结构的文件夹，这是 DOS2 的标准 MOD 结构。
+
+关于本地化，我们主要关注 `Mods` 和 `Public` 下的 `Localization` 文件夹。`Public` 下的 `Localization` 文件夹中，解包 `PAK` 后仅有原始的二进制 `lsb` 文件，我们还需要使用 LSLib Toolkit 转写为 `lsx` 文件，打开 `lsx` 文件我们看到，该文件用标签语言描写了技能名称、技能描述、技能状态等原子化的文字资源。每个原子化资源拥有俩个唯一标签，`UUID` 是面向开发者的语义化的，而 `Handle` 字段则是面相机器的编码的。`Mods` 下的 `Localization` 文件夹中，则存放了各个语言的配置文件，比如 `zh`、`en`、`rus` 等。
+
+#### 配置文件本地化
+
+从 mod 的文件结构上来说，我们只需要翻译 `Mods` 文件夹下的 `Localization` 文件夹中的内容，即创建目标本地化的文件夹（比如 `zh`），然后复制 `en` 目录下的 `english.xml` 文件，并重命名为目标语言，比如 `chinese.xml`，然后针对 `chinese.xml` 文件进行翻译即可。最终重新打包回 `PAK` 即可，DOS2 会根据你自己的本地语言选择 `Mods` 中对应的本地化文件。
+
+但事实没有这么简单，这需要 MOD 创作者必须完整的将 MOD 中的所有词条都摘取到 `english.xml` 文件夹中，且每个词条都有正确的 `contentuid`，否则 DOS2 会无法正确识别词条，导致本地化失败。实际上 MOD 创作者更关注 MOD 本身的功能性内容，对于个人 MOD 创作者来说，很难保证作者完全按照 DOS2 的本地化标准来设计 MOD，所以仅翻译 `Mods/Localization` 中的内容，会导致本地化不完整。
+
+#### 原始文件本地化
+
+从 3DM 等游戏论坛中下载的汉化文件中，可以看到之前的 MOD 汉化者们已经注意到了此类问题，所以他们将翻译目标从 `english.xml` 转向 `Public/Localization` 中的内容,通过直接更改原子化的文本资源来进行汉化工作，这实际上已经是一个很大的进步。对于非技术工作者来说，理解标签语法、压缩/解压文件，都是可能遇到的技术难题。
+
+通过这一步，在 Odinblade 的职业系列中，可以保证所有的技能名称和技能描述都得到完整的汉化。
+但是，当你打开游戏，仍然会发现以下场景的本地化问题：物品名称(比如技能书)、NPC 对话(是的，Odinblade 给每个职业都引入了新的技能书售卖 NPC)、状态描述(比如技能造成的冻伤)。
+
+所以不幸的是，`Public/Localization` 中的内容仍然是不完整的。
+
+#### MOD 编辑器本地化
+
+为了解决上述的问题，你需要对 MOD 本身有更深入的了解，不仅需要准确定位游戏中未本地化文本可能出现的位置，还需要贯通原子化文本的传递链路，否则还会出现即使完成了本地化编辑也未生效的问题。为了更好的了解 MOD，你需要使用 DOS2 官方提供的 MOD 编辑器 **The Divinity Engine2(DE2)**，该编辑器涉及 MOD 的开发、测试、发布一整套生命周期，该编辑器跟随游戏一起安装，但为了使其生效，你还需要下载名为 `Data` 的 DLC，该 DLC 包含了编辑器中的大部分内容，比如素材模板、NPC 模板等等资源。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504012121625.png?imageSlim)
+
+拉瑞安官方提供了开发 MOD 的 [WIKI 文档](https://docs.larian.game/The_Divinity_Engine_2)，可以通过该文档更加准确的了解 DE2 的工作方式。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504012131389.png?imageSlim)
+在此之前我们需要将前面已经解压的 `Public` 和 `Mods` 文件夹移动到 DOS2 的游戏目录中，从而使得 DE2 可以正确识别 MOD 文件。
+
+将 `Public` 和 `Mods` 文件夹下的`$MODNAME_MODID` 文件夹移动到 `[你的 Steam 游戏目录]\steamapps\common\Divinity Original Sin 2\DefEd\Data\` 目录下的同名文件夹中，同时将 `Public` 中的 `mate.lsx` 文件拷贝一份在同名的 `Project` 文件夹中，最终的结果应该类似这样：
+
+```
+Divinity Original Sin 2\DefEd\Data\
+├── Public
+│   ├── $MODNAME_MODID
+└── Mods
+    ├── $MODNAME_MODID
+└── Projects
+    ├── $MODNAME_MODID
+        ├── mate.lsx
+```
+
+现在，让我们打开 DE2 编辑器，你需要选择对应的 MOD，并选择对应的测试场景，在此之后才可以进入 DE2 编辑器。
+对于 DE2 编辑器的复杂功能， 作为本地化翻译工作者，只需要关注下图中的俩个子菜单：
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504012136636.png?imageSlim)
+第一个是**本地化菜单**，这里是 MOD 创作者罗列原子化文本并创建本地化的地方，也是我们之前提到的 `Public/Localization` 下的内容，所以，如果 MOD 创作者没有完整填写这里的内容，本地化就没办法完整进行，现在你知道了为什么仅修改 `Public/Localization` 下的内容仍然会有未本地化的问题存在了。
+
+第二个是**状态笔记本**，你也可以理解为文本原子化笔记本，这里记录了 MOD 作者在开发过程中导出的 MOD 数据，这也是 DE2 约定的一种数据结构，在这里你可以看到作者引入的大部分文本资源。
+
+所以在这里我们发现实际上本地化解经过了多层转发，从【最原始的游戏资源】到【DE2 提供的本地化支持的 `LSB` 文件】，再到【最外层的 `english.xml` 文件】，层层之间通过 `Handle` 映射。
+
+所以对于之前提到的未汉化的资源，你可以通过以下方式修复：
+
+1. IDE 中打开解压后的 MOD 文件夹，全局搜索未本地化的文本并定位，如果在 `.lua` 等 MOD 逻辑代码中，可以直接进行修改，尽管这不是 DOS2 的本地化标准，但他低成本且生效。
+2. 如果 IDE 中无法查出，你需要在 DE2 中的资源浏览器中定位相关的资源，并在状态描述界面找到 `Handle`，然后根据 `Handle` 在 IDE 中进行全局定位。
+3. 如果你已经进行了本地化却无法生效，则根据上述提到的本地换转发链路一层层检查。甚至偶尔你需要自己给一个资源赋值 `Handle`，从而使得转发链路正常工作。`Handle` 可以通过[博德之门 3 的 MOD 工具](https://github.com/ShinyHobo/BG3-Modders-Multitool)生成，虽然概率很小，但在使用前确保自己新赋值的 `Handle` 是唯一的。
+   ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504012152872.png?imageSlim)
+
+### MOD 发布
+
+完成上述这些内容后，如果你足够熟悉，你可以在 DE2 的测试场景以及资源管理器中查看本地化的进度。你也可以直接打开 DOS2 进行验证，是的，即使 MOD 不在`%USERPROFILE%\Documents\Larian Studios\Divinity Original Sin 2 Definitive Edition\Mods`文件夹中，只要按照上面的路径移动到 DOS2 的游戏目录中，也可以在 DOS2 中正常使用。
+
+确保所有内容都没有问题后，你可以在 DE2 中进行 MOD 发布，为了与原 MOD 作区分，你需要在 DE2 中新创建一个空白项目，然后使用你翻译后的 MOD 内容填充该项目，即 `Public` 和 `Mods` 文件夹，然后在 `Project` 文件夹中的 `meta.lsx` 文件中填写 MOD 的名称、ID、版本、作者、描述等信息。作为本地化作者，请保证没有侵权，且记得附上原作者的信息。
+
+发布前还需要提供 MOD 图标、截图等内容，该部分由本地化开发者自由创作。
+
+我采用了直接在 MOD 原图标上添加本地化标识的方式：
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504012200428.png?imageSlim)
+
+同时我自己的本地化 MOD 订阅数也来到了 3000 左右。
+
+很开心在中文游戏论坛中受到游玩者的好评，这是一件非常令人开心的事情。

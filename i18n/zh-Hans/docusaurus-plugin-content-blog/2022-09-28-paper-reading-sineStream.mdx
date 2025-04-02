@@ -1,0 +1,186 @@
+---
+slug: paper-reading-sineStream
+title: 论文阅读 SineStream
+tags: [数据可视化, 论文, 流图]
+---
+
+import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
+
+**TLDR**
+
+本文包含我对论文"SineStream: Improving the Readability of Streamgraphs by Minimizing Sine Illusion Effects"（SineStream：通过最小化正弦错觉效应提高流图可读性）的笔记。我将讨论问题陈述、评估标准、作者的方法以及案例研究。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410171649625.png?imageSlim)
+{/* truncate */}
+
+## 论文
+
+<object
+  data="/paper/SineStream-Improving the Readability of Streamgraphs by  Minimizing Sine Illusion Effects.pdf"
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href="/paper/SineStream-Improving the Readability of Streamgraphs by  Minimizing Sine Illusion Effects.pdf">
+    下载 PDF
+  </a>
+  .
+</object>
+
+## 笔记
+
+### 流图
+
+#### 定义
+
+流图（Stream graph），有时写作 streamgraph，是围绕"中心轴"的堆叠图，形成流动的有机形状。流图展示了主题是如何演变的。
+
+**问题陈述：**
+
+给定一个时间序列 <InlineMath math="{f_1,f_2,...f_n}" /> 和一个基准线 <InlineMath math="g_0" />，计算 <InlineMath math="f_i" /> 的顶层如下：
+
+<BlockMath math="g_i=g_0+\sum_{j=1}^if_j" />
+
+关于如何计算 <InlineMath math="g_0" /> 的问题仍然开放。两种简单的策略是：
+
+- 简单模型：<InlineMath math="g_0\ \equiv\ 0" />
+- 围绕 x 轴对称：<InlineMath math="g_0\ =\ -\frac{1}{2}\sum_{i=1}^nf_i" />
+
+**备注：**
+
+<InlineMath math="f_i\ =\ {f_i(t_0),f_i(t_1),...f_i(t_n)}" />
+，因此 <InlineMath math="g_i\ =\ {g_i(t_0),g_i(t_1),...g_i(t_n)}" />
+
+#### 如何计算基准线
+
+参考文献：Stacked Graphs - Geometry and Aesthetic, L. Byron, M. Wattenberg
+
+- 简单模型：<InlineMath math="g_0\ \equiv\ 0" />
+- 解决方案 1：最小化轮廓（与对称模型相同）  
+  轮廓：<InlineMath math="f(g_0)\ =\ g_0^2 + g_n^2\ =\ g_0^2+(g_0+\sum_{i=1}^nf_i)" />
+  <InlineMath math="\frac{df}{dg_0} = 0\ \Longrightarrow\ g_0=-\frac{1}{2}\sum_{i=1}^nf_i" />
+- 解决方案 2：最小化 <InlineMath math="g_i" /> 与 x 轴的偏差（最小化 wiggle）  
+  偏差：<InlineMath math="f(g_0)=\sum_{i=0}^ng_i^2"  />
+
+  <InlineMath math="\frac{df}{dg_0} = 0\ \Longrightarrow\ g_0=-\frac{1}{n+1}\sum_{i=1}^n(n-i+1)f_i" />
+
+### 正弦错觉效应
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410151219328.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410161816491.png?imageSlim)
+
+**(a)** 沿着正弦曲线绘制了一条均匀厚度的线。我们的感知导致我们使用正交距离而不是垂直距离来确定其厚度。**(b)** 流图中带有虚线边框的绿色层看起来具有恒定的厚度。然而，在其垂直厚度中出现了一个峰值 **(c)**。
+
+**方法：**
+
+由于流图的几何形状由其基准线（最底部的曲线）和层的排序控制。  
+作者重新解释了基准线计算和层排序算法，以减少正弦错觉效应。  
+**对于基准线计算**，通过引入高斯权重来惩罚具有大厚度变化的层，从而改进之前的方法。  
+**对于层排序**，提出了三个设计要求，并通过层次聚类算法实现。
+
+### 基准线计算
+
+#### 评估标准
+
+- Wiggle 度量
+  - Byron 和 Wattenberg：
+    <BlockMath math="Wiggle=\sum_{i=1}^n(\frac{1}{2}(g_i'+g_{i-1}'))^2*w_i" />
+  - Bartolomeo 和 Hu：
+    <BlockMath math="Wiggle_{n1}=\sum_{i=1}^n\frac{|g_i'|+|g_{i-1}'|}{2}*w_i" />
+
+> 然而，尽管它被广泛使用，但使用 wiggle 度量来优化流图布局主要基于经验观察，缺乏明确的感知基础。这就是为什么作者想在这一点上引入正弦错觉的原因。
+
+- 正弦错觉：
+
+<BlockMath math="Illustion = Wiggle = \sum_{i=1}^n(\frac{1}{2}(g_i'+g_{i-1}'))^2*w_i = \sum_{i=1}^n(g_0'+\frac{1}{2}f_i'+\sum_{j=1}^{i-1}f_j')^2*w_i" />
+
+#### 作者的方法
+
+<BlockMath math="g_0' = -\frac{1}{\sum_{i=1}^nW_i}\sum_{i=0}^n\frac{1}{2}(\sum_{j=1}^if_j'+\sum_{j=1}^{i-1}f_j')w_i = -\frac{\sum_{i=1}^nw_i(f_1'+\sum_{j=1}^{i-1}(f_j'+f_{j+1}'))}{2\sum_{i=1}^nw_i}" />
+
+作者修改了原始权重 w i = f i，采用高斯权重来减少当层厚度发生较大变化时该层的影响：
+
+<BlockMath math="w_i=exp(-\frac{f_i'^2}{2c^2})*f_i" />
+
+其中 c 可以是 <InlineMath math="|f_1'|,|f_2'|,...,|f_n'|" /> 的中位数、算术平均值、调和平均值或几何平均值
+
+### 层排序算法
+
+#### 传统计算
+
+- Byron 和 Wattenberg：**LateOnset**
+
+- Bartolomeo 和 Hu：**TopOpt**
+
+#### 作者的方法
+
+:::tip 对比
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410171649625.png?imageSlim)
+不同排序算法的比较如图所示。使用 LateOnset，层根据其开始时间添加到流图中。新层（例如，粉色的第 2 层）通常放在倾斜的基准线上，这会对这些新层引入扭曲和正弦错觉效应。TwoOpt 倾向于将厚层（浅绿色的第 6 层）放在中间，导致邻近层出现大扭曲和强烈的正弦错觉效应。与 LateOnset 和 TwoOpt 相比，作者的排序算法(c)产生了视觉上令人愉悦的流图。在大多数层中，正交和垂直方向是对齐的，因此正弦错觉被最小化。
+:::
+
+- 补偿度
+
+作者定义了补偿度 <InlineMath math="comp(i,j)" /> 来描述每两层 <InlineMath math="f_i,f_j" /> 的相互补偿：
+
+<BlockMath math="comp(i,j) = \frac{1}{L}\sum_{t=0}^T\frac{|f_i'(t)+f_j'(t)|}{|f_i'(t)|+|f_j'(t)|}" />
+
+其中 L 表示组合层的长度。作者定义当 <InlineMath math="|f_i'(t)|+|f_j'(t)| = 0" /> 时，<InlineMath math="\frac{|f_i'(t)+f_j'(t)|}{|f_i'(t)|+|f_j'(t)|} = 0" />
+
+- 厚度权重
+
+作者引入了厚度权重来描述我们对相对较薄层补偿的偏好：
+
+<BlockMath math="w_{th}(i,j) = max\{f_i(t)+f_j(t):t\in[1,m]\}" />
+
+其中 <InlineMath math="f_i(t)" /> 表示 <InlineMath math="f_i" /> 在时间点 <InlineMath math="t" /> 的值，<InlineMath math="m" /> 表示时间点的数量。
+
+- 长度权重
+
+作者使用长度权重来描述我们对相对较长层补偿的偏好：
+
+<BlockMath math="w_{len}(i,j)=max(\frac{m}{L_i},\frac{m}{L_j})" />
+
+其中 <InlineMath math="L_i" /> 是层 <InlineMath math="f_i" /> 的长度
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410171705806.png?imageSlim)
+
+- 距离
+
+<BlockMath math="dist(i,j)=comp(i,j)*w_{len}(i,j)*w_{th}(i,j)" />
+
+<InlineMath math="dist(i, j)" /> 越小，应该给予确保层 <InlineMath math="f_i" /> 和层 <InlineMath math="f_j" /> 相邻的优先级越高。
+
+- 基于层次聚类的排序
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410171708061.png?imageSlim)
+
+在每个时间步骤（蓝色圆圈中的编号），具有最短距离的两层 <InlineMath math="f_i" />，<InlineMath math="f_j" /> 合并得到一个新的组合层 <InlineMath math="f_k={f_i+f_j}" />。然后计算这个新层 <InlineMath math="f_k" /> 与所有其他层之间的距离，并重复合并。
+
+为了保证最小化正弦错觉的排序，作者通过最小化相邻层之间的距离总和来创建最终顺序：
+
+<BlockMath math="arg\ min\sum_{i=1}^{n-1}dist(i,i+1)" />
+
+其中第 <InlineMath math="i" /> 层和第 <InlineMath math="i+1" /> 层对应于层次聚类树的两个相邻叶节点。
+
+### 案例
+
+<iframe
+  id="sineStream-demo"
+  src="/demo/sineStream/index.html"
+  width="100%"
+  style={{ border: 'none' }}
+  onLoad={(e) => {
+    // Adjust iframe height to match content
+    const iframe = e.target;
+    iframe.style.height =
+      iframe.contentWindow.document.documentElement.scrollHeight + 'px';
+  }}
+/>
+
+:::tip
+
+在上面的演示中，SineStream 的代码已被我重新组织。如果您需要查看论文的原始源代码，请访问https://github.com/Ideas-Laboratory/SineStream。如果您有兴趣探索其他成熟的流布局方法，可以访问https://d3js.org/d3-shape/stack。
+
+:::

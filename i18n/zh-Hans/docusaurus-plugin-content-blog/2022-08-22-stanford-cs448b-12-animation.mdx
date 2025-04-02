@@ -1,0 +1,233 @@
+---
+slug: stanford-cs448b-12-animation
+title: 斯坦福 CS448B 12 动画
+tags: [数据可视化, 斯坦福, 课程, CS448B]
+---
+
+import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
+
+**TLDR**
+
+本文包含我对斯坦福 CS448B（数据可视化）课程的笔记，特别关注第十二讲关于动画的内容。我将讨论动画在数据可视化中的重要性、背后的原则，并探索各种数据可视化技术，包括使用指导元素、表达性、有效性、对比和模式感知的支持、数据分组和排序、数据转换、减少认知负担以及一致性。我还将介绍各种图表类型，如折线图、柱状图、堆叠面积图等，提供示例并讨论它们的设计考虑因素。
+
+<img src="/stanford-cs448b/biological motion.gif" />
+{/* truncate */}
+
+## 原文
+
+<object
+  data="/stanford-cs448b/Lec12-animation.pdf"
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href="/stanford-cs448b/Lec12-animation.pdf">下载 PDF</a>.
+</object>
+
+## 笔记
+
+### 课前思考
+
+- 对于最终项目，您有推荐的地方可以查看其他进行了用户研究的数据可视化研究论文吗？
+- 随着动画包含越来越多的数据，是否可能会让用户负担过重或过度刺激？动画因过于分散注意力而有害吗？如果是，我们如何设计以确保它们不会造成这种过度刺激？
+- 是否有更正式或数学化的规则集来指导应该使用哪些颜色来突出信息，以及哪些用于对比？还是这主要是多种因素的组合，需要通过实际查看才能了解？同样，为了黑白打印，颜色是否需要在色调和颜色上都有所不同？我们如何知道应该改变透明度和颜色，还是仅改变颜色？
+- 在评估可视化效果时，我们应该多严肃地对待用户自我报告的偏好？在评估可视化的有效性时，我们应该如何权衡用户表达的偏好与可用性、学习和回忆数据的关系？
+
+### 为什么使用动画
+
+可视化的目标是传达信息  
+动画如何帮助传达信息？
+
+**圆锥树**
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410081132811.png?imageSlim)
+
+[美国枪击死亡数据](https://guns.periscopic.com/?year=2013)
+
+<img src="/stanford-cs448b/U.S. gun deaths.gif" />
+
+- 用于编码数据的视觉变量
+- 引导注意力
+- 理解系统动态
+- 理解状态转换
+- 增加参与度
+
+### 理解动画
+
+- 前注意：比颜色、形状等更强
+- 触发方向反应
+- 运动视差提供 3D 线索
+- 对周边运动更敏感
+
+- 基于生物运动的分组
+
+  <img src="/stanford-cs448b/biological motion.gif" />
+
+- 体积渲染
+
+  <img src="/stanford-cs448b/volume rendering.gif" />
+
+- 跟踪多个目标
+  <img src="/stanford-cs448b/track dot.gif" />
+
+> 我们能同时跟踪多少个点？  
+> **4 到 6 个** - 在 6 个时难度显著增加
+
+动画直接展示转换
+
+能否看到从一个状态到下一个状态的变化？
+
+- 状态是空间布局
+- 变化是简单的转换（主要是平移）
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410081232149.png?imageSlim)
+
+更好地展示转换，但
+
+- 仍可能太快或太慢
+- 可能同时有太多对象移动
+  <img src="/stanford-cs448b/basic shape transition.gif" />
+
+#### [DimpVis](https://vialab.ca/research/dimpvis)
+
+<object
+  data="/paper/DimpVis Exploring Time-varying Information Visualizations by Direct Manipulation.pdf"
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href="/paper/DimpVis Exploring Time-varying Information Visualizations by Direct Manipulation.pdf">
+    下载 PDF
+  </a>
+</object>
+
+#### 因果关系归因
+
+Michotte 演示 1.  
+你看到了什么？  
+大多数观察者报告"红球击中了绿球"。绿球移动"是因为红球击中了它"。因此，红球被认为"导致"绿球移动，尽管这些球只是您屏幕上根据程序移动的彩色圆盘。
+
+<img src="/stanford-cs448b/michotte demonstration 1.gif" />
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410081300348.png?imageSlim)
+
+<hr />
+它是如何工作的？
+<img src="/stanford-cs448b/Two Cylinder Stirling Engine.gif" />
+
+理解动画的困难
+
+- 难以估计路径和轨迹
+- 动作是短暂和瞬时的
+- 无法同时关注多个运动
+- 试图将运动解析为事件、动作和行为
+- 误解和错误推断因果关系
+- 将物理运动拟人化可能导致混淆或错误结论
+
+分解为静态步骤
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410081321575.png?imageSlim)
+
+挑战
+
+选择步骤集
+
+- 如何将过程分割成步骤？
+- 注意：为了清晰起见，步骤通常按顺序显示，而不是同时显示所有内容
+
+Tversky 建议
+
+- 粗粒度层次 - 基于对象分段
+- 细粒度层次 - 基于动作分段
+- 静态描述通常不显示更细粒度的分段
+
+### 可视化中的动画转换
+
+<object
+  data="/paper/Animated Transitions in Statistical Data Graphics
+.pdf"
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a
+    href="/paper/Animated Transitions in Statistical Data Graphics
+.pdf"
+  >
+    下载 PDF
+  </a>
+  .
+</object>
+
+- 适当的动画改善图形感知
+- 使用简单的分阶段转换，但一次只做一件事并不总是最好的
+- 坐标轴重新缩放阻碍感知
+- 如果可能，避免使用（使用通用比例）
+- 更好地维持标志物（延迟网格线的淡出）
+- 受试者偏好动画转换
+
+### 实现动画
+
+#### 基于帧的动画
+
+以固定间隔重绘场景（例如，16 毫秒）  
+开发者定义重绘函数
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091429545.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091429454.png?imageSlim)
+
+#### 基于过渡的动画（Hudson & Stasko '93）
+
+指定属性值、持续时间和缓动（补间）  
+通常通过插值计算
+
+<InlineMath math="step(fraction)\{X_{now} = X_{start} + fraction * (X_{end} - X_{start});\}" />
+
+由 UI 工具包管理时间和重绘。
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091435135.png?imageSlim)
+
+#### D3 过渡
+
+任何 d3 选择都可用于驱动动画。
+
+```javascript
+// Select SVG rectangles and bind them to data values.
+var bars = svg.selectAll("rect.bars").data(values);
+// Animated transition: interpolate to target values using default timing
+bars.transition()
+.attr("x", (d) => xScale(d.foo))
+.attr("y", (d) => yScale(d.bar))
+.style("fill", (d) => colorScale(d.baz));
+// Animation is implicitly queued to run!
+
+bars.transition()
+.duration(500) // animation duration in ms
+.delay(0) // onset delay in ms
+.ease(d3.easeBounce) // set easing (or "pacing") style
+.attr("x", (d) => xScale(d.foo))
+
+bars.transition()
+.duration(500) // animation duration in ms
+.delay(0) // onset delay in ms
+.ease(d3.easeBounce) // set easing (or "pacing") style
+.attr("x", (d) => xScale(d.foo))
+...
+bars.exit().transition() // animate elements leaving display
+.style("opacity", 0) // fade out to fully transparent
+.remove(); // remove from DOM upon completion
+```
+
+#### 缓动函数
+
+目标：风格化动画，改善感知。
+基本思想是扭曲时间：当持续时间从开始（0%）
+到结束（100%）时，使用缓动函数动态调整插值分数
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410091448368.png?imageSlim)
+
+### 总结
+
+动画是一种显著的视觉现象  
+注意力、对象恒常性、因果关系、时间  
+对于过程，逐步的静态图像可能更可取  
+对于转换，动画有一些好处，但要考虑任务和时间

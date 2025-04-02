@@ -1,0 +1,35 @@
+---
+slug: stanford-cs448b-07-introD3
+title: 斯坦福 CS448B 07 D3简介
+tags: [数据可视化, 斯坦福, 课程, CS448B]
+---
+
+import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
+
+**TLDR**
+
+本文包含我对斯坦福 CS448B（数据可视化）课程的笔记，特别关注第七讲关于 D3 的介绍。我将讨论 D3 的重要性、背后的原则，并探索各种数据可视化技术，包括使用指导元素、表达性、有效性、对比和模式感知的支持、数据分组和排序、数据转换、减少认知负担以及一致性。我还将介绍各种图表类型，如折线图、柱状图、堆叠面积图等，提供示例并讨论它们的设计考虑因素。
+
+{/* truncate */}
+
+## 原文
+
+<object
+  data="/stanford-cs448b/Lec07-introD3.pdf"
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href="/stanford-cs448b/Lec07-introD3.pdf">下载 PDF</a>.
+</object>
+
+## 笔记
+
+### 课前思考
+
+- D3 能否验证数据并检查错误，或者所有数据整理工作应该在使用它之前完成？
+- 我对 enter、update 和 exit 数据字段的使用仍然非常困惑。为什么程序员需要访问已经退出的数据？
+- 在工作场所/专业环境中，您什么时候会建议某人使用 D3 而非 Tableau 等工具？
+- 对于 D3，Mike Bostock 和团队是否必须在进行博士研究和为一般程序员开发项目之间做出选择？
+- 有人提到 D3 是行业中制作这些动态和交互式可视化的标准，但对于静态可视化来说情况是否仍然如此？

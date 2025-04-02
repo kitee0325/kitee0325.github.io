@@ -1,0 +1,721 @@
+---
+slug: ECharts-morph-transition
+title: ECharts 形态过渡动画
+tags: [数据可视化, ECharts]
+---
+
+**TLDR**
+
+本文探讨 ECharts 如何实现不同形状之间的形态过渡动画。我们将研究源代码中的核心实现，将过程分解为关键步骤，包括路径转换、结构对齐和最佳旋转角度计算。通过这种分析，我们将了解 ECharts 如何在保持视觉连续性的同时实现平滑的形状变换。
+
+<iframe
+  width="560"
+  height="315"
+  src="https://www.youtube.com/embed/aVwxzDHniEw?si=Sb_-g0Ug6lM8m-NR"
+  title="YouTube video player"
+  frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+  referrerpolicy="strict-origin-when-cross-origin"
+  allowfullscreen
+></iframe>
+{/* truncate */}
+
+## 引言
+
+形态过渡动画是一种常见的动画效果，用于在不同形状之间平滑过渡，为用户提供柔和的视觉引导而不显得突兀。ECharts 也内置了这种效果，虽然与 [GSAP](https://gsap.com/docs/v3/Plugins/MorphSVGPlugin/#morph-into-multiple-shapes) 的过渡效果相比可能有一些不足，但它能满足大多数场景的动画需求。
+
+以下内容需要对贝塞尔曲线有基本的了解。如果您不熟悉贝塞尔曲线，我强烈推荐观看下面这个优秀的贝塞尔曲线教程视频。
+
+<iframe
+  width="560"
+  height="315"
+  src="https://www.youtube.com/embed/aVwxzDHniEw?si=Sb_-g0Ug6lM8m-NR"
+  title="YouTube video player"
+  frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+  referrerpolicy="strict-origin-when-cross-origin"
+  allowfullscreen
+></iframe>
+
+## 形状形态过渡
+
+<img src="/img/ECharts Shape Transition.gif" />
+
+在 ECharts 中，使用 applyMorphAnimation 函数作为形态过渡的入口点。
+https://github.com/apache/echarts/blob/master/src/animation/morphTransitionHelper.ts#L110
+
+```typescript
+// src/animation/morphTransitionHelper.ts
+export function applyMorphAnimation(
+  from: DescendentPaths | DescendentPaths[],
+  to: DescendentPaths | DescendentPaths[],
+  divideShape: UniversalTransitionOption['divideShape'],
+  seriesModel: SeriesModel,
+  dataIndex: number,
+  animateOtherProps: (
+    fromIndividual: Path,
+    toIndividual: Path,
+    rawFrom: Path,
+    rawTo: Path,
+    animationCfg: ElementAnimateConfig
+  ) => void
+) {
+  // ...
+}
+```
+
+您可以看到"from"和"to"的类型可以是数组，这意味着 ECharts 内部处理一对一、多对一、一对多的变换，多对多则由另一个函数实现。在这里，我们将从最简单的一对一示例开始深入细节。
+
+在 [`Zrender/src/tool/morphPath.ts`](https://github.com/ecomfe/zrender/blob/master/src/tool/morphPath.ts) 文件中，您可以看到形态过渡效果的实现。
+
+处理变换的过程主要涉及三个步骤：
+
+1. 将路径转换为三次贝塞尔曲线的数组。
+2. 对齐子路径，确保贝塞尔曲线的两个数组具有相同数量的子路径，并且每个子路径包含相同的贝塞尔曲线。
+3. 寻找最佳旋转角度，以避免过渡过程中出现扭曲和打结。
+
+### 将路径转换为三次贝塞尔曲线的数组
+
+请注意代码中作者关于"如何使用贝塞尔曲线拟合圆弧"的注释，因为这是一个重要问题。
+
+```typescript
+export function pathToBezierCurves(path: PathProxy) {
+  const data = path.data;
+  const len = path.len();
+
+  const bezierArrayGroups: number[][] = [];
+  let currentSubpath: number[];
+
+  let xi = 0;
+  let yi = 0;
+  let x0 = 0;
+  let y0 = 0;
+
+  function createNewSubpath(x: number, y: number) {
+    // More than one M command
+    if (currentSubpath && currentSubpath.length > 2) {
+      bezierArrayGroups.push(currentSubpath);
+    }
+    currentSubpath = [x, y];
+  }
+
+  function addLine(x0: number, y0: number, x1: number, y1: number) {
+    if (!(aroundEqual(x0, x1) && aroundEqual(y0, y1))) {
+      currentSubpath.push(x0, y0, x1, y1, x1, y1);
+    }
+  }
+
+  function addArc(
+    startAngle: number,
+    endAngle: number,
+    cx: number,
+    cy: number,
+    rx: number,
+    ry: number
+  ) {
+    // https://stackoverflow.com/questions/1734745/how-to-create-circle-with-b%C3%A9zier-curves
+    const delta = Math.abs(endAngle - startAngle);
+    const len = (Math.tan(delta / 4) * 4) / 3;
+    const dir = endAngle < startAngle ? -1 : 1;
+
+    const c1 = Math.cos(startAngle);
+    const s1 = Math.sin(startAngle);
+    const c2 = Math.cos(endAngle);
+    const s2 = Math.sin(endAngle);
+
+    const x1 = c1 * rx + cx;
+    const y1 = s1 * ry + cy;
+
+    const x4 = c2 * rx + cx;
+    const y4 = s2 * ry + cy;
+
+    const hx = rx * len * dir;
+    const hy = ry * len * dir;
+    currentSubpath.push(
+      // Move control points on tangent.
+      x1 - hx * s1,
+      y1 + hy * c1,
+      x4 + hx * s2,
+      y4 - hy * c2,
+      x4,
+      y4
+    );
+  }
+
+  let x1;
+  let y1;
+  let x2;
+  let y2;
+
+  for (let i = 0; i < len; ) {
+    const cmd = data[i++];
+    const isFirst = i === 1;
+
+    if (isFirst) {
+      // If the first command is L, C, Q
+      // Then the previous point is the same as the first point of the drawing command
+      // The first command is Arc, which will be handled separately later
+      xi = data[i];
+      yi = data[i + 1];
+
+      x0 = xi;
+      y0 = yi;
+
+      if (cmd === CMD.L || cmd === CMD.C || cmd === CMD.Q) {
+        // Start point
+        currentSubpath = [x0, y0];
+      }
+    }
+
+    switch (cmd) {
+      case CMD.M:
+        // moveTo command creates a new subpath and updates the new starting point
+        // Used when calling closePath
+        xi = x0 = data[i++];
+        yi = y0 = data[i++];
+
+        createNewSubpath(x0, y0);
+        break;
+      case CMD.L:
+        x1 = data[i++];
+        y1 = data[i++];
+        addLine(xi, yi, x1, y1);
+        xi = x1;
+        yi = y1;
+        break;
+      case CMD.C:
+        currentSubpath.push(
+          data[i++],
+          data[i++],
+          data[i++],
+          data[i++],
+          (xi = data[i++]),
+          (yi = data[i++])
+        );
+        break;
+      case CMD.Q:
+        x1 = data[i++];
+        y1 = data[i++];
+        x2 = data[i++];
+        y2 = data[i++];
+        currentSubpath.push(
+          // Convert quadratic to cubic
+          xi + (2 / 3) * (x1 - xi),
+          yi + (2 / 3) * (y1 - yi),
+          x2 + (2 / 3) * (x1 - x2),
+          y2 + (2 / 3) * (y1 - y2),
+          x2,
+          y2
+        );
+        xi = x2;
+        yi = y2;
+        break;
+      case CMD.A:
+        const cx = data[i++];
+        const cy = data[i++];
+        const rx = data[i++];
+        const ry = data[i++];
+        const startAngle = data[i++];
+        const endAngle = data[i++] + startAngle;
+
+        // TODO Arc rotation
+        i += 1;
+        const anticlockwise = !data[i++];
+
+        x1 = Math.cos(startAngle) * rx + cx;
+        y1 = Math.sin(startAngle) * ry + cy;
+        if (isFirst) {
+          // Directly use arc command
+          // First command starting point not yet defined
+          x0 = x1;
+          y0 = y1;
+          createNewSubpath(x0, y0);
+        } else {
+          // Connect a line between current point to arc start point.
+          addLine(xi, yi, x1, y1);
+        }
+
+        xi = Math.cos(endAngle) * rx + cx;
+        yi = Math.sin(endAngle) * ry + cy;
+
+        const step = ((anticlockwise ? -1 : 1) * Math.PI) / 2;
+
+        for (
+          let angle = startAngle;
+          anticlockwise ? angle > endAngle : angle < endAngle;
+          angle += step
+        ) {
+          const nextAngle = anticlockwise
+            ? Math.max(angle + step, endAngle)
+            : Math.min(angle + step, endAngle);
+          addArc(angle, nextAngle, cx, cy, rx, ry);
+        }
+
+        break;
+      case CMD.R:
+        x0 = xi = data[i++];
+        y0 = yi = data[i++];
+        x1 = x0 + data[i++];
+        y1 = y0 + data[i++];
+
+        // rect is an individual path.
+        createNewSubpath(x1, y0);
+        addLine(x1, y0, x1, y1);
+        addLine(x1, y1, x0, y1);
+        addLine(x0, y1, x0, y0);
+        addLine(x0, y0, x1, y0);
+        break;
+      case CMD.Z:
+        currentSubpath && addLine(xi, yi, x0, y0);
+        xi = x0;
+        yi = y0;
+        break;
+    }
+  }
+
+  if (currentSubpath && currentSubpath.length > 2) {
+    bezierArrayGroups.push(currentSubpath);
+  }
+
+  return bezierArrayGroups;
+}
+```
+
+### 对齐子路径
+
+处理三种情况：
+
+- 当子路径 1 不存在时：
+  - 使用 createSubpath 基于子路径 2 创建新的子路径
+  - 保持子路径 2 不变
+- 当子路径 2 不存在时：
+  - 使用 createSubpath 基于子路径 1 创建新的子路径
+  - 保持子路径 1 不变
+- 当两个子路径都存在时：
+  - 使用 alignSubpath 函数对齐两个子路径
+  - 更新 lastSubpath1 和 lastSubpath2 以供后续使用
+
+```typescript
+/**
+ * Make two bezier arrays aligns on structure. To have better animation.
+ *
+ * It will:
+ * Make two bezier arrays have same number of subpaths.
+ * Make each subpath has equal number of bezier curves.
+ *
+ * array is the convert result of pathToBezierCurves.
+ */
+export function alignBezierCurves(array1: number[][], array2: number[][]) {
+  let lastSubpath1;
+  let lastSubpath2;
+
+  let newArray1 = [];
+  let newArray2 = [];
+
+  for (let i = 0; i < Math.max(array1.length, array2.length); i++) {
+    const subpath1 = array1[i];
+    const subpath2 = array2[i];
+
+    let newSubpath1;
+    let newSubpath2;
+
+    if (!subpath1) {
+      newSubpath1 = createSubpath(lastSubpath1 || subpath2, subpath2);
+      newSubpath2 = subpath2;
+    } else if (!subpath2) {
+      newSubpath2 = createSubpath(lastSubpath2 || subpath1, subpath1);
+      newSubpath1 = subpath1;
+    } else {
+      [newSubpath1, newSubpath2] = alignSubpath(subpath1, subpath2);
+      lastSubpath1 = newSubpath1;
+      lastSubpath2 = newSubpath2;
+    }
+
+    newArray1.push(newSubpath1);
+    newArray2.push(newSubpath2);
+  }
+
+  return [newArray1, newArray2];
+}
+```
+
+### 寻找最佳旋转角度
+
+- 通过计算质心对齐两个子路径。
+- 使用 findBestRingOffset 寻找最佳起点匹配。
+- 使用旋转搜索确定最小化变换距离的角度。
+- 使用平方距离之和作为评价标准。
+
+这与 GSAP 的动画方法几乎相同。您可以从视频中获取更多详细信息。
+
+<iframe
+  width="560"
+  height="315"
+  src="https://www.youtube.com/embed/3TLcWlEe6Dc?si=VjQvhdKEaDWtN5uG"
+  title="YouTube video player"
+  frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+  referrerpolicy="strict-origin-when-cross-origin"
+  allowfullscreen
+></iframe>
+
+```typescript
+/**
+ * If we interpolating between two bezier curve arrays.
+ * It will have many broken effects during the transition.
+ * So we try to apply an extra rotation which can make each bezier curve morph as small as possible.
+ */
+function findBestMorphingRotation(
+  fromArr: number[][],
+  toArr: number[][],
+  searchAngleIteration: number,
+  searchAngleRange: number
+): MorphingData {
+  const result = [];
+
+  let fromNeedsReverse: boolean;
+
+  for (let i = 0; i < fromArr.length; i++) {
+    let fromSubpathBezier = fromArr[i];
+    const toSubpathBezier = toArr[i];
+
+    const fromCp = centroid(fromSubpathBezier);
+    const toCp = centroid(toSubpathBezier);
+
+    if (fromNeedsReverse == null) {
+      // Reverse from array if two have different directions.
+      // Determine the clockwise based on the first subpath.
+      // Reverse all subpaths or not. Avoid winding rule changed.
+      fromNeedsReverse = fromCp[2] < 0 !== toCp[2] < 0;
+    }
+
+    const newFromSubpathBezier: number[] = [];
+    const newToSubpathBezier: number[] = [];
+    let bestAngle = 0;
+    let bestScore = Infinity;
+    let tmpArr: number[] = [];
+
+    const len = fromSubpathBezier.length;
+    if (fromNeedsReverse) {
+      // Make sure clockwise
+      fromSubpathBezier = reverse(fromSubpathBezier);
+    }
+    const offset =
+      findBestRingOffset(fromSubpathBezier, toSubpathBezier, fromCp, toCp) * 6;
+
+    const len2 = len - 2;
+    for (let k = 0; k < len2; k += 2) {
+      // Not include the start point.
+      const idx = ((offset + k) % len2) + 2;
+      newFromSubpathBezier[k + 2] = fromSubpathBezier[idx] - fromCp[0];
+      newFromSubpathBezier[k + 3] = fromSubpathBezier[idx + 1] - fromCp[1];
+    }
+    newFromSubpathBezier[0] = fromSubpathBezier[offset] - fromCp[0];
+    newFromSubpathBezier[1] = fromSubpathBezier[offset + 1] - fromCp[1];
+
+    if (searchAngleIteration > 0) {
+      const step = searchAngleRange / searchAngleIteration;
+      for (
+        let angle = -searchAngleRange / 2;
+        angle <= searchAngleRange / 2;
+        angle += step
+      ) {
+        const sa = Math.sin(angle);
+        const ca = Math.cos(angle);
+        let score = 0;
+
+        for (let k = 0; k < fromSubpathBezier.length; k += 2) {
+          const x0 = newFromSubpathBezier[k];
+          const y0 = newFromSubpathBezier[k + 1];
+          const x1 = toSubpathBezier[k] - toCp[0];
+          const y1 = toSubpathBezier[k + 1] - toCp[1];
+
+          // Apply rotation on the target point.
+          const newX1 = x1 * ca - y1 * sa;
+          const newY1 = x1 * sa + y1 * ca;
+
+          tmpArr[k] = newX1;
+          tmpArr[k + 1] = newY1;
+
+          const dx = newX1 - x0;
+          const dy = newY1 - y0;
+
+          // Use dot product to have min direction change.
+          // const d = Math.sqrt(x0 * x0 + y0 * y0);
+          // score += x0 * dx / d + y0 * dy / d;
+          score += dx * dx + dy * dy;
+        }
+
+        if (score < bestScore) {
+          bestScore = score;
+          bestAngle = angle;
+          // Copy.
+          for (let m = 0; m < tmpArr.length; m++) {
+            newToSubpathBezier[m] = tmpArr[m];
+          }
+        }
+      }
+    } else {
+      for (let i = 0; i < len; i += 2) {
+        newToSubpathBezier[i] = toSubpathBezier[i] - toCp[0];
+        newToSubpathBezier[i + 1] = toSubpathBezier[i + 1] - toCp[1];
+      }
+    }
+
+    result.push({
+      from: newFromSubpathBezier,
+      to: newToSubpathBezier,
+      fromCp,
+      toCp,
+      rotation: -bestAngle,
+    });
+  }
+  return result;
+}
+```
+
+## 通用形态过渡
+
+<img src="/img/ECharts Universal Transition.gif" />
+
+### 一对多和多对一过渡
+
+探索了上述内容后，您可能对基本形态过渡有了一些了解。接下来，让我们回到 `applyMorphAnimation` 函数，看看 ECharts 如何处理一对多和多对一过渡。
+
+```typescript
+export function applyMorphAnimation(
+  from: DescendentPaths | DescendentPaths[],
+  to: DescendentPaths | DescendentPaths[],
+  divideShape: UniversalTransitionOption['divideShape'],
+  seriesModel: SeriesModel,
+  dataIndex: number,
+  animateOtherProps: (
+    fromIndividual: Path,
+    toIndividual: Path,
+    rawFrom: Path,
+    rawTo: Path,
+    animationCfg: ElementAnimateConfig
+  ) => void
+) {
+  if (!from.length || !to.length) {
+    return;
+  }
+
+  const updateAnimationCfg = getAnimationConfig(
+    'update',
+    seriesModel,
+    dataIndex
+  );
+  if (!(updateAnimationCfg && updateAnimationCfg.duration > 0)) {
+    return;
+  }
+  const animationDelay = (
+    seriesModel.getModel(
+      'universalTransition'
+    ) as Model<UniversalTransitionOption>
+  ).get('delay');
+
+  const animationCfg = Object.assign(
+    {
+      // Need to setToFinal so the further calculation based on the style can be correct.
+      // Like emphasis color.
+      setToFinal: true,
+    } as SeparateConfig,
+    updateAnimationCfg
+  );
+
+  let many: DescendentPaths[];
+  let one: DescendentPaths;
+  if (isMultiple(from)) {
+    // manyToOne
+    many = from;
+    one = to as DescendentPaths;
+  }
+  if (isMultiple(to)) {
+    // oneToMany
+    many = to;
+    one = from as DescendentPaths;
+  }
+
+  function morphOneBatch(
+    batch: MorphingBatch,
+    fromIsMany: boolean,
+    animateIndex: number,
+    animateCount: number,
+    forceManyOne?: boolean
+  ) {
+    const batchMany = batch.many;
+    const batchOne = batch.one;
+    if (batchMany.length === 1 && !forceManyOne) {
+      // Is one to one
+      const batchFrom: Path = fromIsMany ? batchMany[0] : batchOne;
+      const batchTo: Path = fromIsMany ? batchOne : batchMany[0];
+
+      if (isCombineMorphing(batchFrom as Path)) {
+        // Keep doing combine animation.
+        morphOneBatch(
+          {
+            many: [batchFrom as Path],
+            one: batchTo as Path,
+          },
+          true,
+          animateIndex,
+          animateCount,
+          true
+        );
+      } else {
+        const individualAnimationCfg = animationDelay
+          ? defaults(
+              {
+                delay: animationDelay(animateIndex, animateCount),
+              } as ElementAnimateConfig,
+              animationCfg
+            )
+          : animationCfg;
+        morphPath(batchFrom, batchTo, individualAnimationCfg);
+        animateOtherProps(
+          batchFrom,
+          batchTo,
+          batchFrom,
+          batchTo,
+          individualAnimationCfg
+        );
+      }
+    } else {
+      const separateAnimationCfg = defaults(
+        {
+          dividePath: pathDividers[divideShape],
+          individualDelay:
+            animationDelay &&
+            function (idx, count, fromPath, toPath) {
+              return animationDelay(idx + animateIndex, animateCount);
+            },
+        } as SeparateConfig,
+        animationCfg
+      );
+
+      const { fromIndividuals, toIndividuals } = fromIsMany
+        ? combineMorph(batchMany, batchOne, separateAnimationCfg)
+        : separateMorph(batchOne, batchMany, separateAnimationCfg);
+
+      const count = fromIndividuals.length;
+      for (let k = 0; k < count; k++) {
+        const individualAnimationCfg = animationDelay
+          ? defaults(
+              {
+                delay: animationDelay(k, count),
+              } as ElementAnimateConfig,
+              animationCfg
+            )
+          : animationCfg;
+        animateOtherProps(
+          fromIndividuals[k],
+          toIndividuals[k],
+          fromIsMany ? batchMany[k] : batch.one,
+          fromIsMany ? batch.one : batchMany[k],
+          individualAnimationCfg
+        );
+      }
+    }
+  }
+
+  const fromIsMany = many
+    ? many === from
+    : // Is one to one. If the path number not match. also needs do merge and separate morphing.
+      from.length > to.length;
+
+  const morphBatches = many
+    ? prepareMorphBatches(one, many)
+    : prepareMorphBatches((fromIsMany ? to : from) as DescendentPaths, [
+        (fromIsMany ? from : to) as DescendentPaths,
+      ]);
+  let animateCount = 0;
+  for (let i = 0; i < morphBatches.length; i++) {
+    animateCount += morphBatches[i].many.length;
+  }
+  let animateIndex = 0;
+  for (let i = 0; i < morphBatches.length; i++) {
+    morphOneBatch(morphBatches[i], fromIsMany, animateIndex, animateCount);
+    animateIndex += morphBatches[i].many.length;
+  }
+}
+```
+
+```typescript
+interface MorphingBatch {
+  one: Path;
+  many: Path[];
+}
+
+function prepareMorphBatches(one: DescendentPaths, many: DescendentPaths[]) {
+  const batches: MorphingBatch[] = [];
+  const batchCount = one.length;
+  for (let i = 0; i < batchCount; i++) {
+    batches.push({
+      one: one[i],
+      many: [],
+    });
+  }
+
+  for (let i = 0; i < many.length; i++) {
+    const len = many[i].length;
+    let k;
+    for (k = 0; k < len; k++) {
+      batches[k % batchCount].many.push(many[i][k]);
+    }
+  }
+
+  let off = 0;
+  // If one has more paths than each one of many. average them.
+  for (let i = batchCount - 1; i >= 0; i--) {
+    if (!batches[i].many.length) {
+      const moveFrom = batches[off].many;
+      if (moveFrom.length <= 1) {
+        // Not enough
+        // Start from the first one.
+        if (off) {
+          off = 0;
+        } else {
+          return batches;
+        }
+      }
+      const len = moveFrom.length;
+      const mid = Math.ceil(len / 2);
+      batches[i].many = moveFrom.slice(mid, len);
+      batches[off].many = moveFrom.slice(0, mid);
+
+      off++;
+    }
+  }
+
+  return batches;
+}
+```
+
+这里的代码很多，可能需要足够的时间才能完全理解和消化，但主要步骤如下：
+
+- 参数处理：格式化动画参数和转换中的参与者（from、to）。
+- 分批处理：使用 prepareMorphBatches 函数将格式化的 from 和 to 分成批次。
+- 为每个批次变形：使用 morphOneBatch 函数对每个批次执行变换。
+
+上述代码用于过程控制，这意味着它不涉及低级计算代码，如矩阵或路径。这些低级操作在 Zrender 中实现。如果您感兴趣，可以在这里查看源代码：[Zrender/morphPath.ts](https://github.com/ecomfe/zrender/blob/master/src/tool/morphPath.ts)
+
+:::tip
+
+`morphPath` 文件包含一些最核心/底层的代码。我还没有完全掌握它，但我坚信如果您想要更好的形态过渡效果，这部分是至关重要的。
+
+:::
+
+您可以清楚地看到，ECharts 已经在外部公开了动画参数，但仅限于源代码的应用层，即 Series/Component 层。它尚未在用户与之交互的 Options 中直接公开。这可能会降低应用门槛，使初学者能够以最少的努力使用 ECharts 的自定义包/模板。要更深入地自定义 ECharts 效果，您可以利用官方扩展 API 进行源代码级控制。
+
+### 多对多过渡
+
+多对多变换使用基于差异的方法进行动画排列，这很直观。例如，从散点图到堆叠柱状图的变形，如图所示。
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202412301646499.png?imageSlim)
+
+我们期望形态变换前后的图形表示相同的数据集。通常，形态变换前后的图形元素数量是一致的，但有时可能会有显著变化，例如描绘[演化]时，数据维度在变换过程中随时间变化。这可能导致一些旧元素消失，新元素出现，而横跨两个时期的元素则相应地变形。
+
+实际上，diff 是 ECharts 的核心动画机制。您可以在几乎每个系列视图文件的 `render` 函数中看到 `diff相关` 代码。每当您在现有 ECharts 实例上使用 `setOption` 时，如果新数据与现有数据具有相同的 ID，ECharts 将自动完成过渡动画。这是一个理想的设计。
+
+关于 universalTransition，我建议查看[源代码](https://github.com/apache/echarts/blob/master/src/animation/universalTransition.ts)。

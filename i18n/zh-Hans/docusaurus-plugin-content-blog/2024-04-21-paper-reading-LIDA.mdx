@@ -1,0 +1,259 @@
+---
+slug: paper-reading-LIDA
+title: 论文阅读 LIDA
+tags: [数据可视化, 论文, AI, 自动化]
+---
+
+**TLDR**
+
+LIDA 是一种新型工具，用于生成与语法无关的可视化和信息图表。它解决了自动化可视化创建中的几个关键挑战：
+
+1. 理解数据语义
+2. 枚举可视化目标
+3. 生成可视化规范
+
+该系统使用由大型语言模型（LLMs）和图像生成模型（IGMs）驱动的多阶段流程。它由 4 个主要模块组成：
+
+1. SUMMARIZER：将数据转换为简洁的自然语言摘要
+2. GOAL EXPLORER：基于数据识别潜在的可视化目标
+3. VISGENERATOR：处理可视化代码生成、优化和过滤
+4. INFOGRAPHER：使用 IGMs 创建数据驱动的风格化图形
+
+LIDA 提供了 Python API 和交互式用户界面，支持直接操作和多语言自然语言，用于生成图表、信息图表和数据故事。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411261453677.png?imageSlim)
+{/* truncate */}
+
+## 论文
+
+<object
+  data="/paper/LIDA A Tool for Automatic Generation of Grammar-Agnostic Visualizations and Infographics using Large Language Models.pdf"
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href="/paper/LIDA A Tool for Automatic Generation of Grammar-Agnostic Visualizations and Infographics using Large Language Models.pdf">
+    下载 PDF
+  </a>
+  .
+</object>
+
+## 笔记
+
+[【GitHub 原始代码】](https://github.com/microsoft/lida)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411261435693.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411261453677.png?imageSlim)
+
+### 流程
+
+按照 GitHub 仓库中的说明，我们可以克隆源代码并在我们的开发环境中本地设置 LIDA。这使我们能够亲自体验和探索 LIDA 的功能。
+
+1. 选择可视化库/语法并配置大型语言模型。由于默认模型已弃用，您需要从可用选项中选择一个新模型。
+   ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202412101338304.png?imageSlim)
+
+2. 从示例数据集中选择或上传您自己的自定义数据进行可视化。
+   ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202412101340454.png?imageSlim)
+
+3. 查看自动生成的数据摘要，了解数据集中的关键特征和模式。
+   ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202412101342874.png?imageSlim)
+
+4. 从基于数据摘要生成的建议中选择可视化目标。
+   ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202412101344279.png?imageSlim)
+
+5. 查看为匹配所选目标而自动生成的可视化。
+   ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202412101345167.png?imageSlim)
+
+6. 通过交互式编辑工具优化和自定义可视化。
+   ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202412101345014.png?imageSlim)
+
+### 代码
+
+LIDA 是如何工作的？
+它可能没有您想象的那么复杂。
+
+#### Manager 类
+
+```python
+# Visualization manager class that handles the visualization of the data with the following methods
+
+# summarize data given a df
+# generate goals given a summary
+# generate generate visualization specifications given a summary and a goal
+# execute the specification given some data
+
+
+def __init__(self, text_gen: TextGenerator = None) -> None:
+        """
+        Initialize the Manager object.
+
+        Args:
+            text_gen (TextGenerator, optional): Text generator object. Defaults to None.
+        """
+
+        self.text_gen = text_gen or llm()
+
+        self.summarizer = Summarizer()
+        self.goal = GoalExplorer()
+        self.vizgen = VizGenerator()
+        self.vizeditor = VizEditor()
+        self.executor = ChartExecutor()
+        self.explainer = VizExplainer()
+        self.evaluator = VizEvaluator()
+        self.repairer = VizRepairer()
+        self.recommender = VizRecommender()
+        self.data = None
+        self.infographer = None
+        self.persona = PersonaExplorer()
+
+```
+
+#### 提示设计
+
+##### 摘要
+
+```text
+You are an experienced data analyst that can annotate datasets. Your instructions are as follows:
+i) ALWAYS generate the name of the dataset and the dataset_description
+ii) ALWAYS generate a field description.
+iii.) ALWAYS generate a semantic_type (a single word) for each field given its values e.g. company, city, number, supplier, location, gender, longitude, latitude, url, ip address, zip code, email, etc
+You must return an updated JSON dictionary without any preamble or explanation.
+```
+
+```text
+
+Summarize data given a DataFrame or file path.
+
+        Args:
+            data (Union[pd.DataFrame, str]): Input data, either a DataFrame or file path.
+            file_name (str, optional): Name of the file if data is loaded from a file path. Defaults to "".
+            n_samples (int, optional): Number of summary samples to generate. Defaults to 3.
+            summary_method (str, optional): Summary method to use. Defaults to "default".
+            textgen_config (TextGenerationConfig, optional): Text generation configuration. Defaults to TextGenerationConfig(n=1, temperature=0).
+
+        Returns:
+            Summary: Summary object containing the generated summary.
+
+        Example of Summary:
+            {
+                'name': 'cars.csv',
+                'file_name': 'cars.csv',
+                'dataset_description': '',
+                'fields': [
+                    {
+                        'column': 'Name',
+                        'properties': {
+                            'dtype': 'string',
+                            'samples': [
+                                'Nissan Altima S 4dr',
+                                'Mercury Marauder 4dr',
+                                'Toyota Prius 4dr (gas/electric)'
+                            ],
+                            'num_unique_values': 385,
+                            'semantic_type': '',
+                            'description': ''
+                        }
+                    },
+                    {
+                        'column': 'Type',
+                        'properties': {
+                            'dtype': 'category',
+                            'samples': ['SUV', 'Minivan', 'Sports Car'],
+                            'num_unique_values': 5,
+                            'semantic_type': '',
+                            'description': ''
+                        }
+                    },
+                    {
+                        'column': 'AWD',
+                        'properties': {
+                            'dtype': 'number',
+                            'std': 0,
+                            'min': 0,
+                            'max': 1,
+                            'samples': [1, 0],
+                            'num_unique_values': 2,
+                            'semantic_type': '',
+                            'description': ''
+                        }
+                    }
+                ]
+            }
+
+        """
+
+```
+
+##### 目标
+
+```text
+You are a an experienced data analyst who can generate a given number of insightful GOALS about data, when given a summary of the data, and a specified persona. The VISUALIZATIONS YOU RECOMMEND MUST FOLLOW VISUALIZATION BEST PRACTICES (e.g., must use bar charts instead of pie charts for comparing quantities) AND BE MEANINGFUL (e.g., plot longitude and latitude on maps where appropriate). They must also be relevant to the specified persona. Each goal must include a question, a visualization (THE VISUALIZATION MUST REFERENCE THE EXACT COLUMN FIELDS FROM THE SUMMARY), and a rationale (JUSTIFICATION FOR WHICH dataset FIELDS ARE USED and what we will learn from the visualization). Each goal MUST mention the exact fields from the dataset summary above
+
+```
+
+```text
+The number of GOALS to generate is {n}. The goals should be based on the data summary below,
+The generated goals SHOULD BE FOCUSED ON THE INTERESTS AND PERSPECTIVE of a '{persona.persona} persona, who is insterested in complex, insightful goals about the data.
+
+Generate goals based on a summary.
+
+Args:
+    summary (Summary): Input summary.
+    textgen_config (TextGenerationConfig, optional): Text generation configuration. Defaults to TextGenerationConfig().
+    n (int, optional): Number of goals to generate. Defaults to 5.
+    persona (Persona, str, dict, optional): Persona information. Defaults to None.
+
+Returns:
+    List[Goal]: List of generated goals.
+
+Example of list of goals:
+
+    Goal 0
+    Question: What is the distribution of Retail_Price?
+
+    Visualization: histogram of Retail_Price
+
+    Rationale: This tells about the spread of prices of cars in the dataset.
+
+    Goal 1
+    Question: What is the distribution of Horsepower_HP_?
+
+    Visualization: box plot of Horsepower_HP_
+
+    Rationale: This tells about the distribution of horsepower of cars in the dataset.
+
+```
+
+````text
+
+THE OUTPUT MUST BE A CODE SNIPPET OF A VALID LIST OF JSON OBJECTS. IT MUST USE THE FOLLOWING FORMAT:
+
+```
+   [
+      { "index": 0,  "question": "What is the distribution of X", "visualization": "histogram of X", "rationale": "This tells about "} ..
+   ]
+```
+
+THE OUTPUT SHOULD ONLY USE THE JSON FORMAT ABOVE.
+
+
+````
+
+##### VizGenerator
+
+```text
+
+You are a helpful assistant highly skilled in writing PERFECT code for visualizations. Given some code template, you complete the template to generate a visualization given the dataset and the goal described. The code you write MUST FOLLOW VISUALIZATION BEST PRACTICES ie. meet the specified goal, apply the right transformation, use the right visualization type, use the right data encoding, and use the right aesthetics (e.g., ensure axis are legible). The transformations you apply MUST be correct and the fields you use MUST be correct. The visualization CODE MUST BE CORRECT and MUST NOT CONTAIN ANY SYNTAX OR LOGIC ERRORS (e.g., it must consider the field types and use them correctly). You MUST first generate a brief plan for how you would solve the task e.g. what transformations you would apply e.g. if you need to construct a new column, what fields you would use, what visualization type you would use, what aesthetics you would use, etc. .
+
+```
+
+````text
+Always add a legend with various colors where appropriate. The visualization code MUST only use data fields that exist in the dataset (field_names) or fields that are transformations based on existing field_names). Only use variables that have been defined in the code or are in the dataset summary. You MUST return a FULL PYTHON PROGRAM ENCLOSED IN BACKTICKS ``` that starts with an import statement. DO NOT add any explanation. \n\n THE GENERATED CODE SOLUTION SHOULD BE CREATED BY MODIFYING THE SPECIFIED PARTS OF THE TEMPLATE BELOW \n\n {library_template} \n\n.The FINAL COMPLETED CODE BASED ON THE TEMPLATE above is ... \n\n
+
+````
+
+这是一个我们可以学习的优秀提示设计。
+
+1. 结构良好的任务描述，明确目标和要求
+2. 清晰简洁的语言，避免歧义
+3. 明确定义 AI 助手的角色
+4. 少量样本提示
+5. 精确指定输出格式和结构

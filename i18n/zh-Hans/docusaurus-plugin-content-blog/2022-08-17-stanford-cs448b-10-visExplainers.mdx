@@ -1,0 +1,180 @@
+---
+slug: stanford-cs448b-10-visExplainers
+title: 斯坦福 CS448B 10 可视化解释器
+tags: [数据可视化, 斯坦福, 课程, CS448B]
+---
+
+import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
+
+**TLDR**
+
+本文包含我对斯坦福 CS448B（数据可视化）课程的笔记，特别关注第十讲关于可视化解释器的内容。我将讨论讲故事的重要性、叙事可视化的设计空间、交互式文档、图表序列以及 GraphScape。
+
+<video width="100%" height="auto" controls>
+  <source
+    src="/stanford-cs448b/Hans Rosling-s 200 Countries- 200 Years- 4 Minutes - The Joy of Stats - BBC Four.mp4"
+    type="video/mp4"
+  />
+  您的浏览器不支持视频标签。
+</video>
+{/* truncate */}
+
+## 原文
+
+<object
+  data="/stanford-cs448b/Lec10-visExplainers.pdf"
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href="/stanford-cs448b/Lec10-visExplainers.pdf">下载 PDF</a>.
+</object>
+
+## 笔记
+
+### 课前思考
+
+- 变化盲视如何应用于交互式图表，我们应该如何围绕它进行设计？
+- 是否可以让技术能力较弱的用户更容易创建健壮且高度可定制的视觉解释器？
+- 为什么这些"不良"的可视化在演讲中被通过将背景置于更具体的社区中而合理化，而基于这种格式的可视化本质上并不会提高这些社区的可访问性？
+- 在决定哪些数据应该在哪些通道中编码时：最重要的数据应该首先被注意到，还是最准确地被注意到？
+
+### 主题
+
+1. 讲故事
+2. 叙事可视化的设计空间
+3. 交互式文档
+4. 图表序列
+
+### 讲故事
+
+与人类一样古老
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409261811251.png?imageSlim)
+
+所有媒体都在讲故事：
+
+- <span style={{ color: 'red' }}>人</span> 讲故事
+- <span style={{ color: 'red' }}>文字</span> 讲故事
+- <span style={{ color: 'red' }}>图像</span> 讲故事
+- <span style={{ color: 'red' }}>漫画</span> 讲故事
+- <span style={{ color: 'red' }}>电影</span> 讲故事
+- <span style={{ color: 'red' }}>可视化</span> 讲故事
+
+### 叙事讲故事
+
+叙事（名词）：按顺序给出的一系列事件、事实等的叙述，并在它们之间建立联系。
+
+> "...需要类似电影导演所熟悉的技能，
+> 超越技术专家对计算机工程和科学的知识。"
+>
+> <p style={{ textAlign: 'right' }}>- Gershon & Page 01</p>
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409261827738.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409261827595.png?imageSlim)
+
+<hr />
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409261828401.png?imageSlim)
+<hr />
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409261828600.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409261828734.png?imageSlim)
+<hr />
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409261830670.png?imageSlim)
+<hr />
+**汉斯·罗斯林的 200 个国家、200 年、4 分钟 - 统计的乐趣 - BBC 第四频道**
+<video width="100%" height="auto" controls>
+  <source
+    src="/stanford-cs448b/Hans Rosling-s 200 Countries- 200 Years- 4 Minutes - The Joy of Stats - BBC Four.mp4"
+    type="video/mp4"
+  />
+  您的浏览器不支持视频标签。
+</video>
+
+### 叙事可视化的设计空间
+
+一种结构化信息的方式
+
+- 比列表更容易理解
+- 不确定性、冲突、解决方案
+- 文本和视觉可以相互补充
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409261835687.png?imageSlim)
+
+<hr />
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409261845936.png?imageSlim)
+
+<a href="/paper/2010-Narrative-InfoVis.pdf">《叙事可视化：用数据讲故事》PDF</a>
+<hr />
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409261844665.png?imageSlim)
+<hr />
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409261844848.png?imageSlim)
+<hr />
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409261845651.png?imageSlim)
+
+:::info
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409261847635.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409261848553.png?imageSlim)
+:::
+
+### 交互式文档
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409271630287.png?imageSlim)
+
+<hr />
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409271630462.png?imageSlim)
+<hr />
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409271631880.png?imageSlim)
+<hr />
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409271631379.png?imageSlim)
+<hr />
+
+### 图表序列
+
+**数据分析中的多个图表**  
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409271738251.png?imageSlim)
+
+<hr />
+
+**讲故事中的多个图表**  
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409271739381.png?imageSlim)
+
+<hr />
+
+**我们能否自动识别序列以推荐给人类设计师？**  
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409271740594.png?imageSlim)
+
+:::info 注释
+
+<a href="/paper/A Deeper Understanding of Sequence in Narrative Visualization.pdf">
+  《叙事可视化中序列的深入理解》PDF
+</a>
+:::
+
+### GraphScape
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409271748132.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409271749779.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409271750471.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409271750159.png?imageSlim)
+
+之前我们讨论了单个可视化自动设计的方法（例如 Mackinlay 的 APT）  
+GraphScape 支持可视化集合的自动设计方法。  
+**这里有大量未来的工作要做！**
+
+:::info 注释
+
+<a href="/paper/GraphScape-A Model for Automated Reasoning about Visualization Similarity and Sequencing.pdf">
+  《GraphScape-可视化相似性和排序自动推理模型》PDF
+</a>
+:::
+
+### 总结
+
+- 叙事可视化将通过**图像和文本**的交流与交互技术融合在一起
+- 通过研究专业设计师的作品可以识别特定策略
+- 自动构建有效解释器是可视化研究的活跃领域

@@ -1,0 +1,74 @@
+---
+slug: paper-reading-DMap
+title: 论文阅读 DMap
+tags: [数据可视化, 论文, 数据可视化设计]
+---
+
+import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
+
+**TLDR**
+
+本文包含我对论文"D-Map: Visual Analysis of Ego-centric Information Diffusion Patterns in Social Media"（D-Map：社交媒体中以自我为中心的信息扩散模式的可视化分析）的笔记。我将讨论该论文如何提出一种可视化方法来分析社交媒体平台上的信息传播模式，重点关注 D-Map 布局算法，该算法将力导向图转换为蜂窝图。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202501131545266.png?imageSlim)
+{/* truncate */}
+
+## 论文
+
+<object
+  data="/paper/D-Map Visual Analysis of Ego-centric Information Diffusion Patterns in Social Media.pdf"
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href="/paper/D-Map Visual Analysis of Ego-centric Information Diffusion Patterns in Social Media.pdf">
+    下载 PDF
+  </a>
+  .
+</object>
+
+## 笔记
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202501131545361.png?imageSlim)
+该论文提出了一个可视化分析系统，旨在分析信息在微博上如何传播和传播。我只记录我感兴趣的部分，即 D-Map 布局算法，重点关注从力导向图到蜂窝图的转换。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202501131545266.png?imageSlim)
+**伪代码：**
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202501131546289.png?imageSlim)
+
+## 案例
+
+内容的传播结构（例如 Instagram 或 Twitter 上的内容）应该类似于图表，随着时间在不同群体间传播，并在相应的社区类型（如旅行、摄影、动漫、游戏）内更强烈地传播。总体上，它形成了一个树状的数据结构。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202501151459821.png?imageSlim)
+为了确保同一社区类型的节点尽可能接近，作者在原文中提到他为转发相同内容的节点添加了新链接。这意味着任何给定树节点的子节点都是相互连接的。然而，为了避免形成循环，链接是根据转发的时间顺序添加的。
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202501151510287.png?imageSlim)
+
+假设我们总共有 500 个点，其中 90%（450 个）符合社区类型规则，即子节点的社区类型应与父节点一致。相同的社区确保相同的兴趣。然后，添加 10%（50 个）随机点，代表社区内的一些随机行为。基于上述数据，尝试论文中描述的布局算法。
+
+:::note
+请注意，上述数据严重失真，仅用于重现布局。
+:::
+
+- 使用半正态分布来模拟每个子节点的转发行为，这意味着大多数帖子应该没有转发，只有少数帖子会变得病毒式传播。
+- 在 3 天时间范围内随机生成时间戳，以模拟用户转发的时间。
+
+我尝试了原论文中描述的布局方法，但由于过多的场景特定处理，以及我持续无法理解如何为算法输出第四行中的 M 变量赋值，我遇到了困难。
+
+实际上，我只需要一种算法，可以将关系图转换为蜂窝图，同时保留时间结构。
+
+基于这一要求，我重新实现了以下案例：
+
+<iframe
+  id="DMap-demo"
+  src="/demo/DMap/index.html"
+  width="100%"
+  style={{ border: 'none', height: '100vh' }}
+  onLoad={(e) => {
+    // Adjust iframe height to match content
+    const iframe = e.target;
+    iframe.style.height =
+      iframe.contentWindow.document.documentElement.scrollHeight + 'px';
+  }}
+/>
+
+对我来说效果很好。它看起来相当令人信服，但我仍然需要真实的社交数据来验证它对我是否有效。在此之前，它仅仅是一种布局算法。

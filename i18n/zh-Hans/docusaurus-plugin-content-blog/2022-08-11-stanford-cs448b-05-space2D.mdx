@@ -1,0 +1,257 @@
+---
+slug: stanford-cs448b-05-space2D
+title: 斯坦福 CS448B 05 二维空间
+tags: [数据可视化, 斯坦福, 课程, CS448B]
+---
+
+import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
+
+**TLDR**
+
+本文包含我对斯坦福 CS448B（数据可视化）课程的笔记，特别关注第五讲关于二维空间的内容。我将讨论空间在数据可视化中的重要性、背后的原则，并探索各种数据可视化技术，包括使用指导元素、表达性、有效性、对比和模式感知的支持、数据分组和排序、数据转换、减少认知负担以及一致性。我还将介绍各种图表类型，如折线图、柱状图、堆叠面积图等，提供示例并讨论它们的设计考虑因素。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/ObsidianPasted%20image%2020230828195314.png)
+{/* truncate */}
+
+## 原文
+
+<object
+  data="/stanford-cs448b/Lec05-space2D.pdf"
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href="/stanford-cs448b/Lec05-space2D.pdf">下载 PDF</a>.
+</object>
+
+## 笔记
+
+### 课前思考
+
+- 我们如何知道该使用哪种类型的可视化？是否有一些一般原则引导我们选择柱状图而非饼图？不同标记类型和视觉编码的心理学原理是什么？
+- 是否存在一种标准/科学方法，图形设计师应该据此探索、迭代和最终完成他们的设计？
+- 关于周三讲座中的社交网络图，包括节点-链接、链接排序矩阵和非排序矩阵视图，"是否有其他算法可以帮助突出数据中的特定模式？"
+- 关于公开（Twitter）与私人（学术）数据可视化评论，以及人们在 COVID-19 疫情期间如何更加关注数据可视化："读者的目标是否与设计师的目标一致，如果不一致，这将如何影响用户获得的洞察力以及重新设计过程？  
+  是否公平地只依靠专家？此外，作者如何向用户传达他们的目标？
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409241537904.png?imageSlim)
+
+### 图表和线条
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/ObsidianPasted%20image%2020230828195314.png)
+
+#### 填充空间
+
+尽可能以最高分辨率显示数据  
+不用担心显示零点
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409241540743.png?imageSlim)
+
+#### 在坐标轴刻度中包含零点？
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian20230828195850.png)
+
+#### 坐标轴刻度选择
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian20230828195934.png)
+
+- 简洁性 - 数字是 10、5、2 的倍数
+- 覆盖性 - 刻度接近数据的两端
+- 密度 - 既不太多也不太少
+- 可读性 - 空白、水平文字、大小
+
+#### 如何缩放坐标轴？
+
+极端值解决方案
+
+**原始场景:**
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409241545057.png?imageSlim)
+
+**解决方案 1：裁剪异常值**
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409241546813.png?imageSlim)
+
+注意最大的异常值没有显示  
+在实际任务中，异常值可能会以其他明显的方式标记。
+
+**解决方案 2：清晰标记刻度断点**
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409241549664.png?imageSlim)
+
+**解决方案 3：对数刻度**
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409241550420.png?imageSlim)
+
+:::info 注释
+在我看来，对数刻度是一种需要谨慎选择的解决极端值问题的选项，因为它减小了数据点之间的差异，导致用户对数据的敏感度降低。
+:::
+
+两者都增加了视觉分辨率
+
+- 对数刻度 - 便于比较所有数据
+- 刻度断点 - 跨断点比较更加困难
+
+#### 线性刻度与对数刻度
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian20230828201314.png)
+
+#### 对数刻度
+
+对数将乘法转换为加法  
+`log(xy) = log(x) + log(y)`  
+对数刻度上的等距步长对应于乘法比例因子的等量变化
+
+#### 何时应用对数刻度？
+
+- 解决数据偏斜（例如，长尾、异常值）
+- 使跨多个数量级的比较成为可能
+- 关注乘法因子（而非加法）
+- 记住对数将 × 转换为+！
+- 关注百分比变化，而非线性差异。
+
+- <span style={{ color: 'red' }}>约束</span>：正值，非零
+- <span style={{ color: 'red' }}>约束</span>：受众熟悉度？
+
+#### 半对数图
+
+指数函数 <InlineMath math="y = ka^{mx}" /> 转换为直线
+
+<InlineMath math="log(y) = log(k) + log(a)mx" />
+<br />
+
+截距：<InlineMath math="log(k)" /><br />
+斜率：<InlineMath math="log(a)m" />
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409241610764.png?imageSlim)
+
+<InlineMath math="y=6^0.5x" />
+，半对数空间中的斜率：
+<InlineMath math="log(6)*0.5 = 0.3891" />
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409241610702.png?imageSlim)
+
+<InlineMath math="y=0.5^2x" />
+，半对数空间中的斜率：
+<InlineMath math="log(0.5)*2 = -0.602" />
+
+### 选择长宽比
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409241622482.png?imageSlim)
+相同数据的不同长宽比
+
+#### 倾斜到 45°[Cleveland]
+
+为了便于感知趋势，最大化线段方向的可辨别性
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409241626018.png?imageSlim)
+
+当两个线段之间的绝对角度为 45° 时，它们的可辨别性最大  
+**方法**：优化长宽比，使所有线段之间的平均绝对角度为 45°
+
+#### 最小化弧长（保持面积不变）
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409241627166.png?imageSlim)
+
+#### 良好的折衷方案
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409241627823.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409241628437.png?imageSlim)
+
+`弧长`倾斜产生的长宽比介于其他方法产生的长宽比之间。
+
+### 拟合数据
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409241631829.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409241631863.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409241632086.png?imageSlim)
+
+### 转换数据
+
+曲线与数据拟合得如何？
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409241646949.png?imageSlim)
+
+残差图
+
+- 绘制与最佳拟合曲线的垂直距离
+- 残差图显示拟合的准确性
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409241646135.png?imageSlim)
+
+### 排序
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202312181109807.png?imageSlim)
+
+分析变量的特征  
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409241648354.png?imageSlim)
+
+排序  
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202312181110073.png?imageSlim)
+
+结果  
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409241651763.png?imageSlim)
+
+### 地图变形
+
+#### [2016 年选举地图](https://public.websites.umich.edu/~mejn/election/2016/)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251436146.png?imageSlim)
+
+各州用红色或蓝色标记，表示该州的多数选民是投票给共和党候选人唐纳德·特朗普，还是民主党候选人希拉里·克林顿。这张地图上的红色明显多于蓝色，但这具有误导性：选举实际上比表面看起来要接近得多，克林顿实际上总体上获得了略多的选票。该地图未能考虑人口分布，红色州的平均人口低于蓝色州。蓝色州在面积上可能较小，但它们代表着更多的选民，这在选举中至关重要。
+
+我们可以通过使用示意图（一种根据人口对州大小重新调整的地图）来纠正这一点。各州的大小与其居民数量成比例，而非其面积。例如，拥有 110 万人口的罗德岛将显示为约为怀俄明州（50 万人口）两倍大小，尽管怀俄明州的面积是罗德岛的 60 倍。
+
+以下是这种类型的人口示意图上的 2016 年总统选举结果：
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251436825.png?imageSlim)
+
+然而，这张地图仍然有些误导，因为我们将每个县要么标为红色，要么标为蓝色，好像每个选民都投了相同的票。这当然不现实：所有县都有共和党和民主党支持者，在我们的地图上只使用两种颜色会丢失有关它们之间平衡的任何信息。无法判断特定县是强烈支持某一候选人还是相对平均分配。
+
+显示投票中更多细微差别的一种方法是不仅使用红色和蓝色两种颜色，而是使用红色、蓝色和中间的紫色色调来表示投票百分比。以下是如果这样做，普通地图的样子：
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251434105.png?imageSlim)
+
+- 带有阴影的统计地图
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251449947.png?imageSlim)
+
+- 框架矩形图表
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251450346.png?imageSlim)
+
+- 变形区域
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251451331.png?imageSlim)
+
+- 矩形示意图
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251451516.png?imageSlim)
+
+- 纽约时报 2004 年选举
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251452838.png?imageSlim)
+
+- [纽约时报 2016 年选举](https://www.nytimes.com/interactive/2018/upshot/election-2016-voting-precinct-maps.html)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251452396.png?imageSlim)
+
+- Dorling 示意图
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251453519.png?imageSlim)
+
+- 距离变形
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251453190.png?imageSlim)
+
+- 伦敦地铁
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251454143.png?imageSlim)
+
+- LineDrive [Agrawala & Stolte 2001]
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251455461.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409251456215.png?imageSlim)
+
+### 总结
+
+- 空间是最重要的视觉编码
+- 尽可能以最高分辨率显示数据
+- 空间变换的几何特性支持几何推理
+- 使用变形来强调重要信息

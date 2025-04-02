@@ -1,0 +1,279 @@
+---
+slug: stanford-cs448b-15-deconstructingVisualizations
+title: 斯坦福 CS448B 15 解构可视化
+tags: [数据可视化, 斯坦福, 课程, CS448B]
+---
+
+import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
+
+**TLDR**
+
+本文包含我对斯坦福 CS448B（数据可视化）课程的笔记，特别关注第十五讲关于解构可视化的内容。我将讨论分类、标记提取、数据提取和重新设计的重要性。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111013877.png?imageSlim)
+{/* truncate */}
+
+## 原文
+
+<object
+  data="/stanford-cs448b/Lec15-deconstructingVisualizations.pdf"
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href="/stanford-cs448b/Lec15-deconstructingVisualizations.pdf">下载 PDF</a>
+  .
+</object>
+
+## 笔记
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111013877.png?imageSlim)
+
+### 课前思考
+
+- 对于数据解释器项目，我们是否必须找到一个数据集并基于该数据集创建三个可视化，或者我们可以找一个我们感兴趣的高级主题，然后在该主题内使用不同的数据集创建三个可视化？
+- 在使用社交网络分析时，如何验证你的发现和/或确定你的发现是否具有统计显著性？图分析是否有类似于"p 值"的标准？[您是使用定性还是定量的有效性度量？]
+- 如果我们可以将复杂概念分解为多个易于理解的图表[例如，分解为强连通组件]，为什么还要使用复杂图表？
+  这难道不会有助于使结构更加直观吗？
+
+<hr />
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111020730.png?imageSlim)
+
+像素是图表和图形的不良表示方式
+
+无法对数据进行索引、搜索、操作或交互
+
+目标：重建图表和图形的高级表示，使机器和人能够重新设计、重用和复兴它们
+
+<hr />
+什么是好的表示？
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111022612.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111022631.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111025160.png?imageSlim)
+
+**方法**
+
+- 分类：确定图表类型
+- 标记提取：检索图形标记
+- 数据提取：检索底层数据表
+
+### 分类
+
+#### 训练分类器
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111035498.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111035386.png?imageSlim)
+
+<hr />
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111036190.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111036903.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111036981.png?imageSlim)
+
+<div style={{display:'flex', justifyContent:'center'}}>
+
+| 方法                             | 准确率 |
+| -------------------------------- | ------ |
+| [Prasad 2007] 多类 SVM           | 84%    |
+| ReVision: 多类 SVM               | 88%    |
+| ReVision: 二元 SVM (每类型是/否) | 96%    |
+
+</div>
+
+#### 语料库
+
+超过 2500 张带标签的图像和 10 种图表类型
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111057037.png?imageSlim)
+ReVision 二元 SVM 提供 96%的分类准确率。
+
+http://vis.berkeley.edu/papers/revision/
+
+#### 标记和数据提取
+
+假设
+
+仅限条形图和饼图  
+无阴影或纹理、3D、堆叠条形或分离的饼图
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111106211.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111107509.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111107813.png?imageSlim)
+
+提取结果
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111108521.png?imageSlim)
+
+数据提取误差
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111109540.png?imageSlim)
+
+### 重新设计
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111109187.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111109844.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111110095.png?imageSlim)
+
+局限性
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111111982.png?imageSlim)
+
+### 图形叠加层
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111111752.png?imageSlim)
+
+叠加在图表上以促进图表阅读所涉及的感知和认知过程的视觉元素
+
+<hr />
+分类法
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111112233.png?imageSlim)
+
+<hr />
+演示
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111113779.png?imageSlim)
+
+<hr />
+参考结构
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111113831.png?imageSlim)
+
+通过将标记分解为规则段并辅助读取轴值来提供帮助
+
+<hr />
+高亮显示
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111114143.png?imageSlim)
+
+吸引观众注意特定标记
+
+<hr />
+冗余编码
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111119120.png?imageSlim)
+
+强调数据值或趋势
+
+<hr />
+汇总统计
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111121490.png?imageSlim)
+
+能够与基于数据的统计进行比较
+
+<hr />
+注释
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111122719.png?imageSlim)
+
+提供上下文并支持协作
+
+大多数叠加层只需要访问标记
+
+- 参考结构（标记）
+- 高亮显示（标记）
+- 冗余编码（标记和数据）
+- 汇总统计（标记）
+- 注释（标记）
+
+### 交互式文档
+
+如何促进文本和图表的共同阅读？
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111123252.png?imageSlim)
+
+**目标**：提取文本和图表之间的引用关系  
+**问题**：写作风格的多样性
+
+<hr />
+**示例1：皮尤研究中心**
+
+**之前：**
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111127585.png?imageSlim)
+对资本主义的怀疑在巴西(22%)、中国(19%)、德国(29%)(尽管东德人的支持率低于西德人)和美国(24%)是最低的。对自由市场的怀疑在墨西哥(60%)和日本(60%)最高。
+
+**之后：**
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111135089.png?imageSlim)
+
+对资本主义的怀疑在**巴西(22%)、中国(19%)、德国(29%)**(尽管东德人的支持率低于西德人)和**美国(24%)**是最低的。对自由市场的怀疑在**墨西哥(60%)**和**日本(60%)**最高。
+
+<hr />
+**示例2：经济学人**
+
+**之前：**
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111137190.png?imageSlim)
+
+随着高收入者的薪水和经济表现朝相反方向发展，他们引起了更多的反感。欧洲人和拉丁美洲人对富人的态度往往相似；盎格鲁-撒克逊世界稍微宽容一些。
+
+**之后：**
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111138899.png?imageSlim)
+
+随着高收入者的薪水和经济表现朝相反方向发展，他们引起了更多的反感。欧洲人和拉丁美洲人对富人的态度往往相似；**盎格鲁-撒克逊世界**稍微宽容一些。
+
+<hr />
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111143598.png?imageSlim)
+<hr />
+
+**评估**
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111144845.png?imageSlim)
+
+平均 F1 距离：专家指定的引用与群众指定的引用之间
+
+<hr />
+
+**解构 D3 图表**
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111145759.png?imageSlim)
+
+自动将 D3 代码转换为基于映射的表示，以实现重新设计和样式复用
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111146690.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111146641.png?imageSlim)
+
+### 自动重新设计
+
+我们能否自动重新设计图表以改进
+
+- 感知有效性？
+- 视觉美学？
+- 视障用户的可访问性？
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111147276.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410111148335.png?imageSlim)
+
+:::info important
+
+许多专业收藏
+
+- 科学：PLOS, JSTOR, ACM DL, ...
+- 网络可视化：D3, Processing, ...
+- 新闻：纽约时报，皮尤研究，...
+
+解构如何辅助搜索？
+
+- 按图表类型、数据类型、标记、数据等进行搜索
+- 带有不精确匹配的相似性搜索
+- 查询扩展
+
+:::
+
+### 要点
+
+图表是数据和标记之间的映射集合  
+我们可以从图表位图重建这种表示  
+这种重建能够实现重新设计、重用和复兴

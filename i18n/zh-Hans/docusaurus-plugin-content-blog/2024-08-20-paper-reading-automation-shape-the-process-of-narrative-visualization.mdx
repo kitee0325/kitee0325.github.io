@@ -1,0 +1,147 @@
+---
+slug: paper-reading-automation-shape-the-process-of-narrative-visualization
+title: 论文阅读：自动化如何塑造叙事可视化的过程
+tags: [数据可视化, 论文, AI, 自动化]
+---
+
+**TLDR**
+
+本研究调查了自动化在叙事可视化工具中的应用，总结了六种类型：**注释图表、信息图表、时间线和故事线、数据漫画、滚动讲述和幻灯片，以及数据视频**。研究根据智能和自动化水平将工具分为四类：**设计空间、创作工具、机器学习/人工智能支持工具，以及机器学习/人工智能生成工具**。通过调查 105 篇论文和相关工具，研究探讨了自动化如何逐步参与可视化设计和叙事过程，以帮助用户创建叙事可视化。该研究旨在提供当前研究和发展的概述，确定每个类别中的关键研究问题，并为该领域的进一步研究提供机会。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411251507528.png?imageSlim)
+{/* truncate */}
+
+## 论文
+
+<object
+  data="/paper/How Does Automation Shape the Process of Narrative Visualization A Survey of Tools.pdf"
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href="/paper/How Does Automation Shape the Process of Narrative Visualization A Survey of Tools.pdf">
+    下载 PDF
+  </a>
+  .
+</object>
+
+## 笔记
+
+|                         | 设计<br/>空间                                     | 创作<br/>工具                           | 机器学习/人工智能<br/>支持工具               | 机器学习/人工智能<br/>生成工具 | 总计 |
+| :---------------------: | ------------------------------------------------- | --------------------------------------- | -------------------------------------------- | ------------------------------ | ---- |
+|      **注释图表**       | [7] [8] [9]                                       | [10]                                    | [11] [12] [13] [14] [15] [16] [17] [18] [19] | [20] [21]                      | 15   |
+|      **信息图表**       | [22] [23] [24] [25] [26] [27]                     | [28] [29] [30] [31] [32] [33] [34] [35] | [36] [37] [38]                               | [39] [40] [41]                 | 20   |
+| **时间线和<br/>故事线** | [42] [43] [44] [45] [46] [47]                     | [48] [49]                               | [50] [51] [52] [53] [54] [55]                |                                | 14   |
+|      **数据漫画**       | [56] [57] [58] [59] [60] [61] [62] [63]           | [64] [65] [66] [67]                     | [68]                                         | [69] [70]                      | 15   |
+| **滚动讲述<br/>幻灯片** | [71] [72] [73] [74] [75]                          | [76] [77]                               | [78]                                         | [79]                           | 9    |
+|      **数据视频**       | [80] [81] [82] [83] [84] [85] [86] [87] [88] [89] | [90] [91] [92]                          | [93] [94] [95] [96]                          | [97]                           | 18   |
+|        **总计**         | 38                                                | 20                                      | 24                                           | 9                              | 91   |
+
+[叙事可视化工具浏览器](http://autovis.idvxlab.com/)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411251506331.png?imageSlim)
+作者收集了 91 个设计空间和工具，涵盖了六种叙事可视化类型，并将它们分为四个自动化层次，让我们能够描述自动化技术如何在可视化设计和视觉叙事中逐步使用，进一步帮助用户创建数据可视化。
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411251507528.png?imageSlim)
+
+### 分类法
+
+作者基于自动化和智能程度将可视化工具分为四组。
+
+#### <img src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411251436793.png?imageSlim" width="28" height="28" style={{display:'inline-block', margin:'0px',marginRight:'8px',verticalAlign: 'middle'}}/>设计空间
+
+设计空间是一个概念性的可能性集合，而非软件工具。设计空间强调从多种可能性中选择并探索替代方案的能力。设计空间是对整个设计过程中所有潜在设计选项的描述。利用现有可视化技术中的基本设计原则是构建设计空间最常用的方法。此外，视觉设计空间允许我们捕捉图形设计师的一些隐性知识。
+
+#### <img src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411251436441.png?imageSlim" width="28" height="28" style={{display:'inline-block', margin:'0px',marginRight:'8px',verticalAlign: 'middle'}}/>创作工具
+
+创作工具是为特定可视化创建目的而设计的应用程序。它们封装了关键的软件功能和特性，允许用户自由地创建具有交互功能的可视化。这些工具通常要求设计师从头开始，使他们对创作过程有主要控制权。用户可以预先了解创作框架并与系统交互。
+
+#### <img src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411251436636.png?imageSlim" width="28" height="28" style={{display:'inline-block', margin:'0px',marginRight:'8px',verticalAlign: 'middle'}}/>机器学习/人工智能支持工具
+
+机器学习/人工智能支持工具使用智能算法来帮助创建可视化。它们自动化某些步骤，同时仍然让用户控制创作过程中的关键决策。这些工具可以自动生成一些可视化元素，并为特定部分提供推荐解决方案。用户保持对组织和最终确定可视化设计的控制权。
+
+#### <img src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411251436554.png?imageSlim" width="28" height="28" style={{display:'inline-block', margin:'0px',marginRight:'8px',verticalAlign: 'middle'}}/>机器学习/人工智能生成工具
+
+机器学习/人工智能生成工具是最自动化和智能的选项。用户在创作过程中不需要参与决策。这些工具旨在通过启用自动可视化创建来降低业余者的障碍，同时也使专家更容易探索选项，而无需手动指定每个元素。当用户上传数据时，这些工具会自动处理和分析数据，生成完整的视觉设计解决方案，无需用户干预。
+
+### 视觉分类
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411251516872.png?imageSlim)
+在原论文中，作者详细介绍了六个内容类别下四种智能级别的各种论文和输出。这里仅摘录插图中的代表性内容，不深入具体细节。
+
+#### <img src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411251512214.png?imageSlim" width="28" height="28" style={{display:'inline-block', margin:'0px',marginRight:'8px',verticalAlign: 'middle'}}/>注释图表
+
+注释图表使用图形（箭头或趋势线）或文本（数据值或评论）来补充信息，为可视化添加上下文信息以补充或介绍数据的含义。注释允许观众关注特定内容或关键信息，同时保留上下文数据的完整细节。
+
+注释图表的设计空间和工具的选定示例：
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411251537694.png?imageSlim)
+
+1. 设计空间：关于可视化识别和回忆的实验表明，添加标题和注释文本可以提高用户注意力和回忆能力。
+2. 创作工具：ChartAccent 允许用户手动和交互式地生成数据注释。
+3. 机器学习/人工智能支持工具：Kori 的工具视口会在用户输入文本时自动提示潜在的参考内容（显示为灰色下划线）。也支持简单的交互来手动创建链接。
+4. 机器学习/人工智能生成工具：Contextifier 可以自动生成注释。
+
+#### <img src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411251512331.png?imageSlim" width="28" height="28" style={{display:'inline-block', margin:'0px',marginRight:'8px',verticalAlign: 'middle'}}/>信息图表
+
+信息图表是一种专注于使用图形设计的图标、图像、颜色和其他元素来说明数据和文本信息的可视化类型。它旨在通过将复杂和抽象的概念转化为视觉组件，向目标受众传达特定信息。
+
+信息图表的设计空间和工具的选定示例：
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411251541391.png?imageSlim)
+
+1. 设计空间：不同类型的信息图表对用户有不同程度的吸引力，评分基于使用 9 点李克特量表的用户实验的均值和标准差。
+2. 创作工具：DDG 矢量绘图工具，可用于将矢量图形绑定到数据。
+3. 机器学习/人工智能支持工具：利用深度神经网络，使用手动标记的信息图表作为训练数据，以找到视觉数据项，同时忽略创意方面。
+4. 机器学习/人工智能生成工具：通过模拟在线示例自动生成信息图表，主要分两步：检索（基于视觉元素索引在线实例）和匹配（用个人用户数据替换）。
+
+#### <img src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411251512727.png?imageSlim" width="28" height="28" style={{display:'inline-block', margin:'0px',marginRight:'8px',verticalAlign: 'middle'}}/>时间线和故事线
+
+时间线和故事线描述事件序列。最典型的时间线是根据时间戳水平排列事件，并使用水平轴表示从左到右的时间进程。在故事线可视化中，叙事从左到右展开；每个人都被表示为一条线。当两个人在同一时刻互动时，他们的两条线相交。由于它们的表现形式有许多相似之处，本节将时间线和故事线一起讨论。
+
+时间线的设计空间和工具的选定示例：
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411251543670.png?imageSlim)
+
+1. 设计空间：用时间线讲故事包含三个层次的设计空间：表示、比例和布局。
+
+2. 创作工具：Timeline Storyteller 提供了一个工作视口，其中时间线画布跨越整个浏览器窗口。
+
+3. 机器学习/人工智能支持工具：
+   - TimeLineCurator 是一个基于浏览器的创作工具，用于创建时间顺序可视化，使用不同的颜色表示不同的类别
+   - PlotThread 创建故事线可视化，其布局由 AI 代理和设计师协作开发，而样式和视觉标签可以手动修改以增强叙事
+
+#### <img src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411251512275.png?imageSlim" width="28" height="28" style={{display:'inline-block', margin:'0px',marginRight:'8px',verticalAlign: 'middle'}}/>数据漫画
+
+数据漫画是一种新兴的叙事可视化形式，专注于数据信息的变化和数据序列的视觉呈现。
+与传统漫画不同，数据漫画必须包含数据驱动的内容，允许多个可视化在漫画条带布局的单个面板中并置，带有注释和视觉装饰。数据漫画补充了电影和现场演示所固有的叙事线性，同时提供了信息图表和注释图表中二维空间排列的灵活性。
+
+数据漫画的设计空间和工具的选定示例：
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411251606824.png?imageSlim)
+
+1. 设计空间：数据漫画设计模式和一些数据漫画示例的插图。
+2. 创作工具：DataToon 的工作视口，可通过笔触交互创建动态网络数据卡通。
+3. 机器学习/人工智能支持工具：Chartstory 的工作视口，自动化分析、布局和创建数据漫画的标题，用数据讲述故事。
+4. 机器学习/人工智能生成工具：Calliope 自动从电子表格生成视觉数据故事，包括故事生成器和编辑器。
+
+#### <img src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411251513119.png?imageSlim" width="28" height="28" style={{display:'inline-block', margin:'0px',marginRight:'8px',verticalAlign: 'middle'}}/>滚动讲述和幻灯片
+
+"滚动讲述"一词结合了"讲故事"和"滚动"。它是一种基于滚动的视觉叙事形式，广泛用于数据驱动的文章。滚动讲述文章通常以全屏照片或视频开始，随着用户滚动浏览内容而进展。
+
+类似的视觉叙事形式是幻灯片。许多近期网站集成了按钮和滑块，其中步进器和滚动器的区别取决于用户是点击步骤还是连续滚动。在故事布局方面，页面经常以幻灯片或混合形式出现，结合了两种格式的特点，具有不同的动画和滚动行为。由于幻灯片和混合形式可以相互转换，它们通常与滚动讲述一起研究。
+
+滚动讲述的设计空间和工具的选定示例：
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411251607754.png?imageSlim)
+
+1. 设计空间：概述了如何在设计系统中使用自动排序来指导非设计师在创建叙事可视化时做出结构化决策。
+2. 创作工具：使用文本-图表链接将包含文本和图表的静态数据驱动文章转变为动态内容。
+3. 机器学习/人工智能支持工具：Tedric 系统工作流程，可用于训练演讲技巧，减少即兴演讲的障碍，并根据观众建议生成幻灯片。
+4. 机器学习/人工智能生成工具：自动生成滚动讲述可视化的方法。
+
+#### <img src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411251513311.png?imageSlim" width="28" height="28" style={{display:'inline-block', margin:'0px',marginRight:'8px',verticalAlign: 'middle'}}/>数据视频
+
+数据视频是一种结合数据可视化和动态图形并讲述数据驱动故事的叙事可视化类型。数据视频可以在短时间内向观众呈现多样化的视觉信息，因此在传播数据信息方面被广泛使用。
+
+数据视频的设计空间和工具的选定示例：
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411251609112.png?imageSlim)
+
+1. 设计空间：E+I+PR+被认为是数据视频中最平衡的叙事结构
+2. 创作工具：DataClip 可以为金融分析生成数据驱动的视频
+3. 机器学习/人工智能支持工具：Data Animator 提供带有关键帧堆叠和时间线控制的故事板编辑，用于复杂动画
+4. 机器学习/人工智能生成工具：Autoclips 从数据事实自动为数据视频生成关键帧

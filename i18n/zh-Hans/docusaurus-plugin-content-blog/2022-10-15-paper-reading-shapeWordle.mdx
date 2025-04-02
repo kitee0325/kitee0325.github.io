@@ -1,0 +1,186 @@
+---
+slug: paper-reading-shapeWordle
+title: 论文阅读 ShapeWordle
+tags: [数据可视化, 论文, Wordle, 词云, 标签云]
+---
+
+import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
+
+**TLDR**
+
+本文包含我对论文"ShapeWordle: Tailoring Wordles using Shape-aware Archimedean Spirals"（ShapeWordle：使用形状感知的阿基米德螺线定制 Wordle）的笔记。我将讨论定义、原始方法、论文的贡献和代码实现。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410211517897.png?imageSlim)
+{/* truncate */}
+
+## 论文
+
+<object
+  data="/paper/ShapeWordle-Tailoring Wordles using Shape-aware Archimedean Spirals.pdf"
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href="/paper/ShapeWordle-Tailoring Wordles using Shape-aware Archimedean Spirals.pdf">
+    下载 PDF
+  </a>
+  .
+</object>
+
+## 笔记
+
+<video
+  width="100%"
+  height="auto"
+  controls
+  poster="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410211517897.png?imageSlim"
+>
+  <source src="/video/ShapeWordle.mp4" type="video/mp4" />
+  您的浏览器不支持视频标签。
+</video>
+
+### 定义
+
+词云是文本数据的可视化表示，通常用于描述网站上的关键词元数据，或可视化自由形式的文本。
+
+#### 优点
+
+- 易于理解
+- 美观
+- 突出关键词
+
+#### 缺点
+
+- 可能缺失数据（没有空间放置）
+- 大小不敏感
+
+> [《Word clouds considered harmful》](https://www.niemanlab.org/2011/10/word-clouds-considered-harmful/)，作者为 Jacob Harris，纽约时报高级软件架构师（通过 FlowingData）。
+
+### 原始方法
+
+> https://www.jasondavies.com/wordcloud/about/
+
+布局算法本身非常简单。对于每个词，从最"重要"的开始：
+
+1. 尝试将词放置在某个起点：通常在中间附近，或中心水平线上的某个位置。
+
+2. 如果该词与任何先前放置的词相交，则沿着递增的螺旋移动一步。重复此过程，直到找不到相交。
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410211603697.png?imageSlim)
+
+### 论文贡献
+
+- 形状感知的阿基米德螺线
+- 多中心
+- 可编辑
+- 效果评估
+
+#### 形状感知的阿基米德螺线
+
+阿基米德螺线是最广泛使用的欧几里得螺线之一，可以在极坐标中轻松定义：
+
+<BlockMath math="r(\theta) = m\theta + b" />
+
+其中 <InlineMath math="\theta" /> 是极角，<InlineMath math="r" /> 是与原点的径向距离，<InlineMath math="b = r(0)" /> 是起点与原点的初始距离，<InlineMath math="m" /> 控制连续转弯之间的间距。在连续转弯之间有均匀间距 <InlineMath math="2m\pi" /> 是阿基米德螺线的一个重要且有用的特征。
+
+阿基米德螺线也可以通过三角函数用笛卡尔坐标 <InlineMath math="x" /> 和 <InlineMath math="y" /> 表示：
+
+<BlockMath math="\left(\begin{array}{c}x\\y\end{array}\right) = r(\theta)\left(\begin{array}{c}cos\theta\\sin\theta\end{array}\right)" />
+
+关于 <InlineMath math="\theta" /> 求导得到：
+
+<BlockMath math="\left\{\begin{array}{l}{\frac{dx}{d\theta} = mcos\theta-r(\theta)sin\theta}\\{\frac{dy}{d\theta} = msin\theta+r(\theta)cos\theta}\end{array}\right." />
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410211802686.png?imageSlim)
+
+<InlineMath math="(\frac{dx}{d\theta},\frac{dy}{d\theta})" /> 是螺线在2D空间中 <InlineMath math="(x,y)" /> 处的运动方向（记为 <InlineMath math="U" />
+）。可以沿 <InlineMath math="N=(cos\theta, sin\theta)^T" /> 和 <InlineMath math="T=(-sin\theta, cos\theta)^T" /> 分解 <InlineMath math="U" />
+：
+
+<BlockMath math="U = m \left(\begin{array}{c}cos\theta\\sin\theta\end{array}\right) + r(\theta) \left(\begin{array}{c}-sin\theta\\cos\theta\end{array}\right) = mN + r(\theta)T" />
+
+其中 <InlineMath math="N" /> 和 <InlineMath math="T" /> 分别是点 <InlineMath math="(x,y)" /> 处的单位法向量和单位切向量，该点位于与螺线共心的半径为 <InlineMath math="\sqrt{x^2+y^2}" /> 的圆上。这样的圆可以被解释为底层距离场 <InlineMath math="\phi(x,y) = \sqrt{x^2+y^2}" /> 的等值线，该距离场测量从 <InlineMath math="(x,y)" /> 到原点的欧几里得距离。
+
+**计算距离场**。距离场是一种有效的形状表示，已用于边缘捆绑和轨迹数据可视化。它是一个标量场，通过距离变换 <InlineMath math="R^2 \rightarrow R_+" /> 指定到形状轮廓的最短距离。
+
+<BlockMath math="\phi(p\in R^2,\Omega) = min_{q\in\Omega}||p-q||" />
+
+**扩展阿基米德螺线**。要扩展阿基米德螺线使其具有形状感知，主要问题是如何引导螺线的运动，或者如何定义螺线在给定形状内任意点 <InlineMath math="p" /> 处的运动方向。而不是显式构造等值线然后计算 <InlineMath math="p" /> 处的等值线法线，而是将距离场的梯度作为 <InlineMath math="N" />。这种策略可以准确地近似连续标量场（如 <InlineMath math="\phi" />）的法线。一旦获得 <InlineMath math="N" />，就可以轻松获得 <InlineMath math="T" />，因为它是与 <InlineMath math="N" /> 正交的单位向量。然后可以用微分形式重写方程：
+
+<BlockMath math="\left(\begin{array}{c}dx\\dy\end{array}\right) = md\theta N + rd\theta T" />
+
+然而，在任意形状中的每个点使用相同的 θ 可能不太合适，因为生成的螺线可能无法适应高曲率区域。
+
+为了表征这种尖锐特征，作者考虑了沿螺线的局部曲率，并通过垂直于 <InlineMath math="N" /> 的小切向运动（表示为 <InlineMath math="ds" />）来近似曲线，用 <InlineMath math="Rd\eta" /> 和 <InlineMath math="Rd\theta" /> 表示，其中 R 是局部曲率半径，<InlineMath math="\eta" /> 是用户指定的角速度参数。
+
+<BlockMath math="d\theta = \frac{Rd\eta}{r}" />
+
+也可以写为：
+
+<BlockMath math="\left(\begin{array}{c}dx\\dy\end{array}\right) = \frac{mRd\eta}{r}N + Rd\eta T" />
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410300335424.png?imageSlim)
+
+#### 多中心
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410300345513.png?imageSlim)
+
+**形状分割**。给定一个形状，检测形状中的连通分量，并为每个分量生成距离场。然后使用迭代梯度下降程序来定位每个分量中的局部最大值和相关的形状区域（称为部分）。这允许隐式地将一个分量分割成几个部分。
+
+**词语分配**。给定一个要填充形状的词语列表，首先为每个词设置字体大小，使所有词的面积总和为形状总面积的 70%。然后使用贪心策略将词分配给形状的不同部分。表示 <InlineMath math="p_{i,j}" /> 为第 i 个分量的第 j 个部分，<InlineMath math="A_{i,j}" /> 为 <InlineMath math="p_{i,j}" /> 的面积，<InlineMath math="N" /> 为输入词的总数，分配给 <InlineMath math="p_{i,j}" /> 的词的数量为：
+
+<BlockMath math="\frac{A_{i,j}}{\sum_{u}\sum_{v}A_{u,v}}N" />
+
+假设最大权重的词应该分配给最大的部分，然后定义每个部分中词的最大权重为：
+
+<BlockMath math="W_{i,j} = \frac{A_{i,j}}{max_{u,v}A_{u,v}}" />
+
+#### 可编辑
+
+:::info
+虽然作者在这方面做出了巨大努力并取得了显著成就，但我没有遇到适合这部分内容交互的合适字符场景。所以暂时跳过这部分。
+:::
+
+### 代码
+
+:::warning
+演示需要加载 OpenCV 资源。如果演示显示为空白，可能是由于资源加载失败。您可以尝试使用下面的按钮重新加载。
+:::
+
+<button
+  onClick={() => {
+    const iframe = document.getElementById('shapeWordle-demo');
+    iframe.src = iframe.src;
+  }}
+  style={{
+    padding: '16px 16px 8px',
+    backgroundColor: '#1677ff',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+    cursor: 'pointer',
+    fontSize: '16px',
+    textAlign: 'center',
+    lineHeight: '1',
+  }}
+>
+  重新加载演示
+</button>
+
+<iframe
+  id="shapeWordle-demo"
+  src="/demo/shapeWordle/index.html"
+  width="100%"
+  style={{ border: 'none' }}
+  onLoad={(e) => {
+    // Adjust iframe height to match content
+    const iframe = e.target;
+    iframe.style.height =
+      iframe.contentWindow.document.documentElement.scrollHeight + 'px';
+  }}
+/>
+
+:::tip
+
+在上面的演示中，ShapeWordle 的代码已被我重新组织。如果您需要查看论文的原始源代码，请访问https://github.com/RealKai42/Shape_Wordle。  
+我不确定代码是否 100%正确。有些地方可能需要修正和优化。
+:::

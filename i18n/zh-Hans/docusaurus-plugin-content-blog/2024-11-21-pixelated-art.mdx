@@ -1,0 +1,540 @@
+---
+slug: pixelated-art
+title: 像素艺术
+tags: [数据可视化, 设计, 像素艺术, AI, ComfyUI, ControlNet]
+---
+
+import ModelViewer from '@site/src/components/ModelViewer';
+
+**TLDR**
+本文记录了我使用 AI 工具创建像素艺术动画的实验尝试。通过探索 ComfyUI 等不同方法，我尝试为简单的奔跑动画生成角色精灵表。虽然结果仍处于初步阶段并面临几个挑战，但这个实验提供了一些将 AI 与像素艺术创作结合的见解。文章分享了我的学习过程和开发的技术工作流程，希望对对类似实验感兴趣的人有所帮助。
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502040121836.png?imageSlim)
+
+{/* truncate */}
+
+## 引言
+
+<iframe
+  width="560"
+  height="315"
+  src="https://www.youtube.com/embed/fKv1Mixv0Hk?si=lCwN9neeF7J0nwne"
+  title="YouTube video player"
+  frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+  referrerpolicy="strict-origin-when-cross-origin"
+  allowfullscreen
+></iframe>
+
+> [原始网站](https://pudding.cool/2024/03/teenagers/)
+
+我非常喜欢 Alvin Chang 在 The Pudding 上创作的内容风格，特别是他的作品"青少年到成年人"。这有两个主要原因：首先，我非常欣赏高质量的像素艺术。其次，这部作品的内容引人深思。例如，这篇作品的 YouTube 视频版本中有一条评论说：
+
+`"1997年大多数青少年强烈认同他们的未来将是乐观的" 💀 他们不知道的是....`
+
+因此，我进行了一些技术实验。
+
+## 像素化
+
+### ❎ 纯压缩
+
+<img src="/img/Pixelate Demo.gif" alt="pixelated-art" />
+
+像素化已经是一种成熟的技术，GitHub 上有许多与图像像素化相关的项目。以[`pixelate`](https://gitcode.com/gh_mirrors/pi/pixelate/blob/master/pixelate.js)为例，我将介绍其中的一些计算细节。
+
+```javascript
+(function (root) {
+  window.URL = window.URL || window.webkitURL || window.mozURL;
+
+  function disableSmoothRendering(ctx) {
+    ctx.webkitImageSmoothingEnabled = false;
+    ctx.mozImageSmoothingEnabled = false;
+    ctx.msImageSmoothingEnabled = false;
+    ctx.imageSmoothingEnabled = false;
+    return ctx;
+  }
+
+  function Pixelate(image, opts) {
+    opts = opts || {};
+    this.image = image;
+    this.setAmount(opts.amount);
+
+    var imageLoaded = function () {
+      this.imageUrl = image.src;
+      this.width = image.clientWidth;
+      this.height = image.clientHeight;
+
+      this.canvas = document.createElement('canvas');
+      this.canvas.style.display = 'none';
+      this.canvas.width = this.width;
+      this.canvas.height = this.height;
+
+      this.canvas.style.cssText =
+        'image-rendering: optimizeSpeed;' + // FireFox < 6.0
+        'image-rendering: -moz-crisp-edges;' + // FireFox
+        'image-rendering: -o-crisp-edges;' + // Opera
+        'image-rendering: -webkit-crisp-edges;' + // Chrome
+        'image-rendering: crisp-edges;' + // Chrome
+        'image-rendering: -webkit-optimize-contrast;' + // Safari
+        'image-rendering: pixelated; ' + // Future browsers
+        '-ms-interpolation-mode: nearest-neighbor;'; // IE
+
+      this.ctx = this.canvas.getContext('2d');
+      this.ctx = disableSmoothRendering(this.ctx);
+
+      this.image.parentNode.appendChild(this.canvas, this.image);
+      this.image.onload = null;
+
+      this.pixelImage = new Image();
+      this.pixelImage.onload = function () {
+        this.ready = true;
+        this.render();
+      }.bind(this);
+      this.pixelImage.src = this.imageUrl;
+    }.bind(this);
+
+    if (this.image.complete) {
+      imageLoaded();
+    }
+
+    this.image.onload = imageLoaded;
+
+    return this;
+  }
+
+  Pixelate.prototype.setAmount = function (amount) {
+    this.amount = 1 - (amount || 0);
+    return this;
+  };
+
+  Pixelate.prototype.setWidth = function (width) {
+    var height = (this.height / this.width) * width;
+    this.width = width;
+    this.height = height;
+    this.canvas.width = this.width;
+    this.canvas.height = this.height;
+
+    this.ctx = disableSmoothRendering(this.ctx);
+    return this;
+  };
+
+  Pixelate.prototype.render = function () {
+    if (!this.ready) return this;
+    var w = this.width * (this.amount <= 0 ? 0.01 : this.amount);
+    var h = this.height * (this.amount <= 0 ? 0.01 : this.amount);
+    // render smaller image
+    this.ctx.drawImage(this.pixelImage, 0, 0, w, h);
+    // stretch the smaller image
+    this.ctx.drawImage(this.canvas, 0, 0, w, h, 0, 0, this.width, this.height);
+    this.image.src = this.canvas.toDataURL('image/png');
+    return this;
+  };
+
+  if (typeof exports !== 'undefined') {
+    if (typeof module !== 'undefined' && module.exports) {
+      exports = module.exports = Pixelate;
+    }
+    exports.pixelate = Pixelate;
+  } else if (typeof define === 'function' && define.amd) {
+    define([], function () {
+      return Pixelate;
+    });
+  } else {
+    root.Pixelate = Pixelate;
+  }
+})(this);
+```
+
+- 首先，原始图像被缩小到更小的尺寸，由"amount"参数控制。
+- 然后，这个更小的图像被调整回其原始尺寸。
+- 由于图像平滑功能被禁用，这个过程会产生明显的像素块效果。
+- 图像越小（"amount"越小），调整大小后的像素块就越大，产生更明显的像素化效果。
+
+这个库的操作逻辑非常简单。虽然在处理具有复杂颜色的图像时可能会丢失很多细节，但对于简单场景已经足够了。
+
+<iframe
+  src="/demo/pixelate/index.html"
+  width="100%"
+  style={{ border: 'none' }}
+  onLoad={(e) => {
+    // Adjust iframe height to match content
+    const iframe = e.target;
+    iframe.style.height =
+      iframe.contentWindow.document.body.scrollHeight + 'px';
+  }}
+></iframe>
+
+游戏中常见的像素资源大小是 16px、32px、64px 和 128px。在这里，我们选择 128px 来生成相应的角色资源。考虑到原始图像的高分辨率，它实际上需要进行细化，以确保各种细节更符合像素艺术风格。
+
+<div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+  <img
+    src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202501292246278.png?imageSlim"
+    style={{ height: '512px' }}
+  />
+  <img
+    src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202501292315047.png?imageSlim"
+    style={{ height: '512px' }}
+  />
+
+</div>
+
+### ✅ComfyUI
+
+在 ComfyUI 中，可以使用在线共享的像素艺术工作流程来生成高质量的结果。但是，由于图像可能会有轻微的噪点，如果想要进一步处理或创作，应该通过使用一些图形脚本、自定义像素化节点或在 Photoshop 等图像处理软件中去除噪点。
+
+<div style={{ display: 'flex', gap: '16px', width: '100%' }}>
+  <div style={{ width: '33%', aspectRatio: '1', overflow: 'hidden' }}>
+    <img
+      src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502012002242.png?imageSlim"
+      style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+    />
+  </div>
+  <div style={{ width: '33%', aspectRatio: '1', overflow: 'hidden' }}>
+    <img
+      src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502012003807.png?imageSlim"
+      style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+    />
+  </div>
+  <div style={{ width: '33%', aspectRatio: '1', overflow: 'hidden' }}>
+    <img
+      src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502012023456.png?imageSlim"
+      style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+    />
+  </div>
+</div>
+<a
+  href="/data/pixel-art-openart.ai.json"
+  download="pixel-art-openart.ai.json"
+  style={{
+    backgroundColor: '#4CAF50',
+    border: 'none',
+    color: 'white',
+    padding: '12px 24px',
+    textAlign: 'center',
+    textDecoration: 'none',
+    display: 'inline-block',
+    fontSize: '16px',
+    borderRadius: '8px',
+    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+    transition: 'all 0.3s ease',
+    cursor: 'pointer',
+    margin: '20px auto',
+  }}
+  onMouseOver={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
+  onMouseOut={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+>
+  <span>下载工作流</span>
+</a>
+
+### ✅Aseprite + PixelLab
+
+Aseprite 是专门用于像素艺术设计的软件，而 PixelLab 是 Aseprite 的 AI 支持扩展。Aseprite 是付费软件，而且在我所在的地区价格是可以接受的。考虑到我未来的像素艺术项目，我决定购买它。PixelLab 提供各种付费选项，但目前，我选择了免费版本用于角色生成。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502011949301.png?imageSlim)
+
+下面的图像是其创作结果。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502011950126.png?imageSlim)
+创建的结果可以直接用于任何项目，只需一些简单的提示，就能满足许多基本场景的需求。
+
+## 动画化
+
+### 基础知识
+
+一位熟练的像素艺术家可以根据现有的角色设计快速创建基本的 4 方向或 8 方向动画帧。在这里，我将介绍一些基本概念。
+
+- 6、12 或 24，但 4 帧每秒
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202501301442298.png?imageSlim)
+  12 帧每秒是一个平衡良好的选择，它为初学者提供了较低成本的优势，同时仍能实现符合期望的流畅动画效果。
+  但是，重要的是要记住，我们只是实现基本的奔跑动作，这是一个完全重复的活动。因此，你可以创建一个 4 帧的精灵表，并在一秒内多次重复它来实现流畅的效果。
+
+  <iframe
+    width="560"
+    height="315"
+    src="https://www.youtube.com/embed/J1sFBDQt8J0?si=dPBeT-_GSlxWJwpc&amp;start=50"
+    title="YouTube video player"
+    frameborder="0"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    referrerpolicy="strict-origin-when-cross-origin"
+    allowfullscreen
+  ></iframe>
+
+- 45°
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202501301449497.png?imageSlim)
+  45 度相机角度是一种经验选择，它允许玩家观察角色的前、侧和顶部，从而获得更多视觉细节。虽然这个视角在技术上违反了物理定律，但大多数玩家并不感到突兀。
+
+  <iframe
+    width="560"
+    height="315"
+    src="https://www.youtube.com/embed/aios4kDJZsc?si=_i8L_XVZTgYkKQrw&amp;start=35"
+    title="YouTube video player"
+    frameborder="0"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    referrerpolicy="strict-origin-when-cross-origin"
+    allowfullscreen
+  ></iframe>
+
+  :::info
+  例如，在著名的像素游戏"星露谷物语"中，你也可以看到这种经典的设计方法。
+
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202501301453905.png?imageSlim)
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202501301458178.png?imageSlim)
+  :::
+
+- 4 方向或 8 方向，但 1 方向
+
+  通常，移动时像素角色需要 4 方向或 8 方向的移动动画。然而，对于本文提到的视觉作品，实现单一方向就足够了，这大大减少了所需的工作量。
+
+  你可以观察到大多数移动是左/右的，而左右本质上是镜像的，由于垂直方向的移动有限，我们只需要实现水平（X 轴）移动动画。然后，垂直移动可以简单地通过移动位置来实现。
+
+好的，好消息是我们只需要绘制四个帧。然而，坏消息是我对动画和像素艺术一点都不熟悉。
+但是，这是 AI 的时代，不是吗？经过一些研究，我发现了以下方法：
+
+- ❎ 上传一个 2D 像素图像，使用 AI 将其转换为 3D 模型。结合 Unity 中的免费奔跑骨骼动画，通过录制和处理，可以获得所需的精灵表。
+
+  > 经过一些实验，我发现它的建模效果不太适合像素艺术。要获得好的结果，你必须有身体各部分非常清晰的图像。
+
+- ❎ 利用现有的像素 AI 工具，如 PixelLab。
+
+  > <img src="/img/Pixellab Animate Example.gif" />
+  > 虽然PixelLab提供了我需要的一切，但它的骨骼动画功能是针对专业像素艺术家的付费服务。由于我只打算进行一次测试，我可能会考虑暂时避免这笔费用，等到有更密集的工作需求时再购买。
+
+- ✅ 上传 2D 像素图像，找到现有的骨骼动画截图，并使用 ComfyUI 直接生成精灵表。
+
+  > ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202501301810940.png?imageSlim)
+  > 这似乎是目前对我来说可能最合适的方法——它是免费的，允许控制动作，并且精度损失最小。
+
+:::info
+其他像素动画工具
+
+[Pixel Animator-Pixel Art Animation](https://www.yeschat.ai/gpts-9t55Qx3WHjy-Pixel-Animator)  
+[voidless](https://voidless.dev/image-gen)  
+:::
+
+### 奔跑循环
+
+角色的奔跑动作有一个专门的术语，叫做 RunCycle（奔跑循环）。这指的是单个奔跑动作应该是完整且封闭循环的要求，特别是在游戏和 3D 领域。这意味着一个动作的结束应该无缝连接到下一个动作的开始，为流畅的奔跑动画创建一个循环。
+
+感谢 2D 像素艺术社区内的分享，我们可以轻松找到相关的指导方案：
+
+<img src="/img/Run Cycles.gif" />
+
+### 生成
+
+基于上述材料，我在 ComfyUI 开源社区中找到了相关资源和教程，这为我节省了大量时间。
+
+- 优秀的奔跑骨骼动画
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502040127347.png?imageSlim)
+- 与我的目标高度一致的指南
+
+  <iframe
+    width="560"
+    height="315"
+    src="https://www.youtube.com/embed/ismWniiT8ew?si=0RPUJc5XkIBaHONk"
+    title="YouTube video player"
+    frameborder="0"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    referrerpolicy="strict-origin-when-cross-origin"
+    allowfullscreen
+  ></iframe>
+
+- ComfyUI 的全面初学者指南
+  <iframe
+    width="560"
+    height="315"
+    src="https://www.youtube.com/embed/_C7kR2TFIX0?si=68aS93ZvRRVm4pvd"
+    title="YouTube video player"
+    frameborder="0"
+    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+    referrerpolicy="strict-origin-when-cross-origin"
+    allowfullscreen
+  ></iframe>
+
+最终，我构建了如图所示的工作流程：
+
+- 利用 IPAdapter 维持角色特征
+- 使用 ControlNet 应用精灵表中每一帧的姿势
+- 选择为像素艺术特定模型量身定制的检查点
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502040121836.png?imageSlim)
+
+<a
+  href="/data/pixel-sprite-sheet.json"
+  download="pixel-sprite-sheet.json"
+  style={{
+    backgroundColor: '#4CAF50',
+    border: 'none',
+    color: 'white',
+    padding: '12px 24px',
+    textAlign: 'center',
+    textDecoration: 'none',
+    display: 'inline-block',
+    fontSize: '16px',
+    borderRadius: '8px',
+    boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
+    transition: 'all 0.3s ease',
+    cursor: 'pointer',
+    margin: '20px auto',
+  }}
+  onMouseOver={(e) => (e.currentTarget.style.transform = 'scale(1.05)')}
+  onMouseOut={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+>
+  <span>下载工作流</span>
+</a>
+
+经过简单尝试，我获得了以下结果：
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502040201305.png?imageSlim)
+
+<img src="/img/Sprite Run.gif" />
+
+然而，仍然存在一些问题：
+
+- 扩散模型生成的角色图像与原始角色不同。
+  > 这可能是参数调整的问题。需要调整 IPAdapter 参数，或引入 Flux 来严格保持角色一致性。
+- 生成的图像只是模拟像素风格，而不是严格的像素艺术，导致与之前类似的噪点问题。
+  > 需要引入专用的像素艺术处理节点来消除相应的噪点。
+- 动作过渡不够流畅，奔跑时仍有卡顿感。
+  > 这仍然是一个挑战，因为扩散模型固有的随机性（即使有收敛算法），使得很难确保帧之间的自然过渡。它需要引入独特的像素艺术优化技术，如模糊处理。正如在 PixelLab 的宣传视频中看到的，他们的动画相对流畅，这需要我更深入地掌握 ComfyUI。现在，我将暂时搁置这些问题。
+
+## 改进
+
+- 对于非严格像素的问题，我参考了https://github.com/Astropulse/sd-palettize的代码，并在ComfyUI中实现了一个自定义节点，处理512\*512结果中的非严格像素问题。
+
+- 对于动作不流畅的问题，我使用了来自 Civitai 社区的更小帧划分的姿势精灵表：https://civitai.com/models/56307/character-walking-and-running-animation-poses-8-directions。
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502070708261.png?imageSlim)
+
+然而，仍然存在丢失角色细节（如奔跑时摆动的头发）的问题。我认为根本原因在于像素艺术本身会丢失精度，而在扩散生成中，不可避免地会错误处理一些像素块。
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502070706112.png?imageSlim)
+
+<img src="/img/Sprite Run 20x.gif" />
+
+**下一步考虑（待执行）：**
+
+- 参考https://civitai.com/models/448101/sprite-sheet-maker中的完整过程，首先从高分辨率图像生成精灵表，然后使用像素化脚本处理图像。然而，这要求高分辨率图像适合像素艺术。从上面提到的像素化方法的第一点，我们已经知道，直接使用算法将高分辨率图像转换为像素艺术几乎无法使用。
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502070705154.png?imageSlim)
+
+- 尝试使用 FaceID 处理角色的详细面部特征，并使用 AnimateDiff 进行帧插值，以缓解丢失角色细节的问题。
+
+## 3D 渲染 2D
+
+最近，我在 YouTube 上看到了一个视频。我对它的动画流畅度感到惊讶，因为它也使用了顺序帧模式。所以我决定进一步研究它。
+
+<iframe
+  width="560"
+  height="315"
+  src="https://www.youtube.com/embed/MUr1iRdMywo?si=nnoEerDlHqi2i3IF"
+  title="YouTube video player"
+  frameborder="0"
+  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+  referrerpolicy="strict-origin-when-cross-origin"
+  allowfullscreen
+></iframe>
+### 基本案例
+
+以下是他的处理过程的详细步骤：
+
+- 使用 ControlNet 生成 T 姿势的 2D 角色。
+
+  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+    <img
+      src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502111100499.jpg?imageSlim"
+      style={{ width: '50%', height: 'auto' }}
+    />
+    <img
+      src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502111100675.png?imageSlim"
+      style={{ width: '50%', height: 'auto' }}
+    />
+  </div>
+
+- 使用 tripoSR 将其转换为 3D 模型。即使精度较低，也无关紧要，因为在最终的像素化阶段这将不太明显。
+
+  <ModelViewer
+    modelPath="/model/pixelate/tifa.glb"
+    ambientLightIntensity="0.8"
+  />
+
+- 使用`Blender`将模型导出为.fbx 格式。
+- 将模型上传到`Mixamo`，执行自动骨骼绑定，并选择和应用一个奔跑动画模型。
+  <img src="/img/Mixamo Tifa Running.gif" />
+- 在 Blender 中加载带有奔跑动画的.fbx 模型，并从特定相机角度渲染顺序帧。
+- 使用 SD 对顺序帧进行像素化。我添加了像素化处理，将其转换为真正的像素。
+- 使用 FFmpeg 导出 GIF。
+  <img src="/img/3DRender2D Pixel Tifa.gif" />
+
+虽然流畅度和角色一致性相当令人印象深刻，但它仍然只是一个简单压缩算法的产物；它是像素化的，但不是像素艺术。因此，目前有两个技术挑战：
+
+- 使用 SD 的 ControlNet 应用姿势时，难以保持角色一致性，特别是在小像素区域。
+- 缺乏将所有任务图像转换为像素艺术的模型/算法。
+
+我希望有一天能找到这些问题的解决方案。
+
+### 另一个带有一些改进的方案
+
+- 从[posemy.art](https://posemy.art/app/)选择一个女性动漫模型，应用 T 姿势，获得高质量的 DWopenpose 和 Depth 原始图像。
+
+  <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
+    <img
+      src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502192156453.png?imageSlim"
+      alt=""
+      style={{ width: '33%', height: 'auto' }}
+    />
+    <img
+      src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502192157589.png?imageSlim"
+      alt=""
+      style={{ width: '33%', height: 'auto' }}
+    />
+    <img
+      src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502192157149.png?imageSlim"
+      alt=""
+      style={{ width: '33%', height: 'auto' }}
+    />
+  </div>
+  然而，Depth图像似乎缺乏深度信息，所以我在ComfyUI中使用MiDaS Depth(左)和Zoe Depth(右)重新生成它，最终选择了看起来更干净的MiDaS
+  Depth
+  <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
+    <img
+      src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502192200689.png?imageSlim"
+      alt=""
+      style={{ width: '50%', height: 'auto' }}
+    />
+    <img
+      src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502192200283.png?imageSlim"
+      alt=""
+      style={{ width: '50%', height: 'auto' }}
+    />
+  </div>
+
+- 使用 openpose 和 Depth 的双 ControlNet 确保姿势的准确性。
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502192216094.png?imageSlim)
+
+- 使用最新的 Tripo V2.5 进行 3D 建模。
+
+  > 通过使用角色的四向视图，可以使模型更精确。然而，由于我只是进行一个基本测试，我现在将省略这一步。
+
+  <ModelViewer
+    modelPath="/model/pixelate/anime dragon girl.glb"
+    ambientLightIntensity="0.8"
+  />
+
+- 在 blender 中使用[pixel art add-on](https://lucasroedel.gumroad.com/l/pixel_art)，而不是 ComfyUI 中的 pixelate 自定义节点。
+  <img src="/img/Blender Pixel Art Addon.gif" />
+
+所以，这就是结果：
+
+<div
+  style={{
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    gap: '10px',
+  }}
+>
+  <img
+    src="/img/Dragon Girl Run.gif"
+    style={{ width: 'auto', height: 'auto', flex: 1 }}
+  />
+  <img
+    src="/img/Dragon Girl Run 268.gif"
+    style={{ width: '268px', height: '268px' }}
+  />
+</div>

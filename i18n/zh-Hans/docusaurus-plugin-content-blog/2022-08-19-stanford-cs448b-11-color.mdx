@@ -1,0 +1,337 @@
+---
+slug: stanford-cs448b-11-color
+title: 斯坦福 CS448B 11 色彩
+tags: [数据可视化, 斯坦福, 课程, CS448B, 色彩]
+---
+
+import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
+
+**TLDR**
+
+本文包含我对斯坦福 CS448B（数据可视化）课程的笔记，特别关注第十一讲关于色彩的内容。我将讨论颜色在数据可视化中的重要性、背后的原则，并探索各种数据可视化技术，包括使用指导元素、表达性、有效性、对比和模式感知的支持、数据分组和排序、数据转换、减少认知负担以及一致性。我还将介绍各种图表类型，如折线图、柱状图、堆叠面积图等，提供示例并讨论它们的设计考虑因素。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409271814988.png?imageSlim)
+{/* truncate */}
+
+## 原文
+
+<object
+  data="/stanford-cs448b/Lec11-color.pdf"
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href="/stanford-cs448b/Lec11-color.pdf">下载 PDF</a>.
+</object>
+
+## 笔记
+
+### 色彩的目的
+
+- 用于标记
+- 用于测量
+- 用于表示和模仿
+- 用于活化和装饰
+
+> "首要原则，不要造成损害。"
+>
+> <p style={{ textAlign: 'right' }}>- Edward Tufte </p>
+
+### 色彩感知
+
+- 物理世界
+- 视觉系统
+- 心智模型
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409271814403.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409271814988.png?imageSlim)
+
+物理学家对色彩的看法：
+
+光作为电磁波  
+在可见光谱波长范围内的能量或"相对功率"
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409271816222.png?imageSlim)
+
+发射光与反射光
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409271817745.png?imageSlim)
+
+1. 视网膜
+   ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409271818586.png?imageSlim)
+
+2. 当光进入我们的视网膜
+
+LMS（长、中、短）视锥细胞
+
+- 对不同波长敏感
+- 与输入刺激整合
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409271819913.png?imageSlim)
+
+<InlineMath math="L = \int_\lambda L(\lambda)S(\lambda)d\lambda" />
+<br />
+<InlineMath math="M = \int_\lambda M(\lambda)S(\lambda)d\lambda" />
+<br />
+<InlineMath math="S = \int_\lambda S(\lambda)S(\lambda)d\lambda" />
+<br />
+
+3. 视网膜编码的效果
+
+刺激相同 LMS 响应的光谱是无法区分的（即"同色异谱"）。
+
+三刺激响应
+
+- 计算机显示器
+- 数字扫描仪
+- 数字相机
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409271829367.png?imageSlim)
+
+#### CIE XYZ 色彩空间
+
+1931 年标准化，用于数学表示三刺激响应
+
+"标准观察者"响应曲线：
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409271830737.png?imageSlim)
+
+#### 色盲
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409272113445.png?imageSlim)
+
+:::info 注释
+
+色盲模拟器：  
+https://pilestone.com/pages/color-blindness-simulator-1  
+https://www.color-blindness.com/coblis-color-blindness-simulator/#google_vignette
+
+:::
+
+#### 原色
+
+LMS 线性组合产生：
+
+- 亮度
+- 红绿对比
+- 黄蓝对比
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409272119391.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409272122619.png?imageSlim)
+
+:::tip 示例
+
+实验：
+没有偏红的绿色，没有偏蓝的黄色后像
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409272123631.png?imageSlim)
+:::
+
+#### CIE LUV 和 LAB 色彩空间
+
+1976 年标准化，用于数学表示对立过程理论。
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409272126132.png?imageSlim)
+
+#### CIE LAB 的坐标轴
+
+对应于对立信号  
+`L* = 亮度`  
+`a* = 红绿对比`  
+`b* = 黄蓝对比`
+
+坐标轴缩放以表示"色差"
+JND = 可察觉差异（约 2.3 个单位）
+
+<hr />
+
+[Munsell 色谱](https://munsell.com/color-blog/atlas-color-system-charts/)  
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409272131331.png?imageSlim)
+
+#### 色相、明度、色度
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409272133396.png?imageSlim)
+
+### 感知亮度
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409272204276.png?imageSlim)
+HLS, HSV, HSB
+不是感知模型
+RGB 的简单重新表示
+
+- 沿灰色轴观察
+- 看到色相六边形
+- L 或 V 是灰度像素值
+
+无法预测感知亮度  
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409272151809.png?imageSlim)
+
+<hr />
+
+如果我们有一个感知均匀的色彩空间，我们能否预测我们如何感知颜色？
+
+> 为了有效地使用颜色，必须认识到它会不断欺骗我们。
+>
+> <p style={{ textAlign: 'right' }}> - Josef Albers, 《颜色的相互作用》</p>
+
+#### 同时对比
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409272206346.png?imageSlim)  
+两侧的线条是相同的颜色
+
+<hr />
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409272207961.png?imageSlim)  
+内外细环是相同的颜色
+
+#### 贝佐尔德效应
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409272208036.png?imageSlim)  
+两侧的填充颜色是相同的颜色
+
+#### 锐化效应
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409272210537.png?imageSlim)  
+感知差异取决于背景
+
+#### 扩散效应
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409272210183.png?imageSlim)  
+相邻颜色混合
+
+空间频率
+
+- 色卡问题
+- 小文本、线条、符号
+- 图像颜色
+
+### 基本颜色术语
+
+`Brent Berlin` 和 `Paul Kay` 的偶然发现
+
+1969 年的初步研究
+调查了 20 种语言的使用者
+来自 69 种语言的文献
+
+文化分类的七个级别：
+
+- 第一阶段：暗冷色和亮暖色（这涵盖的颜色集比英语中的"黑色"和"白色"更大）
+- 第二阶段：红色
+- 第三阶段：绿色或黄色（二选一）
+- 第四阶段：绿色和黄色（都有）
+- 第五阶段：蓝色
+- 第六阶段：棕色
+- 第七阶段：紫色、粉色、橙色或灰色
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410081012828.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410081012608.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410081013440.png?imageSlim)
+
+基本颜色术语在不同语言中重复出现
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410081013647.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410081014039.png?imageSlim)
+
+命名影响颜色感知
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410081016724.png?imageSlim)
+
+:::info 注释
+确实非常有趣，尽管文化和语言有显著差异，但颜色边界的感知几乎是一致的。
+:::
+
+根据 XKCD 的颜色...
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410081020837.png?imageSlim)
+
+### 在可视化中使用颜色
+
+色彩映射设计考虑因素
+
+1. 感知上可区分的颜色
+2. 数值距离与感知距离匹配
+3. 颜色和概念正确对齐
+4. 美观、吸引人
+5. 尊重色觉缺陷
+6. 应该在黑白打印中保持可识别
+7. 不要超出人们的理解能力
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410081023933.png?imageSlim)
+
+#### 分类颜色
+
+- 格雷解剖学  
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410081048920.png?imageSlim)  
+  颈部右侧的浅层解剖，显示颈动脉和锁骨下动脉
+
+- 无线电频谱图
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410081051501.png?imageSlim)
+
+问题：
+
+1. 颜色过多
+2. 难以记住映射关系
+3. 颜色不具有区别性
+4. 分组不佳；相似的频段使用不相似的颜色
+5. 标签造成混乱
+6. 颜色环境效应
+7. 颜色交互；相邻颜色彼此搭配不佳
+
+最小化颜色名称的重叠和歧义
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410081053926.png?imageSlim)
+
+[斯坦福可视化组：颜色名称](http://vis.stanford.edu/color-names/)
+
+#### 定量颜色
+
+避免将数据映射到彩虹色
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410081055212.png?imageSlim)
+
+1. 色相没有自然顺序
+2. 人们将颜色分割为类别，产生感知分段
+3. 简单的彩虹色对色盲观众不友好
+4. 低亮度颜色（蓝色）会隐藏高频细节
+
+动脉可视化
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410081056208.png?imageSlim)
+
+阶梯而非渐变
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410081057673.png?imageSlim)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410081058611.png?imageSlim)
+
+美国年龄调整死亡率  
+常见选择：**分为 5 或 7 个等分位数**
+
+> - 等间隔（算术级数）
+> - 等分位数（推荐）
+> - 标准差
+> - 聚类（Jenks 自然断点/一维 K 均值）
+> - 最小化组内方差
+> - 最大化组间方差
+
+**连续色标**  
+亮度渐变，可能还有色相变化  
+通常较高值映射到较深颜色  
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410081100115.png?imageSlim)
+
+**发散色标**  
+当数据有一个有意义的"中点"时有用  
+为中点使用中性颜色（如灰色）  
+为端点使用饱和颜色  
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410081101264.png?imageSlim)
+
+**\*将颜色步骤限制在 3-9 个**
+
+### 总结
+
+- 颜色感知
+  - 对亮度的辨别能力优于色相
+  - 警惕同时对比、锐化效应、扩散效应
+- 颜色命名
+  - 使用易于通过名称区分的颜色
+- 颜色配色方案
+  - 使用少量色相（约 6 个）
+  - 除特殊情况外避免彩虹配色
+  - 借用设计良好的配色方案（如 ColorBrewer）
+  - 考虑用于定量数据的连续和发散色标
