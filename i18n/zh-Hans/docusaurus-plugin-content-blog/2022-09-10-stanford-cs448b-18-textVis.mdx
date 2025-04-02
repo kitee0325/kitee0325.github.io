@@ -4,6 +4,8 @@ title: 斯坦福 CS448B 18 文本可视化
 tags: [数据可视化, 斯坦福, 课程, CS448B]
 ---
 
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
 import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
 
@@ -16,12 +18,12 @@ import { InlineMath, BlockMath } from 'react-katex';
 ## 原文
 
 <object
-  data="/stanford-cs448b/Lec18-textVis.pdf"
+  data={useBaseUrl('/stanford-cs448b/Lec18-textVis.pdf')}
   type="application/pdf"
   width="100%"
   height="800px"
 >
-  <a href="/stanford-cs448b/Lec18-textVis.pdf">下载 PDF</a>.
+  <a href={useBaseUrl('/stanford-cs448b/Lec18-textVis.pdf')}>下载 PDF</a>.
 </object>
 
 ## 笔记
@@ -225,7 +227,11 @@ TF.IDF：词频-逆文档频率
 
 ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141759956.png?imageSlim)
 
-<a href="/stanford-cs448b/Review Spotlight A User Interface for Summarizing User-generated Reviews Using Adjective-Noun Word Pairs.pdf">
+<a
+  href={useBaseUrl(
+    '/stanford-cs448b/Review Spotlight A User Interface for Summarizing User-generated Reviews Using Adjective-Noun Word Pairs.pdf'
+  )}
+>
   下载 PDF《评论聚光灯：使用形容词-名词词对汇总用户生成评论的用户界面》
 </a>
 

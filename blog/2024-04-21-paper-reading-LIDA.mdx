@@ -4,6 +4,8 @@ title: Paper Reading LIDA
 tags: [Dataviz, Paper, AI, Automatic]
 ---
 
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
 **TLDR**
 
 LIDA is a novel tool for generating grammar-agnostic visualizations and infographics. It addresses several key challenges in automatic visualization creation:
@@ -26,12 +28,18 @@ LIDA provides both a Python API and an interactive user interface supporting dir
 ## Paper
 
 <object
-  data="/paper/LIDA A Tool for Automatic Generation of Grammar-Agnostic Visualizations and Infographics using Large Language Models.pdf"
+  data={useBaseUrl(
+    '/paper/LIDA A Tool for Automatic Generation of Grammar-Agnostic Visualizations and Infographics using Large Language Models.pdf'
+  )}
   type="application/pdf"
   width="100%"
   height="800px"
 >
-  <a href="/paper/LIDA A Tool for Automatic Generation of Grammar-Agnostic Visualizations and Infographics using Large Language Models.pdf">
+  <a
+    href={useBaseUrl(
+      '/paper/LIDA A Tool for Automatic Generation of Grammar-Agnostic Visualizations and Infographics using Large Language Models.pdf'
+    )}
+  >
     Download PDF
   </a>
   .

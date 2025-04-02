@@ -4,6 +4,8 @@ title: ECharts 概览
 tags: [数据可视化, ECharts]
 ---
 
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
 **TLDR**
 
 在过去两年中，我的工作涉及基于 ECharts 构建图表组件。这段经历让我对可视化组件库有了基本的了解。本文主要从时间线、特性和架构三个角度介绍 ECharts。
@@ -92,12 +94,18 @@ ECharts 是一个高度复杂的项目，需要很长的学习曲线才能完全
 3. 可视化使用场景极其复杂，涉及图表堆叠、添加或删除组件以及功能耦合。不可能完全适应每一个潜在场景。ECharts 已有效支持大多数场景，但仍有一些情况它无法完全满足。
 
 <object
-  data="/paper/ECharts A declarative framework for rapid construction of web-based visualization.pdf"
+  data={useBaseUrl(
+    '/paper/ECharts A declarative framework for rapid construction of web-based visualization.pdf'
+  )}
   type="application/pdf"
   width="100%"
   height="800px"
 >
-  <a href="/paper/ECharts A declarative framework for rapid construction of web-based visualization.pdf">
+  <a
+    href={useBaseUrl(
+      '/paper/ECharts A declarative framework for rapid construction of web-based visualization.pdf'
+    )}
+  >
     下载 PDF
   </a>
   .

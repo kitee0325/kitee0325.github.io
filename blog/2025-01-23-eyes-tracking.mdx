@@ -4,11 +4,16 @@ title: Eyes Tracking
 tags: [Interaction, Dataviz]
 ---
 
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
 **TLDR**
 
 This article explores a new interaction method for complex network visualizations that combines fisheye distortion with eye tracking technology. The approach allows users to naturally explore dense node-link diagrams by controlling the fisheye effect with their gaze, while keeping the mouse available for other interactions. This is particularly useful for organizational relationship visualizations where users need to switch between overview and detailed views of specific connections.
 
-<img src="/img/D3 Fish Eyes.gif" alt="eyesTrack" />
+<img
+  src={require('@site/static/img/D3 Fish Eyes.gif').default}
+  alt="eyesTrack"
+/>
 {/* truncate */}
 
 ## Introduction
@@ -20,7 +25,10 @@ A persistent challenge I've observed is that while the main graph's dense networ
 ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202501250959212.png?imageSlim)
 Recently, I've discovered two new technologies to me that could significantly enhance the interaction experience for such relationship diagrams, particularly in relational graph. The first is AntV's component called `fisheye`, which enables users to magnify specific portions of the relationship graph to reveal hidden nodes and edges. The second is eye tracking technology.
 
-<img src="/img/AntV Fish Eyes.gif" alt="fisheye" />
+<img
+  src={require('@site/static/img/AntV Fish Eyes.gif').default}
+  alt="fisheye"
+/>
 
 Upon discovering these two technologies, I naturally thought of combining them: using eye tracking to control the fisheye effect while preserving AntV's existing mouse-based interactions. In this enhanced interaction model, eye tracking would control the fisheye in the main graph, improving the experience of exploring complex multi-graph linkages. Meanwhile, the mouse remains free for other interactions, such as selecting bars in auxiliary charts to highlight corresponding nodes in the main graph. The fisheye effect would automatically activate wherever the user's gaze falls on the main graph, creating a more natural and intuitive exploration experience.
 
@@ -103,7 +111,7 @@ For better experience, you can open this demo in a new window by clicking the bu
 :::
 
 <iframe
-  src="/demo/eyesTrack/index.html"
+  src={useBaseUrl('/demo/eyesTrack/index.html')}
   width="100%"
   style={{ border: 'none' }}
   onLoad={(e) => {
@@ -116,15 +124,21 @@ For better experience, you can open this demo in a new window by clicking the bu
 
 :::info
 
-<img src="/img/Eye Tracking Visualization.gif" alt="eyesTrack" />
+<img
+  src={require('@site/static/img/Eye Tracking Visualization.gif').default}
+  alt="eyesTrack"
+/>
 
 Initially, I used the WebGazer.js visual tracking library. However, its default tracking mode uses the mouse position as an auxiliary calibration point, leading to significant tracking discrepancies when your mouse is on the right side of the panel while you are looking at the main graph on the left. Later, I switched to GazeRecorder, which greatly improved the results. Unfortunately, GazeRecorder cannot be used commercially as it isn't fully open-source; it is an SDK open for free trials for researchers only.
 
-This was a very interesting experiment for me, as it worked as expected in the interactive scenarios I envisioned. Additionally, I replicated AntV’s fishEye component in D3.js and gained a foundational understanding of its transformation algorithm.
+This was a very interesting experiment for me, as it worked as expected in the interactive scenarios I envisioned. Additionally, I replicated AntV's fishEye component in D3.js and gained a foundational understanding of its transformation algorithm.
 
 In the future, I might need to return to WebGazer.js and tweak its parameters to achieve results similar to GazeRecorder. But for now, I'll leave it as it is.
 
-<img src="/img/D3 Fish Eyes.gif" alt="eyesTrack" />
+<img
+  src={require('@site/static/img/D3 Fish Eyes.gif').default}
+  alt="eyesTrack"
+/>
 The effects shown in the image above are controlled by mouse movement.
 
 :::

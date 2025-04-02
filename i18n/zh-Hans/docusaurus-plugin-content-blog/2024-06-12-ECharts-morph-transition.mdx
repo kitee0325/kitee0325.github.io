@@ -39,7 +39,7 @@ tags: [数据可视化, ECharts]
 
 ## 形状形态过渡
 
-<img src="/img/ECharts Shape Transition.gif" />
+<img src={require('@site/static/img/ECharts Shape Transition.gif').default} />
 
 在 ECharts 中，使用 applyMorphAnimation 函数作为形态过渡的入口点。
 https://github.com/apache/echarts/blob/master/src/animation/morphTransitionHelper.ts#L110
@@ -476,7 +476,9 @@ function findBestMorphingRotation(
 
 ## 通用形态过渡
 
-<img src="/img/ECharts Universal Transition.gif" />
+<img
+  src={require('@site/static/img/ECharts Universal Transition.gif').default}
+/>
 
 ### 一对多和多对一过渡
 

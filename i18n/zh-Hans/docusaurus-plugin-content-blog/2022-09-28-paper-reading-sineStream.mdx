@@ -4,6 +4,7 @@ title: 论文阅读 SineStream
 tags: [数据可视化, 论文, 流图]
 ---
 
+import useBaseUrl from '@docusaurus/useBaseUrl';
 import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
 
@@ -16,12 +17,18 @@ import { InlineMath, BlockMath } from 'react-katex';
 ## 论文
 
 <object
-  data="/paper/SineStream-Improving the Readability of Streamgraphs by  Minimizing Sine Illusion Effects.pdf"
+  data={useBaseUrl(
+    '/paper/SineStream-Improving the Readability of Streamgraphs by  Minimizing Sine Illusion Effects.pdf'
+  )}
   type="application/pdf"
   width="100%"
   height="800px"
 >
-  <a href="/paper/SineStream-Improving the Readability of Streamgraphs by  Minimizing Sine Illusion Effects.pdf">
+  <a
+    href={useBaseUrl(
+      '/paper/SineStream-Improving the Readability of Streamgraphs by  Minimizing Sine Illusion Effects.pdf'
+    )}
+  >
     下载 PDF
   </a>
   .
@@ -168,7 +175,7 @@ import { InlineMath, BlockMath } from 'react-katex';
 
 <iframe
   id="sineStream-demo"
-  src="/demo/sineStream/index.html"
+  src={useBaseUrl('/demo/sineStream/index.html')}
   width="100%"
   style={{ border: 'none' }}
   onLoad={(e) => {

@@ -4,6 +4,8 @@ title: Stanford CS448B 18 TextVis
 tags: [Dataviz, Stanford, Class, CS448B]
 ---
 
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
 import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
 
@@ -16,12 +18,12 @@ This article contains my notes from Stanford's CS448B (Data Visualization) cours
 ## Original
 
 <object
-  data="/stanford-cs448b/Lec18-textVis.pdf"
+  data={useBaseUrl('/stanford-cs448b/Lec18-textVis.pdf')}
   type="application/pdf"
   width="100%"
   height="800px"
 >
-  <a href="/stanford-cs448b/Lec18-textVis.pdf">Download PDF</a>.
+  <a href={useBaseUrl('/stanford-cs448b/Lec18-textVis.pdf')}>Download PDF</a>.
 </object>
 
 ## Notes
@@ -225,7 +227,11 @@ The normalized term frequency relative to the most frequent n-gram, e.g., the wo
 
 ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410141759956.png?imageSlim)
 
-<a href="/stanford-cs448b/Review Spotlight A User Interface for Summarizing User-generated Reviews Using Adjective-Noun Word Pairs.pdf">
+<a
+  href={useBaseUrl(
+    '/stanford-cs448b/Review Spotlight A User Interface for Summarizing User-generated Reviews Using Adjective-Noun Word Pairs.pdf'
+  )}
+>
   Download PDF《Review Spotlight: A User Interface for Summarizing
   User-generated Reviews Using Adjective-Noun Word Pairs》
 </a>

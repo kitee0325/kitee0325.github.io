@@ -4,6 +4,8 @@ title: 斯坦福 CS448B 12 动画
 tags: [数据可视化, 斯坦福, 课程, CS448B]
 ---
 
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
 import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
 
@@ -17,12 +19,12 @@ import { InlineMath, BlockMath } from 'react-katex';
 ## 原文
 
 <object
-  data="/stanford-cs448b/Lec12-animation.pdf"
+  data={useBaseUrl('/stanford-cs448b/Lec12-animation.pdf')}
   type="application/pdf"
   width="100%"
   height="800px"
 >
-  <a href="/stanford-cs448b/Lec12-animation.pdf">下载 PDF</a>.
+  <a href={useBaseUrl('/stanford-cs448b/Lec12-animation.pdf')}>下载 PDF</a>.
 </object>
 
 ## 笔记
@@ -91,12 +93,18 @@ import { InlineMath, BlockMath } from 'react-katex';
 #### [DimpVis](https://vialab.ca/research/dimpvis)
 
 <object
-  data="/paper/DimpVis Exploring Time-varying Information Visualizations by Direct Manipulation.pdf"
+  data={useBaseUrl(
+    '/paper/DimpVis Exploring Time-varying Information Visualizations by Direct Manipulation.pdf'
+  )}
   type="application/pdf"
   width="100%"
   height="800px"
 >
-  <a href="/paper/DimpVis Exploring Time-varying Information Visualizations by Direct Manipulation.pdf">
+  <a
+    href={useBaseUrl(
+      '/paper/DimpVis Exploring Time-varying Information Visualizations by Direct Manipulation.pdf'
+    )}
+  >
     下载 PDF
   </a>
 </object>
@@ -143,15 +151,17 @@ Tversky 建议
 ### 可视化中的动画转换
 
 <object
-  data="/paper/Animated Transitions in Statistical Data Graphics
-.pdf"
+  data={useBaseUrl(
+    '/paper/Animated Transitions in Statistical Data Graphics.pdf'
+  )}
   type="application/pdf"
   width="100%"
   height="800px"
 >
   <a
-    href="/paper/Animated Transitions in Statistical Data Graphics
-.pdf"
+    href={useBaseUrl(
+      '/paper/Animated Transitions in Statistical Data Graphics.pdf'
+    )}
   >
     下载 PDF
   </a>

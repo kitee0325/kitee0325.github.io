@@ -4,6 +4,7 @@ title: 论文阅读 ShapeWordle
 tags: [数据可视化, 论文, Wordle, 词云, 标签云]
 ---
 
+import useBaseUrl from '@docusaurus/useBaseUrl';
 import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
 
@@ -16,12 +17,18 @@ import { InlineMath, BlockMath } from 'react-katex';
 ## 论文
 
 <object
-  data="/paper/ShapeWordle-Tailoring Wordles using Shape-aware Archimedean Spirals.pdf"
+  data={useBaseUrl(
+    '/paper/ShapeWordle-Tailoring Wordles using Shape-aware Archimedean Spirals.pdf'
+  )}
   type="application/pdf"
   width="100%"
   height="800px"
 >
-  <a href="/paper/ShapeWordle-Tailoring Wordles using Shape-aware Archimedean Spirals.pdf">
+  <a
+    href={useBaseUrl(
+      '/paper/ShapeWordle-Tailoring Wordles using Shape-aware Archimedean Spirals.pdf'
+    )}
+  >
     下载 PDF
   </a>
   .
@@ -168,7 +175,7 @@ import { InlineMath, BlockMath } from 'react-katex';
 
 <iframe
   id="shapeWordle-demo"
-  src="/demo/shapeWordle/index.html"
+  src={useBaseUrl('/demo/shapeWordle/index.html')}
   width="100%"
   style={{ border: 'none' }}
   onLoad={(e) => {

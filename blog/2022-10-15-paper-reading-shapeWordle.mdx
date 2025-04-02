@@ -4,6 +4,7 @@ title: Paper Reading ShapeWordle
 tags: [Dataviz, Paper, Wordle, Word Cloud, Tag Cloud]
 ---
 
+import useBaseUrl from '@docusaurus/useBaseUrl';
 import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
 
@@ -16,12 +17,18 @@ This article contains my notes from the paper "ShapeWordle: Tailoring Wordles us
 ## Paper
 
 <object
-  data="/paper/ShapeWordle-Tailoring Wordles using Shape-aware Archimedean Spirals.pdf"
+  data={useBaseUrl(
+    '/paper/ShapeWordle-Tailoring Wordles using Shape-aware Archimedean Spirals.pdf'
+  )}
   type="application/pdf"
   width="100%"
   height="800px"
 >
-  <a href="/paper/ShapeWordle-Tailoring Wordles using Shape-aware Archimedean Spirals.pdf">
+  <a
+    href={useBaseUrl(
+      '/paper/ShapeWordle-Tailoring Wordles using Shape-aware Archimedean Spirals.pdf'
+    )}
+  >
     Download PDF
   </a>
   .
@@ -169,7 +176,7 @@ The demo requires loading OpenCV resources. If the demo appears blank, it may be
 
 <iframe
   id="shapeWordle-demo"
-  src="/demo/shapeWordle/index.html"
+  src={useBaseUrl('/demo/shapeWordle/index.html')}
   width="100%"
   style={{ border: 'none' }}
   onLoad={(e) => {

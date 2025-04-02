@@ -5,6 +5,7 @@ tags: [数据可视化, 色彩, 色彩空间]
 ---
 
 import ModelViewer from '@site/src/components/ModelViewer';
+import useBaseUrl from '@docusaurus/useBaseUrl';
 
 **TLDR**
 
@@ -70,7 +71,7 @@ import ModelViewer from '@site/src/components/ModelViewer';
 
 #### RGB
 
-<ModelViewer modelPath="/model/rgb/scene.glb" />
+<ModelViewer modelPath={useBaseUrl('/model/rgb/scene.glb')} />
 
 RGB 基于红色、绿色和蓝色颜色分量（通道）值。通常，这些分量直接用于获取和显示颜色。例如，当显示彩色图像缓冲区时，第一个通道被路由到显示器的第一个输出通道（通常是红色），第二个通道到第二个通道（通常是绿色），第三个通道到第三个通道（通常是蓝色）。  
 RGB 色彩空间可以被看作是一个具有红色、绿色和蓝色轴的立方体。位于原点[0, 0, 0]的颜色被认为是黑色，而位于[255, 255, 255]（对于 8 位缓冲区）的颜色被认为是白色。所有其他颜色都可以表示为这个范围内红色、绿色和蓝色值的组合。  
@@ -91,7 +92,7 @@ HSL 建立在 RGB 色彩模型的基础上，但基于色相、饱和度和亮�
 
 #### HSV
 
-<ModelViewer modelPath="/model/hsv/scene1.glb" />
+<ModelViewer modelPath={useBaseUrl('/model/hsv/scene1.glb')} />
 
 HSV 类似于 HSL，不同之处在于第三个分量称为明度，并表示亮度，就好像 HSL 模型的白点已经压缩到中心圆盘。在下图中，该模型显示为一个简单的圆锥体，色相（H）位于圆形盘周围，饱和度（S）从中心向外增加。明度（V）分量范围从黑色（圆盘下方圆锥体的最远点）到白色（圆盘的中心）。
 ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410211846501.png?imageSlim)
@@ -100,7 +101,7 @@ HSV 色彩空间反映了创建色调（添加白色）或阴影（添加黑色�
 
 #### CIELAB
 
-<ModelViewer modelPath="/model/cielab/scene.glb" />
+<ModelViewer modelPath={useBaseUrl('/model/cielab/scene.glb')} />
 
 CIELAB（或 LAB）基于颜色的亮度（L）、在红色和绿色之间的位置（A）以及在黄色和蓝色之间的位置（B）。与 RGB 和 HSL 不同，LAB 旨在独立于设备，并作为一种独特的色彩模型开发，旨在使用从视觉实验中获取的统计数据完全表示人类对颜色的解释。LAB 中的颜色差异与人类感知成比例变化。例如，如果两种颜色的距离为 5，它们看起来的差异大约是距离为 1 的两种颜色的 5 倍。LAB 被设计为感知均匀，使其成为测量色差的良好空间。  
 由于 LAB 基于色彩感知，其数学模型更好地表示人类如何区分颜色，色差更有意义。这可以在以下示例中看到，您必须选择哪种颜色，A 或 B，更接近颜色 X。

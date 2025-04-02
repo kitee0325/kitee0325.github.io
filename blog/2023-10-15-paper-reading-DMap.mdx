@@ -4,6 +4,7 @@ title: Paper Reading DMap
 tags: [Dataviz, Paper, Datav Design]
 ---
 
+import useBaseUrl from '@docusaurus/useBaseUrl';
 import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
 
@@ -16,12 +17,18 @@ This article contains my notes from the paper "D-Map: Visual Analysis of Ego-cen
 ## Paper
 
 <object
-  data="/paper/D-Map Visual Analysis of Ego-centric Information Diffusion Patterns in Social Media.pdf"
+  data={useBaseUrl(
+    '/paper/D-Map Visual Analysis of Ego-centric Information Diffusion Patterns in Social Media.pdf'
+  )}
   type="application/pdf"
   width="100%"
   height="800px"
 >
-  <a href="/paper/D-Map Visual Analysis of Ego-centric Information Diffusion Patterns in Social Media.pdf">
+  <a
+    href={useBaseUrl(
+      '/paper/D-Map Visual Analysis of Ego-centric Information Diffusion Patterns in Social Media.pdf'
+    )}
+  >
     Download PDF
   </a>
   .
@@ -60,7 +67,7 @@ Based on this requirement, I have re-implemented the following case:
 
 <iframe
   id="DMap-demo"
-  src="/demo/DMap/index.html"
+  src={useBaseUrl('/demo/DMap/index.html')}
   width="100%"
   style={{ border: 'none', height: '100vh' }}
   onLoad={(e) => {

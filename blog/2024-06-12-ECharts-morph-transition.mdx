@@ -39,7 +39,7 @@ The following content requires a basic understanding of Bézier curves. If you a
 
 ## Shape morph transition
 
-<img src="/img/ECharts Shape Transition.gif" />
+<img src={require('@site/static/img/ECharts Shape Transition.gif').default} />
 
 In ECharts, use the applyMorphAnimation function as the entry point for morphing transitions.
 https://github.com/apache/echarts/blob/master/src/animation/morphTransitionHelper.ts#L110
@@ -476,7 +476,9 @@ function findBestMorphingRotation(
 
 ## Universal morph transition
 
-<img src="/img/ECharts Universal Transition.gif" />
+<img
+  src={require('@site/static/img/ECharts Universal Transition.gif').default}
+/>
 
 ### One-to-many and many-to-one transitions
 

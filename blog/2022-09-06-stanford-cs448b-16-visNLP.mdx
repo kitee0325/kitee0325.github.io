@@ -4,6 +4,8 @@ title: Stanford CS448B 16 VisNLP
 tags: [Dataviz, Stanford, Class, CS448B]
 ---
 
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
 import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
 
@@ -16,12 +18,12 @@ This article contains my notes from Stanford's CS448B (Data Visualization) cours
 ## Original
 
 <object
-  data="/stanford-cs448b/Lec16-visNLP.pdf"
+  data={useBaseUrl('/stanford-cs448b/Lec16-visNLP.pdf')}
   type="application/pdf"
   width="100%"
   height="800px"
 >
-  <a href="/stanford-cs448b/Lec16-visNLP.pdf">Download PDF</a>.
+  <a href={useBaseUrl('/stanford-cs448b/Lec16-visNLP.pdf')}>Download PDF</a>.
 </object>
 
 ## Notes
@@ -139,12 +141,18 @@ Half of the explanations referred to visual features of chart
 ### Natural language interfaces
 
 <object
-  data="/paper/Eviza-A Natural Language Interface for Visual Analysis.pdf"
+  data={useBaseUrl(
+    '/paper/Eviza-A Natural Language Interface for Visual Analysis.pdf'
+  )}
   type="application/pdf"
   width="100%"
   height="800px"
 >
-  <a href="/paper/Eviza-A Natural Language Interface for Visual Analysis.pdf">
+  <a
+    href={useBaseUrl(
+      '/paper/Eviza-A Natural Language Interface for Visual Analysis.pdf'
+    )}
+  >
     Download PDF
   </a>
   .

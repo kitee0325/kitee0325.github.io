@@ -4,6 +4,8 @@ title: 论文阅读 LIDA
 tags: [数据可视化, 论文, AI, 自动化]
 ---
 
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
 **TLDR**
 
 LIDA 是一种新型工具，用于生成与语法无关的可视化和信息图表。它解决了自动化可视化创建中的几个关键挑战：
@@ -26,12 +28,18 @@ LIDA 提供了 Python API 和交互式用户界面，支持直接操作和多语
 ## 论文
 
 <object
-  data="/paper/LIDA A Tool for Automatic Generation of Grammar-Agnostic Visualizations and Infographics using Large Language Models.pdf"
+  data={useBaseUrl(
+    '/paper/LIDA A Tool for Automatic Generation of Grammar-Agnostic Visualizations and Infographics using Large Language Models.pdf'
+  )}
   type="application/pdf"
   width="100%"
   height="800px"
 >
-  <a href="/paper/LIDA A Tool for Automatic Generation of Grammar-Agnostic Visualizations and Infographics using Large Language Models.pdf">
+  <a
+    href={useBaseUrl(
+      '/paper/LIDA A Tool for Automatic Generation of Grammar-Agnostic Visualizations and Infographics using Large Language Models.pdf'
+    )}
+  >
     下载 PDF
   </a>
   .

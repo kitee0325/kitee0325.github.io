@@ -10,18 +10,18 @@ import Link from '@docusaurus/Link';
 
 This article explores how to extend ECharts' global roaming functionality. While ECharts provides roaming through dataZoom for Cartesian charts, relationship-type charts lack full global roaming support. We'll examine ECharts' current single-series roaming implementation and develop a solution to enable global roaming across all chart types.
 
-<img src="/img/Roam Example.gif" />
+<img src={require('@site/static/img/Roam Example.gif').default} />
 {/* truncate */}
 
 ## Task
 
 Despite ECharts offering hundreds of visualization features through its extensive configuration options, some common functionalities, such as the roaming feature, remain unmet. In ECharts, zooming and moving charts (collectively referred to as roaming hereafter) can be achieved in two ways. For charts using Cartesian coordinates (like line and bar charts), ECharts enables the roaming feature through the dataZoom component.
 
-<img src="/img/ECharts DataZoom Example.gif" />
+<img src={require('@site/static/img/ECharts DataZoom Example.gif').default} />
 
 However, for relationship-type charts (such as Sankey and Sunburst charts—relation charts without lines), global roaming is not fully supported. Currently, only single-series roaming is implemented within the most common types of relationship charts(Graph).
 
-<img src="/img/ECharts Roaming Example.gif" />
+<img src={require('@site/static/img/ECharts Roaming Example.gif').default} />
 
 ## Original Roaming Solution
 
@@ -650,4 +650,4 @@ function getLabelZoomTransform(
 
 ## Final Result
 
-<img src="/img/Roam Example.gif" />
+<img src={require('@site/static/img/Roam Example.gif').default} />

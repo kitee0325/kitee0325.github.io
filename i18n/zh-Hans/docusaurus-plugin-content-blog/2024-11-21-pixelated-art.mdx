@@ -4,6 +4,7 @@ title: 像素艺术
 tags: [数据可视化, 设计, 像素艺术, AI, ComfyUI, ControlNet]
 ---
 
+import useBaseUrl from '@docusaurus/useBaseUrl';
 import ModelViewer from '@site/src/components/ModelViewer';
 
 **TLDR**
@@ -38,7 +39,10 @@ import ModelViewer from '@site/src/components/ModelViewer';
 
 ### ❎ 纯压缩
 
-<img src="/img/Pixelate Demo.gif" alt="pixelated-art" />
+<img
+  src={require('@site/static/img/Pixelate Demo.gif').default}
+  alt="pixelated-art"
+/>
 
 像素化已经是一种成熟的技术，GitHub 上有许多与图像像素化相关的项目。以[`pixelate`](https://gitcode.com/gh_mirrors/pi/pixelate/blob/master/pixelate.js)为例，我将介绍其中的一些计算细节。
 
@@ -153,7 +157,7 @@ import ModelViewer from '@site/src/components/ModelViewer';
 这个库的操作逻辑非常简单。虽然在处理具有复杂颜色的图像时可能会丢失很多细节，但对于简单场景已经足够了。
 
 <iframe
-  src="/demo/pixelate/index.html"
+  src={useBaseUrl('/demo/pixelate/index.html')}
   width="100%"
   style={{ border: 'none' }}
   onLoad={(e) => {
@@ -203,7 +207,7 @@ import ModelViewer from '@site/src/components/ModelViewer';
   </div>
 </div>
 <a
-  href="/data/pixel-art-openart.ai.json"
+  href={useBaseUrl('/data/pixel-art-openart.ai.json')}
   download="pixel-art-openart.ai.json"
   style={{
     backgroundColor: '#4CAF50',
@@ -294,8 +298,11 @@ Aseprite 是专门用于像素艺术设计的软件，而 PixelLab 是 Aseprite 
 
 - ❎ 利用现有的像素 AI 工具，如 PixelLab。
 
-  > <img src="/img/Pixellab Animate Example.gif" />
-  > 虽然PixelLab提供了我需要的一切，但它的骨骼动画功能是针对专业像素艺术家的付费服务。由于我只打算进行一次测试，我可能会考虑暂时避免这笔费用，等到有更密集的工作需求时再购买。
+  > <img
+  >   src={require('@site/static/img/Pixellab Animate Example.gif').default}
+  > />
+  > 虽然 PixelLab 提供了我需要的一切，但它的骨骼动画功能是针对专业像素艺术家的付费服务。由于我只打算
+  > 进行一次测试，我可能会考虑暂时避免这笔费用，等到有更密集的工作需求时再购买。
 
 - ✅ 上传 2D 像素图像，找到现有的骨骼动画截图，并使用 ComfyUI 直接生成精灵表。
 
@@ -309,13 +316,13 @@ Aseprite 是专门用于像素艺术设计的软件，而 PixelLab 是 Aseprite 
 [voidless](https://voidless.dev/image-gen)  
 :::
 
-### 奔跑循环
+### RunCycle
 
 角色的奔跑动作有一个专门的术语，叫做 RunCycle（奔跑循环）。这指的是单个奔跑动作应该是完整且封闭循环的要求，特别是在游戏和 3D 领域。这意味着一个动作的结束应该无缝连接到下一个动作的开始，为流畅的奔跑动画创建一个循环。
 
 感谢 2D 像素艺术社区内的分享，我们可以轻松找到相关的指导方案：
 
-<img src="/img/Run Cycles.gif" />
+<img src={require('@site/static/img/Run Cycles.gif').default} />
 
 ### 生成
 
@@ -357,7 +364,7 @@ Aseprite 是专门用于像素艺术设计的软件，而 PixelLab 是 Aseprite 
 ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502040121836.png?imageSlim)
 
 <a
-  href="/data/pixel-sprite-sheet.json"
+  href={useBaseUrl('/data/pixel-sprite-sheet.json')}
   download="pixel-sprite-sheet.json"
   style={{
     backgroundColor: '#4CAF50',
@@ -383,7 +390,7 @@ Aseprite 是专门用于像素艺术设计的软件，而 PixelLab 是 Aseprite 
 经过简单尝试，我获得了以下结果：
 ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502040201305.png?imageSlim)
 
-<img src="/img/Sprite Run.gif" />
+<img src={require('@site/static/img/Sprite Run.gif').default} />
 
 然而，仍然存在一些问题：
 
@@ -396,7 +403,7 @@ Aseprite 是专门用于像素艺术设计的软件，而 PixelLab 是 Aseprite 
 
 ## 改进
 
-- 对于非严格像素的问题，我参考了https://github.com/Astropulse/sd-palettize的代码，并在ComfyUI中实现了一个自定义节点，处理512\*512结果中的非严格像素问题。
+- 对于非严格像素的问题，我参考了 https://github.com/Astropulse/sd-palettize 的代码，并在 ComfyUI 中实现了一个自定义节点，处理 512\*512 结果中的非严格像素问题。
 
 - 对于动作不流畅的问题，我使用了来自 Civitai 社区的更小帧划分的姿势精灵表：https://civitai.com/models/56307/character-walking-and-running-animation-poses-8-directions。
   ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502070708261.png?imageSlim)
@@ -405,11 +412,11 @@ Aseprite 是专门用于像素艺术设计的软件，而 PixelLab 是 Aseprite 
 
 ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502070706112.png?imageSlim)
 
-<img src="/img/Sprite Run 20x.gif" />
+<img src={require('@site/static/img/Sprite Run 20x.gif').default} />
 
 **下一步考虑（待执行）：**
 
-- 参考https://civitai.com/models/448101/sprite-sheet-maker中的完整过程，首先从高分辨率图像生成精灵表，然后使用像素化脚本处理图像。然而，这要求高分辨率图像适合像素艺术。从上面提到的像素化方法的第一点，我们已经知道，直接使用算法将高分辨率图像转换为像素艺术几乎无法使用。
+- 参考 https://civitai.com/models/448101/sprite-sheet-maker 中的完整过程，首先从高分辨率图像生成精灵表，然后使用像素化脚本处理图像。然而，这要求高分辨率图像适合像素艺术。从上面提到的像素化方法的第一点，我们已经知道，直接使用算法将高分辨率图像转换为像素艺术几乎无法使用。
 
 ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502070705154.png?imageSlim)
 
@@ -449,17 +456,17 @@ Aseprite 是专门用于像素艺术设计的软件，而 PixelLab 是 Aseprite 
 - 使用 tripoSR 将其转换为 3D 模型。即使精度较低，也无关紧要，因为在最终的像素化阶段这将不太明显。
 
   <ModelViewer
-    modelPath="/model/pixelate/tifa.glb"
+    modelPath={useBaseUrl('/model/pixelate/tifa.glb')}
     ambientLightIntensity="0.8"
   />
 
 - 使用`Blender`将模型导出为.fbx 格式。
 - 将模型上传到`Mixamo`，执行自动骨骼绑定，并选择和应用一个奔跑动画模型。
-  <img src="/img/Mixamo Tifa Running.gif" />
+  <img src={require('@site/static/img/Mixamo Tifa Running.gif').default} />
 - 在 Blender 中加载带有奔跑动画的.fbx 模型，并从特定相机角度渲染顺序帧。
 - 使用 SD 对顺序帧进行像素化。我添加了像素化处理，将其转换为真正的像素。
 - 使用 FFmpeg 导出 GIF。
-  <img src="/img/3DRender2D Pixel Tifa.gif" />
+  <img src={require('@site/static/img/3DRender2D Pixel Tifa.gif').default} />
 
 虽然流畅度和角色一致性相当令人印象深刻，但它仍然只是一个简单压缩算法的产物；它是像素化的，但不是像素艺术。因此，目前有两个技术挑战：
 
@@ -512,14 +519,14 @@ Aseprite 是专门用于像素艺术设计的软件，而 PixelLab 是 Aseprite 
   > 通过使用角色的四向视图，可以使模型更精确。然而，由于我只是进行一个基本测试，我现在将省略这一步。
 
   <ModelViewer
-    modelPath="/model/pixelate/anime dragon girl.glb"
+    modelPath={useBaseUrl('/model/pixelate/anime dragon girl.glb')}
     ambientLightIntensity="0.8"
   />
 
 - 在 blender 中使用[pixel art add-on](https://lucasroedel.gumroad.com/l/pixel_art)，而不是 ComfyUI 中的 pixelate 自定义节点。
-  <img src="/img/Blender Pixel Art Addon.gif" />
+  <img src={require('@site/static/img/Blender Pixel Art Addon.gif').default} />
 
-所以，这就是结果：
+最终的结果如下：
 
 <div
   style={{
@@ -530,11 +537,11 @@ Aseprite 是专门用于像素艺术设计的软件，而 PixelLab 是 Aseprite 
   }}
 >
   <img
-    src="/img/Dragon Girl Run.gif"
+    src={require('@site/static/img/Dragon Girl Run.gif').default}
     style={{ width: 'auto', height: 'auto', flex: 1 }}
   />
   <img
-    src="/img/Dragon Girl Run 268.gif"
+    src={require('@site/static/img/Dragon Girl Run 268.gif').default}
     style={{ width: '268px', height: '268px' }}
   />
 </div>

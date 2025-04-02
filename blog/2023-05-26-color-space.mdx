@@ -5,6 +5,7 @@ tags: [Dataviz, Color, Color Space]
 ---
 
 import ModelViewer from '@site/src/components/ModelViewer';
+import useBaseUrl from '@docusaurus/useBaseUrl';
 
 **TLDR**
 
@@ -70,7 +71,7 @@ But when transforming from a larger space into a smaller one, there will be so-c
 
 #### RGB
 
-<ModelViewer modelPath="/model/rgb/scene.glb" />
+<ModelViewer modelPath={useBaseUrl('/model/rgb/scene.glb')} />
 
 RGB is based on red, green, and blue color component (band) values. Typically, these components are directly used for acquiring and displaying color. For example, when displaying a color image buffer, the first band is routed to the monitor's first output channel (usually red), the second band to the second channel (usually green), and the third band to the third channel (usually blue).  
 The RGB color space can be seen as a cube with a red, green, and blue axis. Colors located at the origin, [0, 0, 0], are considered to be black, while colors located at [255, 255, 255] (for an 8-bit buffer) are considered to be white. All other colors can be represented as a combination of red, green, and blue values within this range.  
@@ -91,7 +92,7 @@ With the HSL model, band independence makes color manipulation much simpler. Mos
 
 #### HSV
 
-<ModelViewer modelPath="/model/hsv/scene1.glb" />
+<ModelViewer modelPath={useBaseUrl('/model/hsv/scene1.glb')} />
 
 HSV resembles HSL, except the third component is called value, and represents brightness as if the white point of the HSL model has been compressed to the central disk. In the diagram below, the model is shown as a simple cone, with hue (H) positioned around a circular disk, and saturation (S) increasing from the center out. The value (V) component ranges from black (the far point of the cone below the disk) to white (the center of the disk).
 ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410211846501.png?imageSlim)
@@ -100,7 +101,7 @@ The HSV color space reflects how paint colors change when creating tints (adding
 
 #### CIELAB
 
-<ModelViewer modelPath="/model/cielab/scene.glb" />
+<ModelViewer modelPath={useBaseUrl('/model/cielab/scene.glb')} />
 
 CIELAB (or LAB) is based on the color's luminance (L), its position between red and green (A), and its position between yellow and blue (B). Unlike RGB and HSL, LAB is intended to be device-independent, and was developed as a distinct color model intended to represent a completely human interpretation of color using statistical data taken from visual experiments. Color differences in LAB vary proportionally with human perception. For example, if two colors are at a distance of 5, they will appear roughly 5 times as different as two colors at a distance of 1. LAB was designed to be perceptually uniform, making it a good space to measure color difference.  
 Since LAB is based on color perception, its mathematical model better represents how humans distinguish color, and color differences are more meaningful. This can be seen in the following example, where you have to choose which color, A or B, is closer to color X.

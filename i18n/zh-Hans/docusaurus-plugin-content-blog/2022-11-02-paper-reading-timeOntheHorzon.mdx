@@ -4,6 +4,8 @@ title: 论文阅读 TimeOntheHorzon
 tags: [数据可视化, 论文, 数据可视化设计]
 ---
 
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
 import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
 
@@ -16,12 +18,12 @@ import { InlineMath, BlockMath } from 'react-katex';
 ## 论文
 
 <object
-  data="/paper/Time on the Horizon.pdf"
+  data={useBaseUrl('/paper/Time on the Horizon.pdf')}
   type="application/pdf"
   width="100%"
   height="800px"
 >
-  <a href="/paper/Time on the Horizon.pdf">下载 PDF</a>.
+  <a href={useBaseUrl('/paper/Time on the Horizon.pdf')}>下载 PDF</a>.
 </object>
 
 ## 笔记

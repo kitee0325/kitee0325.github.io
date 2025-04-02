@@ -4,6 +4,8 @@ title: 斯坦福 CS448B 10 可视化解释器
 tags: [数据可视化, 斯坦福, 课程, CS448B]
 ---
 
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
 import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
 
@@ -23,12 +25,12 @@ import { InlineMath, BlockMath } from 'react-katex';
 ## 原文
 
 <object
-  data="/stanford-cs448b/Lec10-visExplainers.pdf"
+  data={useBaseUrl('/stanford-cs448b/Lec10-visExplainers.pdf')}
   type="application/pdf"
   width="100%"
   height="800px"
 >
-  <a href="/stanford-cs448b/Lec10-visExplainers.pdf">下载 PDF</a>.
+  <a href={useBaseUrl('/stanford-cs448b/Lec10-visExplainers.pdf')}>下载 PDF</a>.
 </object>
 
 ## 笔记
@@ -104,7 +106,9 @@ import { InlineMath, BlockMath } from 'react-katex';
 
 ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409261845936.png?imageSlim)
 
-<a href="/paper/2010-Narrative-InfoVis.pdf">《叙事可视化：用数据讲故事》PDF</a>
+<a href={useBaseUrl('/paper/2010-Narrative-InfoVis.pdf')}>
+  《叙事可视化：用数据讲故事》PDF
+</a>
 <hr />
 ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202409261844665.png?imageSlim)
 <hr />
@@ -147,7 +151,11 @@ import { InlineMath, BlockMath } from 'react-katex';
 
 :::info 注释
 
-<a href="/paper/A Deeper Understanding of Sequence in Narrative Visualization.pdf">
+<a
+  href={useBaseUrl(
+    '/paper/A Deeper Understanding of Sequence in Narrative Visualization.pdf'
+  )}
+>
   《叙事可视化中序列的深入理解》PDF
 </a>
 :::
@@ -168,7 +176,11 @@ GraphScape 支持可视化集合的自动设计方法。
 
 :::info 注释
 
-<a href="/paper/GraphScape-A Model for Automated Reasoning about Visualization Similarity and Sequencing.pdf">
+<a
+  href={useBaseUrl(
+    '/paper/GraphScape-A Model for Automated Reasoning about Visualization Similarity and Sequencing.pdf'
+  )}
+>
   《GraphScape-可视化相似性和排序自动推理模型》PDF
 </a>
 :::

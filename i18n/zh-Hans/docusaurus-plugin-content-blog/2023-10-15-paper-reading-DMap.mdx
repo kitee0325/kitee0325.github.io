@@ -4,6 +4,7 @@ title: 论文阅读 DMap
 tags: [数据可视化, 论文, 数据可视化设计]
 ---
 
+import useBaseUrl from '@docusaurus/useBaseUrl';
 import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
 
@@ -16,12 +17,18 @@ import { InlineMath, BlockMath } from 'react-katex';
 ## 论文
 
 <object
-  data="/paper/D-Map Visual Analysis of Ego-centric Information Diffusion Patterns in Social Media.pdf"
+  data={useBaseUrl(
+    '/paper/D-Map Visual Analysis of Ego-centric Information Diffusion Patterns in Social Media.pdf'
+  )}
   type="application/pdf"
   width="100%"
   height="800px"
 >
-  <a href="/paper/D-Map Visual Analysis of Ego-centric Information Diffusion Patterns in Social Media.pdf">
+  <a
+    href={useBaseUrl(
+      '/paper/D-Map Visual Analysis of Ego-centric Information Diffusion Patterns in Social Media.pdf'
+    )}
+  >
     下载 PDF
   </a>
   .
@@ -60,7 +67,7 @@ import { InlineMath, BlockMath } from 'react-katex';
 
 <iframe
   id="DMap-demo"
-  src="/demo/DMap/index.html"
+  src={useBaseUrl('/demo/DMap/index.html')}
   width="100%"
   style={{ border: 'none', height: '100vh' }}
   onLoad={(e) => {
