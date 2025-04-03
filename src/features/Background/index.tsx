@@ -31,33 +31,33 @@ const Background: React.FC<BackgroundProps> = ({ debug = false }) => {
 
     const prefersDarkMode = detectTheme();
 
-    // 根据模式设置默认配置
+    // 根据模式设置默认配置（参照官方Demo参数）
     let config = {
-      SIM_RESOLUTION: 128,
+      SIM_RESOLUTION: 128, // 官方默认值：128
       DYE_RESOLUTION: 1024,
       CAPTURE_RESOLUTION: 512,
-      DENSITY_DISSIPATION: 0.97,
-      VELOCITY_DISSIPATION: 0.98,
-      PRESSURE: 0.8,
+      DENSITY_DISSIPATION: 1.0, // 官方默认值：接近1.0
+      VELOCITY_DISSIPATION: 0.2, // 官方默认值：0.2
+      PRESSURE: 0.8, // 官方默认值：0.8
       PRESSURE_ITERATIONS: 20,
-      CURL: 50,
-      SPLAT_RADIUS: 0.4,
-      SPLAT_FORCE: 8000,
-      SHADING: true,
-      COLORFUL: true,
+      CURL: 30, // 官方默认值：30 (vorticity)
+      SPLAT_RADIUS: 0.25, // 官方默认值：0.25
+      SPLAT_FORCE: 6000,
+      SHADING: true, // 官方默认值：启用
+      COLORFUL: true, // 官方默认值：启用
       COLOR_UPDATE_SPEED: 10,
-      PAUSED: false,
+      PAUSED: false, // 官方默认值：禁用
       BACK_COLOR: prefersDarkMode
-        ? { r: 15, g: 15, b: 15 } // 暗模式下较深背景
-        : { r: 240, g: 240, b: 240 }, // 亮模式下较亮背景
+        ? { r: 15, g: 15, b: 15 }
+        : { r: 240, g: 240, b: 240 },
       TRANSPARENT: false,
-      BLOOM: true,
+      BLOOM: true, // 官方默认值：启用
       BLOOM_ITERATIONS: 8,
       BLOOM_RESOLUTION: 256,
       BLOOM_INTENSITY: 0.8,
       BLOOM_THRESHOLD: 0.6,
       BLOOM_SOFT_KNEE: 0.7,
-      SUNRAYS: true,
+      SUNRAYS: true, // 官方默认值：启用
       SUNRAYS_RESOLUTION: 196,
       SUNRAYS_WEIGHT: 1.0,
     };
@@ -704,9 +704,10 @@ const Background: React.FC<BackgroundProps> = ({ debug = false }) => {
     function multipleSplats(amount: number) {
       for (let i = 0; i < amount; i++) {
         const color = generateColor();
-        color[0] *= 4.0;
-        color[1] *= 4.0;
-        color[2] *= 4.0;
+        // 根据官方Demo效果调整颜色乘数
+        color[0] *= 10.0; // 恢复到官方默认的乘数值
+        color[1] *= 10.0;
+        color[2] *= 10.0;
         const x = Math.random();
         const y = Math.random();
         const dx = 1000 * (Math.random() - 0.5);
@@ -868,17 +869,10 @@ const Background: React.FC<BackgroundProps> = ({ debug = false }) => {
     function generateColor() {
       const c = HSVtoRGB(Math.random(), 1.0, 1.0);
 
-      if (prefersDarkMode) {
-        // 暗模式下使用较柔和的亮色调
-        c.r *= 0.6;
-        c.g *= 0.6;
-        c.b *= 0.6;
-      } else {
-        // 亮模式下使用更柔和的深色调
-        c.r *= 0.2;
-        c.g *= 0.2;
-        c.b *= 0.2;
-      }
+      // 根据官方Demo调整颜色强度
+      c.r *= 0.15;
+      c.g *= 0.15;
+      c.b *= 0.15;
 
       return [c.r, c.g, c.b];
     }
@@ -1230,8 +1224,8 @@ const Background: React.FC<BackgroundProps> = ({ debug = false }) => {
     let nextSplatTime = 0;
 
     function getRandomSplatInterval() {
-      // 返回2-8秒之间的随机间隔，减少溅射频率
-      return 2000 + Math.random() * 6000;
+      // 将溅射间隔延长到2-5秒
+      return 2000 + Math.random() * 3000; // 2-5秒的随机间隔
     }
 
     function update() {
@@ -1245,12 +1239,12 @@ const Background: React.FC<BackgroundProps> = ({ debug = false }) => {
       updateColors(dt);
       applyInputs();
 
-      // 添加随机溅射逻辑
+      // 添加随机溅射逻辑，更接近官方Demo的"Random splats"效果
       if (now > lastSplatTime + nextSplatTime) {
         lastSplatTime = now;
         nextSplatTime = getRandomSplatInterval();
-        // 随机创建1-2个溅射，减少每次溅射的数量
-        const splatCount = Math.floor(Math.random() * 2) + 1;
+        // 随机创建3-5个溅射
+        const splatCount = Math.floor(Math.random() * 3) + 3;
         multipleSplats(splatCount);
       }
 
