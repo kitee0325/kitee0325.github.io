@@ -3,8 +3,7 @@ import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import Profile from '../features/Profile';
 import FeatureBlogs from '../features/FeatureBlogs';
 import ProjectGallery from '../features/ProjectGallery';
-import HexGrid from '../features/Background';
-import styles from './index.module.css';
+import FluidBackground from '../features/Background';
 
 export default function Home(): JSX.Element {
   const { siteConfig } = useDocusaurusContext();
@@ -13,14 +12,10 @@ export default function Home(): JSX.Element {
       title={`Hello from ${siteConfig.title}`}
       description={siteConfig.tagline}
     >
-      <div className={styles.container}>
-        <HexGrid />
-        <div className={styles.content}>
-          <Profile />
-          <FeatureBlogs />
-          <ProjectGallery />
-        </div>
-      </div>
+      <FluidBackground />
+      <Profile />
+      <FeatureBlogs />
+      <ProjectGallery />
     </Layout>
   );
 }

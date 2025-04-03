@@ -31,8 +31,7 @@
     "react-dom": "^18.0.0",
     "react-katex": "^3.0.1",
     "react-responsive-masonry": "^2.7.1",
-    "three": "^0.169.0",
-    "zrender": "^5.6.1"
+    "three": "^0.169.0"
   },
   "devDependencies": {
     "@docusaurus/module-type-aliases": "^3.6.2",
