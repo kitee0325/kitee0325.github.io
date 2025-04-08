@@ -1,0 +1,378 @@
+---
+slug: fluid-simulator
+title: Fluid Simulator
+tags: [Fluid, Simulation]
+---
+
+import useBaseUrl from '@docusaurus/useBaseUrl';
+import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
+
+**TLDR**
+There are two classic methods for fluid simulation: the Eulerian method and the Lagrangian method. This article will provide a detailed explanation of the principles and implementation of both approaches.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504081614488.png?imageSlim)
+{/* truncate */}
+
+## Comparison of Simulation Methods
+
+Fluids typically refer to liquids or gases. Due to their similar physical properties, despite minor differences, they can share most of the same simulation methods.
+
+In fluid simulation, we generally adopt the following assumptions:
+
+- **Incompressibility**:
+  The volume of a fluid remains essentially constant under external forces. For example, water can be considered nearly incompressible - even under a pressure of <InlineMath math="10,000kg/cm^2" /> (equivalent to the weight of a heavy truck on one square centimeter), its volume would only decrease by approximately <InlineMath math="3\%" />.
+
+There are two classic methods for fluid simulation:
+
+:::info Eulerian Method
+Uses a fixed grid system where each cell records fluid properties such as velocity and density. This method describes fluid behavior from a macroscopic perspective, aligning more closely with the concept of a "field," making it suitable for simulating highly continuous fluid phenomena.
+:::
+
+:::info Lagrangian Method
+Employs a moving particle system where each particle carries fluid properties and moves with the fluid. This method tracks fluid particles from a microscopic perspective, more closely matching the natural movement characteristics of matter, making it suitable for handling free surfaces and complex boundary problems.
+:::
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504040208552.png?imageSlim)
+
+## Eulerian Method
+
+In the grid, we represent the velocity field with a two-dimensional vector and the density field with a scalar.
+Under ideal conditions, we assume the fluid has no internal friction, simplifying the computational model. In practical applications, appropriate viscosity terms are added as needed.
+
+Simulating the velocity field at cell boundaries rather than cell centers is preferable, as it provides a clearer understanding of how individual cells flow into their adjacent cells.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504040251014.png?imageSlim)
+
+The entire simulation process can be summarized in three steps:
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504040254564.png?imageSlim)
+
+### 1. Modify Velocity Values Based on External Forces
+
+Here we use gravity. For all cells, <InlineMath math="v_{i,j} = v_{i,j} + g \Delta t" />, meaning we add the product of gravitational acceleration and time step to the vertical component.
+Gravitational acceleration <InlineMath math="g" />: <InlineMath math="9.81 m/s^2" />
+Time step <InlineMath math="\Delta t" />: (e.g., <InlineMath math="\frac{1}{30}s" />)
+
+```javascript
+for (let i = 0; i < gridWidth; i++) {
+  for (let j = 0; j < gridHeight; j++) {
+    v[i][j] = v[i][j] + g * dt;
+  }
+}
+```
+
+### 2. Make the Fluid Incompressible (Projection)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504040307013.png?imageSlim)
+To maintain fluid incompressibility, we introduce the concept of divergence, which is proportional to the amount of fluid leaving a cell during a time step. In a stacked grid structure, we only need to sum the velocities of adjacent cells.
+
+<BlockMath math="D = u_{i+1,j} - u_{i,j} + v_{i,j+1} - v_{i,j}" />
+
+:::note Physical Meaning of Divergence
+
+- If the right side <InlineMath math="u_{i+1,j}" /> is positive, it means fluid is flowing out of this cell
+- If the left side <InlineMath math="u_{i+1,j}" /> is positive, it means fluid is flowing into this cell
+- If D is positive, it indicates excessive outflow
+- If negative, it indicates excessive inflow
+- For incompressible fluids, we need to ensure D equals 0
+  :::
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504040647572.png?imageSlim)
+
+#### Force Divergence to Zero
+
+Taking excessive inflow as an example, normally we would just flip one of the edge velocity components, but fluids cannot do this. Fluids can only push velocity components outward or pull them inward by the same amount.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504040649856.png?imageSlim)
+The solution is actually simple: distribute D evenly among the **valid directional components**, i.e.:
+
+<BlockMath math="u_{i,j} = u_{i,j} - \frac{D}{4}" />
+<BlockMath math="u_{i+1,j} = u_{i+1,j} + \frac{D}{4}" />
+<BlockMath math="v_{i,j} = v_{i,j} - \frac{D}{4}" />
+<BlockMath math="v_{i,j+1} = v_{i,j+1} + \frac{D}{4}" />
+
+#### Handling Obstacles/Boundaries
+
+If one side is a wall or obstacle, we average the remaining edges:
+i.e.:
+
+<BlockMath math="u_{i+1,j} = u_{i+1,j} + \frac{D}{3}" />
+<BlockMath math="v_{i,j} = v_{i,j} - \frac{D}{3}" />
+<BlockMath math="v_{i,j+1} = v_{i,j+1} + \frac{D}{3}" />
+
+Typically, we store a scalar value s in each cell, setting it to 0 for obstacle cells and 1 for regular fluid cells. This value is called the **Solid Fraction**, representing the proportion of solid in the cell.
+i.e.:
+
+<BlockMath math="D = u_{i+1,j} - u_{i,j} + v_{i,j+1} - v_{i,j}" />
+<BlockMath math="S = S_{i+1,j} + S_{i,j} + S_{i,j+1} + S_{i,j}" />
+<BlockMath math="u_{i,j} = u_{i,j} - D*\frac{S_{i,j}}{S}" />
+<BlockMath math="u_{i+1,j} = u_{i+1,j} + D*\frac{S_{i+1,j}}{S}" />
+<BlockMath math="v_{i,j} = v_{i,j} - D*\frac{S_{i,j}}{S}" />
+<BlockMath math="v_{i,j+1} = v_{i,j+1} + D*\frac{S_{i,j+1}}{S}" />
+
+<div style={{ display: 'flex', gap: '20px' }}>
+  <img
+    src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504040654356.png?imageSlim"
+    alt="Fluid Simulation Image 1"
+    style={{ width: '50%' }}
+  />
+  <img
+    src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504040705037.png?imageSlim"
+    alt="Fluid Simulation Image 2"
+    style={{ width: '50%' }}
+  />
+</div>
+
+We then apply this logic to the entire grid rather than individual cells. The specific method is to iterate through the grid n times, processing each cell in each iteration and applying the formulas mentioned above to make the divergence of all cells zero. This method is called the Gauss-Seidel iteration method.
+
+```javascript
+for (let iteration = 0; iteration < n; iteration++) {
+  for (let i = 0; i < gridWidth; i++) {
+    for (let j = 0; j < gridHeight; j++) {
+      const D = u[i + 1][j] - u[i][j] + v[i][j + 1] - v[i][j];
+      const S = S[i + 1][j] - S[i][j] + S[i][j + 1] - S[i][j];
+
+      u[i][j] -= D * (S[i][j] / S);
+      u[i + 1][j] += D * (S[i + 1][j] / S);
+      v[i][j] -= D * (S[i][j] / S);
+      v[i][j + 1] += D * (S[i][j + 1] / S);
+    }
+  }
+}
+```
+
+:::note Boundary Handling
+This is a very simple calculation logic. For cells at the boundary, when they access cells outside the grid, we can either treat the external cells as obstacles or copy the current cell's value.
+:::
+
+#### Measuring Pressure
+
+Fluid simulation typically requires calculating the pressure field distribution, which doesn't affect the simulation itself but provides additional information. We store a scalar pressure value in each cell, initialized to 0 <InlineMath math="p_{i,j} = 0" />. During each grid iteration, individual cells update their pressure according to the following equation:
+
+<BlockMath math="p_{i,j} = p_{i,j} + \frac{d}{s} * \frac{\rho h}{\Delta t}" />
+
+Where <InlineMath math="d" /> is the divergence, <InlineMath math="s" /> is the total number of valid cells (sum of solid fractions), <InlineMath math="\rho" /> is the fluid density, and <InlineMath math="h" /> is the cell size.
+
+```javascript
+for (let i = 0; i < gridWidth; i++) {
+  for (let j = 0; j < gridHeight; j++) {
+    p[i][j] = 0;
+  }
+}
+
+for (let iteration = 0; iteration < n; iteration++) {
+  for (let i = 0; i < gridWidth; i++) {
+    for (let j = 0; j < gridHeight; j++) {
+      const D = u[i + 1][j] - u[i][j] + v[i][j + 1] - v[i][j];
+      const S = S[i + 1][j] + S[i][j] + S[i][j + 1] + S[i][j];
+      p[i][j] += (D / S) * ((rho * h) / dt);
+    }
+  }
+}
+```
+
+#### Accelerating Gauss-Seidel Convergence with Over-Relaxation
+
+This sounds complex but is actually quite simple. We introduce an additional constant <InlineMath math="1<o<2" /> when calculating divergence, i.e.:
+
+<BlockMath math="D = o * (u_{i+1,j} - u_{i,j} + v_{i,j+1} - v_{i,j})" />
+
+### 3. Moving Fluid Advection
+
+In the physical world, velocity is carried by particles in the fluid. As particles move, we attach their velocity vectors to the grid, so we need to convert particle velocities to cell velocities.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504040902053.png?imageSlim)
+
+#### Semi-Lagrangian Method
+
+A relatively simple and stable approach is to use the Semi-Lagrangian advection method. For example, in the figure, we want to know which fluid particle moved to the position of <InlineMath math="u_t" />?
+
+<div style={{ display: 'flex', gap: '20px' }}>
+  <img
+    src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504040908883.png?imageSlim"
+    alt="Fluid Simulation Image 1"
+    style={{ width: '50%' }}
+  />
+  <img
+    src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504040931401.png?imageSlim"
+    alt="Fluid Simulation Image 2"
+    style={{ width: '50%' }}
+  />
+</div>
+
+By calculating the velocity field <InlineMath math="v(x)" /> at position <InlineMath math="x" />, we can predict the position of a fluid particle one time step earlier at <InlineMath math="x - v(x) * dt" />. Since we use a straight-line path approximation, this method introduces numerical viscosity. To reduce the impact of this numerical dissipation, we can use methods like vorticity confinement to maintain fluid detail characteristics.
+
+To calculate <InlineMath math="v(x)" />, we first need to compute the vertical component <InlineMath math="\bar{v}" /> and horizontal component <InlineMath math="u_{i,j}" />. <InlineMath math="\bar{v}" /> can be simply calculated by averaging the <InlineMath math="v" /> values in the neighborhood:
+
+<BlockMath math="\bar{v} = \frac{v_{i,j} + v_{i,j+1} + v_{i-1,j} + v_{i-1,j+1}}{4}" />
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504040937225.png?imageSlim)
+
+To calculate <InlineMath math="\bar{v}" /> at any position, we need to introduce weighted averaging:
+
+<BlockMath math="\bar{v} = w_{00}w_{10}v_{i,j}+w_{01}w_{10}v_{i+1,j}+w_{01}w_{11}v_{i,j+1}+w_{011}w_{11}v_{i+1,j+1}" />
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504040943082.png?imageSlim)
+
+#### Smoke Advection
+
+:::note Visualization Effect
+This is only for additional display effects and does not affect fluid simulation calculations.
+:::
+
+We can add a density value between 0 and 1 based on the velocity field already stored in each cell, stored at the center of each cell. To calculate the new density value in a cell, we use the velocity field value at the cell's center, then step back one time step and interpolate the density at the previous position.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504041007534.png?imageSlim)
+
+#### Streamline Visualization
+
+Streamline visualization is also simple. At the base position <InlineMath math="x" />, we sample the velocity field, then update <InlineMath math="x" /> through <InlineMath math="s*v" />.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504041013434.png?imageSlim)
+
+### Demo
+
+<iframe
+  id="elura"
+  src={useBaseUrl('/demo/fluidSimulator/Elura.html')}
+  width="100%"
+  style={{ border: 'none', minHeight: '600px' }}
+  onLoad={(e) => {
+    // Adjust iframe height to match content
+    const iframe = e.target;
+    iframe.style.height =
+      iframe.contentWindow.document.documentElement.scrollHeight + 'px';
+  }}
+/>
+
+## Lagrangian Method
+
+In the previous section, we introduced the basic concepts of the Lagrangian method. This approach simulates fluid behavior by tracking the motion of each particle from a microscopic perspective. While this method is very intuitive (for example, we can imagine simulating water flow by tracking each water molecule's movement), it faces significant computational challenges in practical applications. For instance, even 1 cubic centimeter of water contains trillions of water molecules, making it impractical to directly track each molecule's movement.
+
+### SPH (Smoothed Particle Hydrodynamics)
+
+To maintain the advantages of the Lagrangian method while addressing computational complexity, we introduce the **SPH** (Smoothed Particle Hydrodynamics) method. The core idea of SPH is to treat each particle as a "fuzzy" particle with a smoothing radius rather than a precise point. Specifically:
+
+- Each particle has a circular influence range with radius <InlineMath math="R" />
+- Within this range, the particle's influence gradually weakens from center to edge
+- This allows us to simulate overall fluid behavior with relatively few particles
+- While maintaining fluid continuity and smoothness
+
+In SPH, each particle carries a density field that describes its influence on the surrounding space. By superimposing the density fields of all particles, we obtain the density distribution of the entire fluid. This density field-based description enables more accurate simulation of fluid physical properties.
+
+<img src={useBaseUrl('/img/SPH.gif')} />
+
+### Smoothing Function
+
+To describe this smooth particle influence, we need to define a smoothing function. The simplest smoothing function is linear:
+
+<BlockMath math="y(influence) = \begin{cases} R - x(distance) & \text{if } -r \leq x \leq r \\ 0 & \text{otherwise} \end{cases}" />
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504071251131.png?imageSlim)
+
+However, this function is not smooth enough at both edges and center, resulting in a density field that doesn't transition continuously. Therefore, we can use more complex smoothing functions, such as:
+
+<BlockMath math="y(influence) = \begin{cases} (r^2 - x^2)^3 & \text{if } -r \leq x \leq r \\ 0 & \text{otherwise} \end{cases}" />
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504071300272.png?imageSlim)
+
+### Density Field and Pressure
+
+From our previous discussion of the Eulerian method, we know that fluids are incompressible. This means:
+
+1. Particles always move from high-density to low-density regions
+2. This movement continuously attempts to correct overall density differences
+3. This is essentially a gradient operation, where we constantly seek the direction of maximum density gradient
+4. Particles move along this direction until reaching equilibrium
+
+In a fluid initialization scenario:
+
+- We introduce multiple particles and apply gravity
+- Particles fall under gravity
+- They begin to diffuse and escape under the influence of other particles' density fields
+- Pressure can be expressed as: <InlineMath math="p = (density - targetDensity) * pressureMultiplier;" />
+  - Where <InlineMath math="pressureMultiplier" /> is the specified pressure coefficient
+
+### Improvement of Smoothing Function
+
+During the process of escaping other density fields, for a single particle's density field, the acceleration of sampling point movement matches the slope of our defined smoothing function. However, the previously used smoothing function has an issue:
+
+- When sampling points are very close to the particle
+- Because the slope of the smoothing function at X-axis 0 is almost 0
+- This causes sampling points that should escape the particle to become stationary
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504071726073.png?imageSlim)
+
+To solve this problem, we need to update the smoothing function:
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504071706839.png?imageSlim)
+
+Additionally, a [paper](http://www.ligum.umontreal.ca/Clavet-2005-PVFS/pvfs.pdf) points out that in Lagrangian fluid simulation, particles tend to get too close to each other. They introduced the concept of near pressure by making the smoothing function sharper to increase pressure when particles get too close, enhancing the tendency for particles to escape.
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504081606069.png?imageSlim)
+
+### Pressure Calculation Optimization
+
+:::note Application of Newton's Third Law
+According to Newton's Third Law, every action has an equal and opposite reaction. In fluid simulation:
+
+- When a particle experiences pressure from other particles
+- It also exerts an equal and opposite pressure on other particles
+- To simplify calculations, we can use a shared pressure approach:
+  - Use the average of the target particle and sampling point pressures
+  - Instead of the original pressure value calculated directly from the target particle
+    :::
+
+### Performance Optimization
+
+After solving the above problems, to calculate the true escape direction and velocity of the current sampling point, we need to perform a weighted sum of all particle density fields. Within a single time step, we perform the following operations:
+
+```javascript
+function simulationStep(deltaTime) {
+  // apply gravity and calculate density
+  parallel.forEach((p, i) => {
+    velocities[i].y += Gravity * deltaTime;
+    densities[i] = CalculateDensity(positions[i]);
+  });
+
+  // calculate and apply pressure forces
+  parallel.forEach((p, i) => {
+    const pressureForce = CalculatePressureForce(positions[i]);
+    // F=ma => a=F/m
+    pressureAcceleration = pressureForce / densities[i];
+    velocities[i] += pressureAcceleration * deltaTime;
+  });
+
+  // update positions and resolve collisions
+  parallel.forEach((p, i) => {
+    positions[i] += velocities[i] * deltaTime;
+    ResolveCollisions(positions[i], velocities[i]);
+  });
+}
+```
+
+This clearly imposes a significant performance burden. For a single particle, we need to loop through all other remaining particles and calculate pressure based on the density field. In reality, it's easy to see that we only need to calculate other particles within the sampling radius of a single particle.
+
+### Spatial Lookup
+
+We can divide the canvas into a grid where each grid's side length equals the sampling radius. For a single particle, we only need to focus on particles in the 9 surrounding grids centered on the particle's grid. For any grid, it stores a list of particles currently located in that grid, and this list continuously updates its particle elements as the fluid simulation progresses. Since the space is divided into independent grids without dependencies, CUDA acceleration could be introduced here. However, since we're currently only considering JS-based visualization effects, we'll stick with the CPU-computed version.
+
+:::tip Performance Optimization Direction
+WebGPU might be a good direction for performance optimization, but since I'm not very familiar with it yet, we'll set this aside for now.
+:::
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504071809865.png?imageSlim)
+
+For a single grid, we represent it through rows and columns. However, we can store each grid's particle list using a spatial hash table, allowing us to quickly find the grid containing a particle through the hash table's key. For example, for grid coordinates <InlineMath math="x,y" />, we can use <InlineMath math="key = x * P_1 + y * P_2" /> as the hash table's key, where <InlineMath math="P_1,P_2" /> are two arbitrary prime numbers. After calculating all particles' corresponding keys, we can perform a simple incremental sort, making particles in the same grid adjacent in the array, enabling efficient and fast iteration.
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504081348582.png?imageSlim)
+In addition to the particle hash table, we need to maintain a hash index table that maps to the index position in the particle hash table where we can find the corresponding particles when we locate a specific grid.
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504081358967.png?imageSlim)
+However, since different grids might yield the same hash key, we also need to perform distance calculations to exclude grids beyond the 9 surrounding grids that might match the hash value.
+
+### Demo
+
+:::note Interaction Instructions
+You can attract fluid with the left mouse button and repel fluid with the right mouse button to observe the effects of Lagrangian fluid simulation.
+:::
+
+<iframe
+  id="lagrangian"
+  src={useBaseUrl('/demo/fluidSimulator/Lagrangian.html')}
+  width="800px"
+  height="600px"
+  style={{ border: 'none' }}
+/>

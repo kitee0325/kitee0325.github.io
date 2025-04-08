@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>2D Fluid Simulation</title>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+      canvas {
+        display: block;
+        width: 800px;
+        height: 600px;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas"></canvas>
+    <script>
+      class FluidSimulation {
+        constructor(canvas) {
+          // 获取canvas和上下文
+          this.canvas = canvas;
+          this.ctx = canvas.getContext('2d');
+
+          // 设置canvas大小
+          this.canvas.width = this.canvas.clientWidth;
+          this.canvas.height = this.canvas.clientHeight;
+
+          // 模拟参数
+          this.numParticles = 1000; // 粒子数量
+          this.gravity = 9.8; // 重力加速度
+          this.collisionDamping = 0.95; // 碰撞阻尼系数
+          this.smoothingRadius = 2; // 平滑半径（物理单位）
+          this.targetDensity = 5; // 目标密度
+          this.pressureMultiplier = 100; // 压力系数
+          this.nearPressureMultiplier = 30; // 近场压力系数
+          this.viscosityStrength = 0.25; // 粘度强度
+          this.particleRadius = 0.5; // 粒子半径（物理单位）
+          this.particleRenderRadius = 4; // 粒子渲染半径（像素）
+
+          // 交互参数
+          this.interactionRadius = 4; // 增加交互半径
+          this.interactionStrength = 25; // 增加交互强度
+          this.mousePosition = { x: 0, y: 0 }; // 鼠标位置（物理单位）
+          this.isLeftMouseDown = false; // 左键吸引
+          this.isRightMouseDown = false; // 右键排斥
+          this.lastMousePosition = { x: 0, y: 0 }; // 上一帧鼠标位置
+          this.mouseVelocity = { x: 0, y: 0 }; // 鼠标速度
+          this.mouseVelocitySmoothing = 0.8; // 鼠标速度平滑因子
+          this.maxMouseVelocity = 20; // 最大鼠标速度
+          this.velocityInfluence = 0.8; // 增加速度影响因子
+          this.forceFalloff = 0.5; // 力衰减因子
+          this.minInteractionForce = 5; // 最小交互力
+
+          // 缩放因子和渲染参数
+          this.scale = 30; // 物理单位 -> 像素的缩放因子
+          this.velocityDisplayMax = 15; // 速度可视化的最大值
+
+          // 时间步长参数
+          this.timeScale = 1.0; // 时间缩放因子
+          this.maxDeltaTime = 1 / 60; // 最大时间步长(秒)，60FPS
+          this.iterationsPerFrame = 1; // 每帧迭代次数
+          this.predictionFactor = 1 / 120.0; // 位置预测因子，与compute中一致
+
+          // 根据缩放因子计算边界大小（物理单位）
+          this.boundsSize = {
+            x: this.canvas.width / this.scale,
+            y: this.canvas.height / this.scale,
+          };
+
+          // 初始化数组
+          this.positions = new Array(this.numParticles);
+          this.velocities = new Array(this.numParticles);
+          this.predictedPositions = new Array(this.numParticles);
+          this.densities = new Array(this.numParticles);
+
+          // 初始化时间
+          this.lastTime = 0;
+          this.lastDrawTime = 0;
+
+          // 初始化粒子
+          this.initParticles();
+
+          // 开始动画循环
+          requestAnimationFrame((time) => this.update(time));
+        }
+
+        initParticles() {
+          // 在中央区域生成粒子
+          const halfBoxSize = {
+            x: this.boundsSize.x * 0.4,
+            y: this.boundsSize.y * 0.4,
+          };
+
+          for (let i = 0; i < this.numParticles; i++) {
+            // 在矩形区域内均匀分布
+            const pointsPerSide = Math.ceil(Math.sqrt(this.numParticles));
+            const row = Math.floor(i / pointsPerSide);
+            const col = i % pointsPerSide;
+
+            // 计算网格内的位置，稍微加点随机性
+            const jitter = {
+              x: (Math.random() - 0.5) * 0.1,
+              y: (Math.random() - 0.5) * 0.1,
+            };
+
+            this.positions[i] = {
+              x:
+                (col / (pointsPerSide - 1) - 0.5) * halfBoxSize.x * 2 +
+                jitter.x,
+              y:
+                (row / (pointsPerSide - 1) - 0.5) * halfBoxSize.y * 2 +
+                jitter.y,
+            };
+
+            // 初始速度
+            this.velocities[i] = { x: 0, y: 0 };
+            this.predictedPositions[i] = { ...this.positions[i] };
+            this.densities[i] = { density: 0, nearDensity: 0 };
+          }
+        }
+
+        // 添加鼠标交互事件监听
+        setupInteractions() {
+          // 鼠标移动事件
+          this.canvas.addEventListener('mousemove', (event) => {
+            // 获取鼠标在canvas中的位置
+            const rect = this.canvas.getBoundingClientRect();
+            const mouseX = event.clientX - rect.left;
+            const mouseY = event.clientY - rect.top;
+
+            // 转换为世界坐标（物理单位）
+            this.lastMousePosition = { ...this.mousePosition };
+            this.mousePosition = {
+              x: (mouseX - this.canvas.width / 2) / this.scale,
+              y: (mouseY - this.canvas.height / 2) / this.scale,
+            };
+
+            // 计算鼠标速度（考虑时间步长）
+            const deltaTime = 1 / 60; // 假设60FPS
+            this.mouseVelocity = {
+              x: (this.mousePosition.x - this.lastMousePosition.x) / deltaTime,
+              y: (this.mousePosition.y - this.lastMousePosition.y) / deltaTime,
+            };
+
+            // 限制最大速度并平滑
+            const speed = Math.sqrt(
+              this.mouseVelocity.x * this.mouseVelocity.x +
+                this.mouseVelocity.y * this.mouseVelocity.y
+            );
+            if (speed > this.maxMouseVelocity) {
+              const scale = this.maxMouseVelocity / speed;
+              this.mouseVelocity.x *= scale;
+              this.mouseVelocity.y *= scale;
+            }
+
+            // 平滑速度
+            this.mouseVelocity.x *= this.mouseVelocitySmoothing;
+            this.mouseVelocity.y *= this.mouseVelocitySmoothing;
+          });
+
+          // 鼠标按下事件
+          this.canvas.addEventListener('mousedown', (event) => {
+            if (event.button === 0) {
+              // 左键
+              this.isLeftMouseDown = true;
+            } else if (event.button === 2) {
+              // 右键
+              this.isRightMouseDown = true;
+            }
+          });
+
+          // 鼠标释放事件
+          this.canvas.addEventListener('mouseup', (event) => {
+            if (event.button === 0) {
+              // 左键
+              this.isLeftMouseDown = false;
+            } else if (event.button === 2) {
+              // 右键
+              this.isRightMouseDown = false;
+            }
+          });
+
+          // 鼠标离开canvas
+          this.canvas.addEventListener('mouseleave', () => {
+            this.isLeftMouseDown = false;
+            this.isRightMouseDown = false;
+          });
+
+          // 禁用右键菜单
+          this.canvas.addEventListener('contextmenu', (event) => {
+            event.preventDefault();
+          });
+        }
+
+        // 计算鼠标交互力
+        calculateInteractionForce(position, velocity) {
+          // 默认只有重力
+          const gravityForce = { x: 0, y: this.gravity };
+
+          // 检查是否有鼠标交互
+          const isInteracting = this.isLeftMouseDown || this.isRightMouseDown;
+          if (!isInteracting) return gravityForce;
+
+          // 计算与鼠标的距离
+          const offsetX = this.mousePosition.x - position.x;
+          const offsetY = this.mousePosition.y - position.y;
+          const sqrDist = offsetX * offsetX + offsetY * offsetY;
+
+          // 确保交互半径一致 - 同一处使用 interactionRadius
+          const interactionRadiusSqr =
+            this.interactionRadius * this.interactionRadius;
+
+          // 检查是否在交互半径内
+          if (sqrDist < interactionRadiusSqr) {
+            const dist = Math.sqrt(sqrDist);
+            const edgeFactor = dist / this.interactionRadius; // 1 at edge, 0 at center
+            const centerFactor = 1 - edgeFactor; // 0 at edge, 1 at center
+
+            // 计算指向中心的方向向量
+            const dirX = dist > 0 ? offsetX / dist : 0;
+            const dirY = dist > 0 ? offsetY / dist : 1;
+
+            // 计算交互强度（左键吸引，右键排斥）
+            const strength = this.isRightMouseDown
+              ? -this.interactionStrength
+              : this.interactionStrength;
+
+            // 计算力的衰减
+            const forceFalloff = Math.pow(centerFactor, this.forceFalloff);
+
+            // 按照原项目计算方式计算重力权重和加速度
+            const gravityWeight =
+              1 - centerFactor * Math.min(1, Math.abs(strength) / 10);
+
+            // 计算鼠标速度对粒子的影响
+            const velocityInfluence = this.velocityInfluence * forceFalloff;
+            const velocityForce = {
+              x: this.mouseVelocity.x * velocityInfluence,
+              y: this.mouseVelocity.y * velocityInfluence,
+            };
+
+            // 计算基础交互力
+            const interactionForce = {
+              x: dirX * forceFalloff * strength,
+              y: dirY * forceFalloff * strength,
+            };
+
+            // 确保最小交互力
+            const forceMagnitude = Math.sqrt(
+              interactionForce.x * interactionForce.x +
+                interactionForce.y * interactionForce.y
+            );
+
+            if (forceMagnitude < this.minInteractionForce) {
+              const scale = this.minInteractionForce / forceMagnitude;
+              interactionForce.x *= scale;
+              interactionForce.y *= scale;
+            }
+
+            // 返回合成的力 (重力 * 权重 + 交互力 + 速度影响)
+            return {
+              x:
+                gravityForce.x * gravityWeight +
+                interactionForce.x -
+                velocity.x * centerFactor +
+                velocityForce.x,
+              y:
+                gravityForce.y * gravityWeight +
+                interactionForce.y -
+                velocity.y * centerFactor +
+                velocityForce.y,
+            };
+          }
+
+          return gravityForce;
+        }
+
+        densityKernel(dst, radius) {
+          // SpikyKernelPow2 实现
+          if (dst < radius) {
+            const v = radius - dst;
+            const scalingFactor = 6 / (Math.PI * Math.pow(radius, 4));
+            return v * v * scalingFactor;
+          }
+          return 0;
+        }
+
+        nearDensityKernel(dst, radius) {
+          // SpikyKernelPow3 实现
+          if (dst < radius) {
+            const v = radius - dst;
+            const scalingFactor = 10 / (Math.PI * Math.pow(radius, 5));
+            return v * v * v * scalingFactor;
+          }
+          return 0;
+        }
+
+        densityDerivative(dst, radius) {
+          // DerivativeSpikyPow2 实现
+          if (dst <= radius) {
+            const v = radius - dst;
+            const scalingFactor = 12 / (Math.PI * Math.pow(radius, 4));
+            return -v * scalingFactor;
+          }
+          return 0;
+        }
+
+        nearDensityDerivative(dst, radius) {
+          // DerivativeSpikyPow3 实现
+          if (dst <= radius) {
+            const v = radius - dst;
+            const scalingFactor = 30 / (Math.PI * Math.pow(radius, 5));
+            return -v * v * scalingFactor;
+          }
+          return 0;
+        }
+
+        viscosityKernel(dst, radius) {
+          // SmoothingKernelPoly6 实现
+          if (dst < radius) {
+            const v = radius * radius - dst * dst;
+            const scalingFactor = 4 / (Math.PI * Math.pow(radius, 8));
+            return v * v * v * scalingFactor;
+          }
+          return 0;
+        }
+
+        calculateDensity(pos) {
+          let density = 0;
+          let nearDensity = 0;
+
+          for (let i = 0; i < this.numParticles; i++) {
+            const dx = this.predictedPositions[i].x - pos.x;
+            const dy = this.predictedPositions[i].y - pos.y;
+            const dst = Math.sqrt(dx * dx + dy * dy);
+
+            if (dst < this.smoothingRadius) {
+              density += this.densityKernel(dst, this.smoothingRadius);
+              nearDensity += this.nearDensityKernel(dst, this.smoothingRadius);
+            }
+          }
+
+          return { density, nearDensity };
+        }
+
+        pressureFromDensity(density) {
+          // 添加最小密度限制，防止压力过大
+          const minDensity = Math.max(density, 0.1);
+          return (minDensity - this.targetDensity) * this.pressureMultiplier;
+        }
+
+        nearPressureFromDensity(nearDensity) {
+          return this.nearPressureMultiplier * nearDensity;
+        }
+
+        handleCollisions(particleIndex) {
+          const pos = this.positions[particleIndex];
+          const vel = this.velocities[particleIndex];
+          const halfSize = {
+            x: this.boundsSize.x * 0.5 - this.particleRadius,
+            y: this.boundsSize.y * 0.5 - this.particleRadius,
+          };
+
+          // 边界碰撞
+          if (Math.abs(pos.x) > halfSize.x) {
+            pos.x = halfSize.x * Math.sign(pos.x);
+            vel.x *= -this.collisionDamping;
+          }
+          if (Math.abs(pos.y) > halfSize.y) {
+            pos.y = halfSize.y * Math.sign(pos.y);
+            vel.y *= -this.collisionDamping;
+          }
+        }
+
+        updateSimulation(deltaTime) {
+          // 每帧可以迭代多次，提高稳定性
+          const timeStep = deltaTime / this.iterationsPerFrame;
+
+          for (let iter = 0; iter < this.iterationsPerFrame; iter++) {
+            // 1. 应用外部力（重力和鼠标交互）并预测位置
+            for (let i = 0; i < this.numParticles; i++) {
+              // 计算交互力
+              const interactionForce = this.calculateInteractionForce(
+                this.positions[i],
+                this.velocities[i]
+              );
+
+              // 应用外部力
+              this.velocities[i].x += interactionForce.x * timeStep;
+              this.velocities[i].y += interactionForce.y * timeStep;
+
+              // 预测位置用于密度计算
+              this.predictedPositions[i] = {
+                x:
+                  this.positions[i].x +
+                  this.velocities[i].x * this.predictionFactor,
+                y:
+                  this.positions[i].y +
+                  this.velocities[i].y * this.predictionFactor,
+              };
+            }
+
+            // 2. 计算密度
+            for (let i = 0; i < this.numParticles; i++) {
+              this.densities[i] = this.calculateDensity(
+                this.predictedPositions[i]
+              );
+            }
+
+            // 3. 计算压力
+            for (let i = 0; i < this.numParticles; i++) {
+              const density = this.densities[i].density;
+              const nearDensity = this.densities[i].nearDensity;
+              const pressure = this.pressureFromDensity(density);
+              const nearPressure = this.nearPressureFromDensity(nearDensity);
+              let pressureForce = { x: 0, y: 0 };
+
+              for (let j = 0; j < this.numParticles; j++) {
+                if (i === j) continue;
+
+                const dx =
+                  this.predictedPositions[j].x - this.predictedPositions[i].x;
+                const dy =
+                  this.predictedPositions[j].y - this.predictedPositions[i].y;
+                const dst = Math.sqrt(dx * dx + dy * dy);
+
+                if (dst < this.smoothingRadius) {
+                  const dir = { x: dx / dst, y: dy / dst };
+                  const neighborDensity = this.densities[j].density;
+                  const neighborNearDensity = this.densities[j].nearDensity;
+                  const neighborPressure =
+                    this.pressureFromDensity(neighborDensity);
+                  const neighborNearPressure =
+                    this.nearPressureFromDensity(neighborNearDensity);
+
+                  const sharedPressure = (pressure + neighborPressure) * 0.5;
+                  const sharedNearPressure =
+                    (nearPressure + neighborNearPressure) * 0.5;
+
+                  const densityTerm = Math.max(neighborDensity, 0.1);
+                  const nearDensityTerm = Math.max(neighborNearDensity, 0.001);
+
+                  pressureForce.x +=
+                    dir.x *
+                    this.densityDerivative(dst, this.smoothingRadius) *
+                    (sharedPressure / densityTerm);
+                  pressureForce.y +=
+                    dir.y *
+                    this.densityDerivative(dst, this.smoothingRadius) *
+                    (sharedPressure / densityTerm);
+
+                  pressureForce.x +=
+                    dir.x *
+                    this.nearDensityDerivative(dst, this.smoothingRadius) *
+                    (sharedNearPressure / nearDensityTerm);
+                  pressureForce.y +=
+                    dir.y *
+                    this.nearDensityDerivative(dst, this.smoothingRadius) *
+                    (sharedNearPressure / nearDensityTerm);
+                }
+              }
+
+              // 用密度归一化
+              const accel = {
+                x: pressureForce.x / Math.max(density, 0.1),
+                y: pressureForce.y / Math.max(density, 0.1),
+              };
+
+              this.velocities[i].x += accel.x * timeStep;
+              this.velocities[i].y += accel.y * timeStep;
+            }
+
+            // 4. 计算粘度
+            for (let i = 0; i < this.numParticles; i++) {
+              let viscosityForce = { x: 0, y: 0 };
+
+              for (let j = 0; j < this.numParticles; j++) {
+                if (i === j) continue;
+
+                const dx =
+                  this.predictedPositions[j].x - this.predictedPositions[i].x;
+                const dy =
+                  this.predictedPositions[j].y - this.predictedPositions[i].y;
+                const dst = Math.sqrt(dx * dx + dy * dy);
+
+                if (dst < this.smoothingRadius) {
+                  const kernel = this.viscosityKernel(
+                    dst,
+                    this.smoothingRadius
+                  );
+                  viscosityForce.x +=
+                    (this.velocities[j].x - this.velocities[i].x) * kernel;
+                  viscosityForce.y +=
+                    (this.velocities[j].y - this.velocities[i].y) * kernel;
+                }
+              }
+
+              this.velocities[i].x +=
+                viscosityForce.x * this.viscosityStrength * timeStep;
+              this.velocities[i].y +=
+                viscosityForce.y * this.viscosityStrength * timeStep;
+            }
+
+            // 5. 更新位置并处理碰撞
+            for (let i = 0; i < this.numParticles; i++) {
+              this.positions[i].x += this.velocities[i].x * timeStep;
+              this.positions[i].y += this.velocities[i].y * timeStep;
+              this.handleCollisions(i);
+            }
+          }
+        }
+
+        // 计算颜色比例尺，从蓝色到红色
+        getColorScale(value, min, max) {
+          // 添加速度阈值检测
+          const velocityThreshold = 1; // 当速度差小于这个值时认为流体静止
+
+          // 如果速度范围太小，认为流体静止，使用统一的蓝色
+          if (max - min < velocityThreshold) {
+            return 'rgb(0, 150, 255)'; // 使用统一的蓝色
+          }
+
+          // 确保value在min和max之间，并添加平滑过渡
+          const normalizedValue = Math.max(
+            0,
+            Math.min(1, (value - min) / (max - min || 1))
+          );
+
+          // 使用更平滑的颜色过渡
+          // 蓝色(0,150,255) -> 青色(0,255,255) -> 黄色(255,255,0) -> 红色(255,50,0)
+          let r, g, b;
+
+          if (normalizedValue < 0.5) {
+            // 蓝色到青色
+            const t = normalizedValue * 2;
+            r = 0;
+            g = Math.round(150 + (255 - 150) * t);
+            b = 255;
+          } else {
+            // 青色到红色
+            const t = (normalizedValue - 0.5) * 2;
+            r = Math.round(255 * t);
+            g = Math.round(255 - (255 - 50) * t);
+            b = Math.round(255 - 255 * t);
+          }
+
+          return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        // 计算速度大小（模长）
+        getVelocityMagnitude(velocity) {
+          return Math.sqrt(velocity.x * velocity.x + velocity.y * velocity.y);
+        }
+
+        render() {
+          // 清空画布
+          this.ctx.fillStyle = 'rgb(10, 10, 20)';
+          this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+          // 绘制边界
+          this.ctx.strokeStyle = 'rgba(0, 255, 150, 0.5)';
+          this.ctx.lineWidth = 2;
+          this.ctx.strokeRect(
+            this.canvas.width / 2 - (this.boundsSize.x * this.scale) / 2,
+            this.canvas.height / 2 - (this.boundsSize.y * this.scale) / 2,
+            this.boundsSize.x * this.scale,
+            this.boundsSize.y * this.scale
+          );
+
+          // 如果鼠标交互激活，绘制交互区域和速度指示器
+          if (this.isLeftMouseDown || this.isRightMouseDown) {
+            // 绘制交互区域
+            this.ctx.strokeStyle = this.isLeftMouseDown
+              ? 'rgba(0, 255, 0, 0.7)'
+              : 'rgba(255, 0, 0, 0.7)';
+            this.ctx.beginPath();
+            this.ctx.arc(
+              this.canvas.width / 2 + this.mousePosition.x * this.scale,
+              this.canvas.height / 2 + this.mousePosition.y * this.scale,
+              this.interactionRadius * this.scale,
+              0,
+              Math.PI * 2
+            );
+            this.ctx.stroke();
+          }
+
+          // 计算所有粒子的速度范围，使用平滑处理
+          let minVelocity = Infinity;
+          let maxVelocity = 0;
+          const velocityBuffer = new Array(this.numParticles);
+
+          // 第一次遍历：收集所有速度值
+          for (let i = 0; i < this.numParticles; i++) {
+            const velocityMag = this.getVelocityMagnitude(this.velocities[i]);
+            velocityBuffer[i] = velocityMag;
+            minVelocity = Math.min(minVelocity, velocityMag);
+            maxVelocity = Math.max(maxVelocity, velocityMag);
+          }
+
+          // 使用velocityDisplayMax作为参考上限，并添加平滑处理
+          maxVelocity = Math.min(maxVelocity, this.velocityDisplayMax);
+
+          // 如果速度范围太小，使用固定的最小范围
+          if (maxVelocity - minVelocity < 0.1) {
+            minVelocity = 0;
+            maxVelocity = 0.1;
+          }
+
+          // 绘制粒子（先绘制一个发光效果）
+          for (let i = 0; i < this.numParticles; i++) {
+            const pos = this.positions[i];
+            const velocityMag = velocityBuffer[i];
+            const color = this.getColorScale(
+              velocityMag,
+              minVelocity,
+              maxVelocity
+            );
+
+            // 绘制发光效果
+            const gradient = this.ctx.createRadialGradient(
+              this.canvas.width / 2 + pos.x * this.scale,
+              this.canvas.height / 2 + pos.y * this.scale,
+              0,
+              this.canvas.width / 2 + pos.x * this.scale,
+              this.canvas.height / 2 + pos.y * this.scale,
+              this.particleRenderRadius * 2
+            );
+
+            // 提取RGB值用于发光效果
+            const rgbMatch = color.match(/\d+/g);
+            if (rgbMatch && rgbMatch.length === 3) {
+              const [r, g, b] = rgbMatch;
+              gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.8)`);
+              gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
+            } else {
+              gradient.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
+              gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            }
+
+            this.ctx.fillStyle = gradient;
+            this.ctx.beginPath();
+            this.ctx.arc(
+              this.canvas.width / 2 + pos.x * this.scale,
+              this.canvas.height / 2 + pos.y * this.scale,
+              this.particleRenderRadius * 2,
+              0,
+              Math.PI * 2
+            );
+            this.ctx.fill();
+          }
+
+          // 绘制粒子（实心）
+          for (let i = 0; i < this.numParticles; i++) {
+            const pos = this.positions[i];
+            const velocityMag = velocityBuffer[i];
+
+            // 基于速度获取颜色
+            this.ctx.fillStyle = this.getColorScale(
+              velocityMag,
+              minVelocity,
+              maxVelocity
+            );
+
+            this.ctx.beginPath();
+            this.ctx.arc(
+              this.canvas.width / 2 + pos.x * this.scale,
+              this.canvas.height / 2 + pos.y * this.scale,
+              this.particleRenderRadius,
+              0,
+              Math.PI * 2
+            );
+            this.ctx.fill();
+          }
+
+          // 显示FPS
+          const fps = Math.round(
+            1000 / (performance.now() - this.lastDrawTime)
+          );
+          this.lastDrawTime = performance.now();
+
+          this.ctx.fillStyle = 'white';
+          this.ctx.font = '14px Arial';
+          this.ctx.fillText(`FPS: ${fps}`, 10, 20);
+          this.ctx.fillText(`Particles: ${this.numParticles}`, 10, 40);
+        }
+
+        update(time) {
+          // 计算时间步长并应用时间缩放
+          const rawDeltaTime = (time - this.lastTime) / 1000;
+          const deltaTime =
+            Math.min(rawDeltaTime, this.maxDeltaTime) * this.timeScale;
+          this.lastTime = time;
+
+          if (!this.lastDrawTime) this.lastDrawTime = performance.now();
+
+          // 更新模拟
+          this.updateSimulation(deltaTime);
+
+          // 渲染
+          this.render();
+
+          // 继续下一帧
+          requestAnimationFrame((time) => this.update(time));
+        }
+      }
+
+      // 启动模拟
+      const canvas = document.getElementById('canvas');
+      const simulation = new FluidSimulation(canvas);
+      simulation.setupInteractions();
+    </script>
+  </body>
+</html>
