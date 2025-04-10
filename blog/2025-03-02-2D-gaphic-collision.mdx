@@ -1,0 +1,242 @@
+---
+slug: 2D-graphic-collision
+title: 2D Graphic Collision
+tags: [collision]
+---
+
+import useBaseUrl from '@docusaurus/useBaseUrl';
+import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
+
+**TLDR**  
+This article introduces various 2D collision detection methods: from basic Axis-Aligned Bounding Boxes (AABB) and circular collision, to Oriented Bounding Boxes (OBB) and the Welzl algorithm for minimum enclosing circles; from the Separating Axis Theorem (SAT) for convex polygons, to precise pixel-level collision detection; finally covering performance optimization through Hierarchical Bounding Boxes (HBB) and spatial partitioning methods like quadtrees. Different methods are suitable for different scenarios, providing solutions for collision detection from simple geometric shapes to complex irregular figures.
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504101631287.png?imageSlim)
+{/* truncate */}
+
+## Rectangle and Circle Based Collision Detection
+
+2D graphic collision detection is frequently used in visualization, such as in bee swarm plots, physical simulations, overlap detection, and other scenarios.  
+In most cases, we approximate irregular shapes as circles or rectangles for collision detection, greatly simplifying calculations.
+
+### Axis-Aligned Bounding Box (AABB)
+
+Rectangles can approximate figures of almost any aspect ratio. In non-rotational scenarios, AABB bounding boxes are generally used for collision detection.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504101614684.png?imageSlim)
+
+```javascript
+function isRectangleCollision(rect1, rect2) {
+  return (
+    rect1.x < rect2.x + rect2.width &&
+    rect1.x + rect1.width > rect2.x &&
+    rect1.y < rect2.y + rect2.height &&
+    rect1.y + rect1.height > rect2.y
+  );
+}
+```
+
+### Oriented Bounding Box (OBB)
+
+OBB effectively solves the rectangle rotation problem. An OBB is essentially a rotated AABB, and there are two common methods to calculate an OBB:
+
+1. Principal Component Analysis (PCA)
+   The most common OBB calculation method, though it doesn't always produce the optimal OBB
+   ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504101734674.png?imageSlim)
+
+   - Calculate the mean (center point) of all polygon vertices
+   - Calculate the covariance matrix of the vertices
+   - Perform eigenvalue decomposition on the covariance matrix to obtain eigenvectors
+   - These eigenvectors become the principal axis directions of the OBB
+   - Project the polygon onto these principal axes to find minimum and maximum projection values
+   - Construct the OBB based on these projection values
+
+2. Rotating Calipers Algorithm
+   Suitable for convex polygons and always produces the optimal OBB. For non-convex polygons, this method can be applied by calculating the convex hull, though it may not produce the optimal OBB
+   ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504101739866.png?imageSlim)
+
+   - For each edge of the convex hull, treat it as one edge of the rectangle
+   - Find the farthest vertices parallel and perpendicular to this edge to form a bounding rectangle
+   - Calculate the area of all possible bounding rectangles and select the one with minimum area as the OBB
+
+### Enclosing Circle Based on AABB
+
+Circle collision detection is simpler - compared to AABB's four comparisons, it only requires one comparison: checking if the distance between circle centers is less than the sum of their radii. This method handles rotation well but is only suitable for shapes with aspect ratios close to 1. The circle parameters can be calculated from the AABB bounding box, with the center of the bounding box as the circle center and the longer edge as the diameter.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504101519964.png?imageSlim)
+
+```javascript
+function isCircleCollision(circle1, circle2) {
+  const distance = Math.sqrt(
+    (circle1.x - circle2.x) ** 2 + (circle1.y - circle2.y) ** 2
+  );
+  return distance < circle1.radius + circle2.radius;
+}
+```
+
+However, an enclosing circle calculated from an AABB is not necessarily the minimum enclosing circle in the strict sense. To find the precise minimum enclosing circle, the Welzl algorithm can be used.
+
+### Welzl Algorithm
+
+The Welzl algorithm works with point sets in polygons, recursively finding the minimum enclosing circle. For any set of points P:
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504101755498.png?imageSlim)
+
+- Randomly shuffle the point set P
+- Start with an empty set and add points one by one
+- If a new point is inside the current circle, maintain the existing circle
+- If a new point is outside the circle, recalculate the minimum enclosing circle with this point as a boundary point
+- Recursively solve sub-problems until a circle containing all points is constructed
+
+In non-strict collision detection scenarios, collision objects can be approximated as circles or rectangles, using the methods described above. For most polygon scenarios, these approximation methods can adequately solve collision problems. If a scenario is suitable for both circle and rectangle detection, we can compare the compactness ratio (<InlineMath math="\frac{S_{circle}}{S_{rect}}"/>), choosing the method with the smaller area (more compact with the original shape).
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504101625765.png?imageSlim)
+
+Although rectangle and circle bounding box methods solve most scenarios, there are cases where they are less suitable. For instance, a simple triangle cannot be well approximated by either a rectangle or circle, resulting in insufficient collision detection precision.
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504101826120.png?imageSlim)
+
+## Separating Axis Theorem (SAT)
+
+SAT is a collision detection method based on the separating axis theorem, which works well for convex polygons.
+
+SAT only applies to convex polygons with few edges. Its principle is simple: if two polygons do not intersect, there must exist an axis perpendicular to one of the edges of either convex polygon where the projections of the two polygons do not overlap.  
+While this sounds complicated, it can be quickly understood through illustration:
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504101631287.png?imageSlim)
+
+## Pixel Collision
+
+Pixel collision is often used for strict collision detection scenarios where objects have complex edge shapes, such as characters, animals, plants, etc. Compared to the geometric-based collision detection methods mentioned earlier, pixel collision can achieve pixel-level precise collision detection.
+
+In JavaScript, there are several common ways to implement pixel collision detection:
+
+- Using the getImageData method
+
+This is the most direct method, which analyzes each pixel point by obtaining pixel data on the canvas:
+
+```javascript
+function pixelCollision(rect1, rect2, ctx) {
+  // Calculate overlapping area
+  const x = Math.max(rect1.x, rect2.x);
+  const y = Math.max(rect1.y, rect2.y);
+  const width = Math.min(rect1.x + rect1.width, rect2.x + rect2.width) - x;
+  const height = Math.min(rect1.y + rect1.height, rect2.y + rect2.height) - y;
+
+  // If there's no overlapping area, return false directly
+  if (width <= 0 || height <= 0) return false;
+
+  // Get pixel data for the overlapping area
+  const data1 = ctx.getImageData(x, y, width, height).data;
+
+  // Save current canvas state
+  ctx.save();
+
+  // Clear canvas
+  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+  // Only draw the second object
+  // ... code to draw rect2 ...
+
+  // Get pixel data for the second object in the overlapping area
+  const data2 = ctx.getImageData(x, y, width, height).data;
+
+  // Restore canvas state
+  ctx.restore();
+
+  // Check if any pixels overlap
+  for (let i = 3; i < data1.length; i += 4) {
+    if (data1[i] > 0 && data2[i] > 0) {
+      return true; // Collision detected
+    }
+  }
+
+  return false; // No collision
+}
+```
+
+- Using globalCompositeOperation
+
+This method utilizes Canvas blending modes to detect collisions:
+
+```javascript
+function compositeCollision(obj1, obj2, ctx) {
+  // Save current canvas state
+  ctx.save();
+
+  // Create an offscreen canvas
+  const offscreenCanvas = document.createElement('canvas');
+  const offCtx = offscreenCanvas.getContext('2d');
+  offscreenCanvas.width = ctx.canvas.width;
+  offscreenCanvas.height = ctx.canvas.height;
+
+  // Draw the first object on the offscreen canvas
+  // ... code to draw obj1 ...
+
+  // Set blending mode
+  offCtx.globalCompositeOperation = 'destination-in';
+
+  // Draw the second object on the offscreen canvas
+  // ... code to draw obj2 ...
+
+  // Check if any pixels are retained (indicating collision)
+  const imageData = offCtx.getImageData(
+    0,
+    0,
+    offscreenCanvas.width,
+    offscreenCanvas.height
+  );
+  const data = imageData.data;
+
+  // Restore canvas state
+  ctx.restore();
+
+  // Check for non-transparent pixels
+  for (let i = 3; i < data.length; i += 4) {
+    if (data[i] > 0) {
+      return true; // Collision detected
+    }
+  }
+
+  return false; // No collision
+}
+```
+
+Pixel collision detection is computationally intensive. Consider these optimization methods:
+
+1. **Multi-level detection**: First use AABB or circle for rough detection, only proceed to pixel-level detection when rough detection passes
+2. **Lower resolution**: For large objects, pixel detection can be performed at lower resolution
+3. **Cache detection results**: For static objects, collision information can be pre-calculated and cached
+4. **Limit detection frequency**: Pixel-level detection doesn't need to be executed every frame, detection frequency can be reduced
+
+## Performance Optimization through Spatial Partitioning
+
+### Hierarchical Bounding Box (HBB)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504101948844.png?imageSlim)
+
+Hierarchical Bounding Box is a method that decomposes complex objects into a hierarchy of simple bounding boxes, effectively improving collision detection efficiency. The core idea of HBB is to divide complex objects into multiple levels of bounding boxes, starting detection from the coarsest outer bounding box and only continuing to detect more refined inner bounding boxes when the outer bounding box collides.
+
+- **Hierarchical structure**: Create multi-layered bounding boxes from coarse to fine for objects
+- **Top-down detection**: Start from the outermost bounding box and progressively detect deeper layers
+- **Early culling**: If no collision is detected in the outer bounding box, all inner bounding boxes can be excluded directly
+
+There are typically two common implementation methods:
+
+- **Tree structure**: Each node represents a bounding box, with child nodes representing finer divisions
+- **Array structure**: Store bounding boxes in arrays by level for quick traversal
+
+Its advantages are:
+
+- Significantly reduces the number of object pairs needing detailed collision testing
+- Suitable for complex objects with clear hierarchical structure, such as character models, multi-jointed objects, etc.
+- Can be combined with different shapes of bounding boxes (such as AABB, OBB, circle, etc.)
+
+Compared to spatial partitioning methods like quadtrees, HBB focuses more on the geometric structure of the object itself and is especially suitable for objects that need precise collision detection but have relatively complex shapes.
+
+### Quadtree
+
+A quadtree is essentially a spatial partitioning algorithm. For scenarios requiring frequent collision detection, quadtrees can be used to partition space first, thereby reducing the number of collision detections.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504101920847.png?imageSlim)
+If an object spans multiple quadrants, there are generally several solutions:
+
+- Upper-level storage: Store objects spanning multiple quadrants in the smallest node that completely contains the object (usually the parent node).
+- Multiple references: Keep references to the object in each quadrant it covers.
+- Loose quadtree: Use quadrant boundaries that are looser than strict quadtrees, allowing some overlap between quadrants.

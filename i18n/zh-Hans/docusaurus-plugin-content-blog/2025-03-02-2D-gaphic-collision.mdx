@@ -1,0 +1,242 @@
+---
+slug: 2D-graphic-collision
+title: 2D 图形碰撞
+tags: [碰撞]
+---
+
+import useBaseUrl from '@docusaurus/useBaseUrl';
+import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
+
+**TLDR**  
+本文介绍了多种 2D 图形碰撞检测方法：从基础的轴对齐包围盒（AABB）和圆形碰撞，到定向包围盒（OBB）和 Welzl 算法求最小外接圆；从适用于凸多边形的分离轴定理（SAT），到基于像素级别的精确碰撞检测；最后介绍了通过分层边界框（HBB）和四叉树等空间划分方法来优化性能。不同方法适用于不同场景，从简单几何形状到复杂不规则图形的碰撞检测都有对应解决方案。
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504101631287.png?imageSlim)
+{/* truncate */}
+
+## 基于矩形或圆形的碰撞检测
+
+2D 图形碰撞检测在可视化中会被经常使用到，比如蜂群图、物理模拟、重叠检测等场景。  
+在大部分场景下，我们都会将不规则形状拟合为圆形或者矩形来进行碰撞检测，从而大大简化计算。
+
+### 轴对齐包围盒 (Axis-Aligned Bounding Box, AABB)
+
+矩形几乎可以拟合任意纵横比的图形，在非旋转场景下，一般使用 AABB 包围盒来进行碰撞检测。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504101614684.png?imageSlim)
+
+```javascript
+function isRectangleCollision(rect1, rect2) {
+  return (
+    rect1.x < rect2.x + rect2.width &&
+    rect1.x + rect1.width > rect2.x &&
+    rect1.y < rect2.y + rect2.height &&
+    rect1.y + rect1.height > rect2.y
+  );
+}
+```
+
+### 定向包围盒 (Oriented Bounding Box, OBB)
+
+OBB 可以很好的解决矩形的旋转问题，OBB 本质上就是旋转的 AABB，有俩种常见的办法计算出 OBB：
+
+1. 主轴法 (Principal Component Analysis, PCA)
+   最常见的 OBB 计算方法，但不一定产生最优 OBB
+   ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504101734674.png?imageSlim)
+
+   - 计算多边形所有顶点的均值（中心点）
+   - 计算顶点的协方差矩阵
+   - 对协方差矩阵进行特征值分解，得到特征向量
+   - 这些特征向量就是 OBB 的主轴方向
+   - 将多边形投影到这些主轴上，找出最小和最大投影值
+   - 根据这些投影值构建 OBB
+
+2. 旋转卡壳算法 (Rotating Calipers)  
+   适用于凸多边形，且一定产生最优 OBB，对于非凸多边形，可以通过计算凸包的方式应用该方法，但不一定产生最优 OBB
+   ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504101739866.png?imageSlim)
+
+   - 对于凸包上的每条边，将其作为矩形的一条边
+   - 找出与该边平行和垂直的最远顶点，形成一个包围矩形
+   - 计算所有可能包围矩形的面积，选择面积最小的矩形作为 OBB
+
+### 基于 AABB 的外接圆
+
+圆形的碰撞检测更加简单，相比 AABB 的四次比较，仅需要一次比较，即判断圆心之间的距离是否小于两个圆的半径之和就可以判断出是否碰撞，且可以很好的解决旋转的问题，不过仅适用于纵横比近似 1 的形状。圆的具体参数可以根据 AABB 计算出的包围盒来计算，即包围盒的中心为圆心，较长的一条边为直径。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504101519964.png?imageSlim)
+
+```javascript
+function isCircleCollision(circle1, circle2) {
+  const distance = Math.sqrt(
+    (circle1.x - circle2.x) ** 2 + (circle1.y - circle2.y) ** 2
+  );
+  return distance < circle1.radius + circle2.radius;
+}
+```
+
+不过根据 AABB 计算出的外接圆，不一定是严格意义上的最小外接圆。如果想精确求出最小外接圆，可以使用 Welzl 算法。
+
+### Welzl 算法
+
+Welzl 算法面向多边形中的点集，通过递归的方式求出最小外接圆，对于任意多边形的点集 P：
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504101755498.png?imageSlim)
+
+- 随机打乱点集 P
+- 从空集开始，逐个添加点
+- 若新点在当前圆内，维持现有圆不变
+- 若新点在圆外，以该点为边界点重新计算最小包围圆
+- 递归解决子问题，直到构造出包含所有点的最小圆
+
+在非严格碰撞检测场景中，可以将碰撞物近似看做圆形和矩形，从而使用上述的各种方法进行碰撞检测。在大部分多边形场景下，我们都可以使用上述的方法近似的解决碰撞的问题。如果有场景同时适用于圆形检测和矩形检测，也可以通过比较紧凑率（<InlineMath math="\frac{S_{circle}}{S_{rect}}"/>），即面积比值来采取面积更小（与原图形更紧凑）的方案。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504101625765.png?imageSlim)
+
+尽管基于矩形和圆形包围盒的方案可以解决大部分场景，但仍然存在一些场景不太适用，就比如最简单的三角形，无论适用矩形还是圆形，都无法很好的拟合三角形，从而导致碰撞检测的精度不够。
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504101826120.png?imageSlim)
+
+## 分离轴定理 (Separating Axis Theorem, SAT)
+
+SAT 是基于分离轴定理的碰撞检测方法，可以很好的解决凸多边形的碰撞检测问题。
+
+SAT 仅适用于凸多边形且边数少的情况，他的原理非常简单，如果俩个多边形不相交，则一定存在一个垂直于俩个凸多边形某一条边的轴，使得俩个多边形在该轴上的投影互不重叠。  
+虽然有点拗口，但可以通过图示快速理解：
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504101631287.png?imageSlim)
+
+## 像素碰撞
+
+像素碰撞常常面向严格的碰撞检测场景，且参与检测的物体具有复杂的边缘形状，比如人物、动物、植物等等。相较于前面提到的各种基于几何形状的碰撞检测方法，像素碰撞可以实现像素级别的精确碰撞检测。
+
+在 JavaScript 中，有几种常见的像素碰撞检测实现方式：
+
+- 使用 getImageData 方法
+
+这是最直接的方法，通过获取画布上的像素数据并分析每个像素点来判断碰撞：
+
+```javascript
+function pixelCollision(rect1, rect2, ctx) {
+  // 计算重叠区域
+  const x = Math.max(rect1.x, rect2.x);
+  const y = Math.max(rect1.y, rect2.y);
+  const width = Math.min(rect1.x + rect1.width, rect2.x + rect2.width) - x;
+  const height = Math.min(rect1.y + rect1.height, rect2.y + rect2.height) - y;
+
+  // 如果没有重叠区域，直接返回 false
+  if (width <= 0 || height <= 0) return false;
+
+  // 获取重叠区域的像素数据
+  const data1 = ctx.getImageData(x, y, width, height).data;
+
+  // 保存当前 canvas 状态
+  ctx.save();
+
+  // 清除 canvas
+  ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+  // 只绘制第二个物体
+  // ... 绘制 rect2 的代码 ...
+
+  // 获取第二个物体在重叠区域的像素数据
+  const data2 = ctx.getImageData(x, y, width, height).data;
+
+  // 恢复 canvas 状态
+  ctx.restore();
+
+  // 检查是否有像素重叠
+  for (let i = 3; i < data1.length; i += 4) {
+    if (data1[i] > 0 && data2[i] > 0) {
+      return true; // 发现碰撞
+    }
+  }
+
+  return false; // 没有碰撞
+}
+```
+
+- 使用 globalCompositeOperation
+
+这种方法利用 Canvas 的混合模式来检测碰撞：
+
+```javascript
+function compositeCollision(obj1, obj2, ctx) {
+  // 保存当前画布状态
+  ctx.save();
+
+  // 创建离屏 canvas
+  const offscreenCanvas = document.createElement('canvas');
+  const offCtx = offscreenCanvas.getContext('2d');
+  offscreenCanvas.width = ctx.canvas.width;
+  offscreenCanvas.height = ctx.canvas.height;
+
+  // 在离屏 canvas 上绘制第一个物体
+  // ... 绘制 obj1 的代码 ...
+
+  // 设置混合模式
+  offCtx.globalCompositeOperation = 'destination-in';
+
+  // 在离屏 canvas 上绘制第二个物体
+  // ... 绘制 obj2 的代码 ...
+
+  // 检查是否有任何像素保留（表示碰撞）
+  const imageData = offCtx.getImageData(
+    0,
+    0,
+    offscreenCanvas.width,
+    offscreenCanvas.height
+  );
+  const data = imageData.data;
+
+  // 恢复画布状态
+  ctx.restore();
+
+  // 检查是否存在非透明像素
+  for (let i = 3; i < data.length; i += 4) {
+    if (data[i] > 0) {
+      return true; // 发现碰撞
+    }
+  }
+
+  return false; // 没有碰撞
+}
+```
+
+像素碰撞检测是计算密集型的操作，可以考虑以下优化方法：
+
+1. **多级检测**：先使用 AABB 或圆形进行粗略检测，只有当粗略检测通过时才进行像素级检测
+2. **降低分辨率**：对大型物体，可以在较低分辨率下进行像素检测
+3. **缓存检测结果**：对于静态物体，可以预先计算并缓存碰撞信息
+4. **限制检测频率**：不必每帧都执行像素级检测，可以降低检测频率
+
+## 通过空间划分优化性能
+
+### 分层边界框 (Hierarchical Bounding Box, HBB)
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504101948844.png?imageSlim)
+
+分层边界框是一种将复杂物体分解为简单包围盒层次结构的方法，它可以有效地提高碰撞检测的效率。HBB 的核心思想是将复杂物体分割成多个层级的包围盒，从最粗略的外层包围盒开始检测，只有当外层包围盒发生碰撞时，才会继续检测内层更精细的包围盒。
+
+- **层次结构**：为物体创建从粗到细的多层包围盒
+- **自顶向下检测**：从最外层包围盒开始，逐层深入检测
+- **早期剔除**：如果外层包围盒没有碰撞，则可以直接排除内层所有包围盒
+
+通常有两种常见的实现方式：
+
+- **树状结构**：每个节点表示一个包围盒，子节点表示更精细的分割
+- **数组结构**：按层级将包围盒存储在数组中，便于快速遍历
+
+他的优点如下：
+
+- 显著减少需要进行详细碰撞测试的物体对数量
+- 适用于具有明确层次结构的复杂物体，如角色模型、多关节物体等
+- 可以结合不同形状的包围盒（如 AABB、OBB、圆形等）使用
+
+相比于四叉树等空间分割方法，HBB 更专注于物体本身的几何结构，特别适合于需要精确碰撞检测但形状又相对复杂的物体。
+
+### 四叉树 Quadtree
+
+四叉树本质上是一种空间分割算法，，针对需要频繁进行碰撞检测的场景，可以先使用四叉树进行空间分割，从而减少碰撞检测的次数。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202504101920847.png?imageSlim)
+如果某个物体跨越多个象限，一般有以下几种解决方案：
+
+- 上层存储法：将跨越多个象限的物体存储在其完全包含该物体的最小节点中（通常是父节点）。
+- 多重引用法：在物体覆盖的每个象限中都保存该物体的引用。
+- 松散四叉树：使用比严格四叉树更宽松的象限边界，允许象限之间有一定重叠。
