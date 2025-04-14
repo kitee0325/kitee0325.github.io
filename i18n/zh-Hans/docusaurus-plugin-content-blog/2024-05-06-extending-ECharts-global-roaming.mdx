@@ -5,23 +5,24 @@ tags: [数据可视化, ECharts, 插件]
 ---
 
 import Link from '@docusaurus/Link';
+import useBaseUrl from '@docusaurus/useBaseUrl';
 
 **TLDR**
 
 本文探讨如何扩展 ECharts 的全局漫游功能。虽然 ECharts 通过 dataZoom 为笛卡尔坐标系图表提供了漫游功能，但关系型图表缺乏完整的全局漫游支持。我们将研究 ECharts 当前的单系列漫游实现，并开发一个解决方案来实现所有图表类型的全局漫游功能。
 
-<img src={require('@site/static/img/Roam Example.gif').default} />
+<img src={useBaseUrl('/img/Roam Example.gif')} />
 {/* truncate */}
 
 ## 任务
 
 尽管 ECharts 通过其丰富的配置选项提供了数百种可视化功能，但一些常见功能，如漫游功能，仍然未被满足。在 ECharts 中，缩放和移动图表（以下统称为漫游）可以通过两种方式实现。对于使用笛卡尔坐标系的图表（如折线图和柱状图），ECharts 通过 dataZoom 组件实现了漫游功能。
 
-<img src={require('@site/static/img/ECharts DataZoom Example.gif').default} />
+<img src={useBaseUrl('/img/ECharts DataZoom Example.gif')} />
 
 然而，对于关系型图表（如桑基图和旭日图——没有线条的关系图），全局漫游功能并未得到完全支持。目前，只在最常见的关系图（Graph）类型中实现了单系列漫游。
 
-<img src={require('@site/static/img/ECharts Roaming Example.gif').default} />
+<img src={useBaseUrl('/img/ECharts Roaming Example.gif')} />
 
 ## 原始漫游解决方案
 
@@ -650,4 +651,4 @@ function getLabelZoomTransform(
 
 ## 最终结果
 
-<img src={require('@site/static/img/Roam Example.gif').default} />
+<img src={useBaseUrl('/img/Roam Example.gif')} />

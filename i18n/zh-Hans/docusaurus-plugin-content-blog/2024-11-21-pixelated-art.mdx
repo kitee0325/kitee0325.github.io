@@ -39,10 +39,7 @@ import ModelViewer from '@site/src/components/ModelViewer';
 
 ### ❎ 纯压缩
 
-<img
-  src={require('@site/static/img/Pixelate Demo.gif').default}
-  alt="pixelated-art"
-/>
+<img src={useBaseUrl('/img/Pixelate Demo.gif')} alt="pixelated-art" />
 
 像素化已经是一种成熟的技术，GitHub 上有许多与图像像素化相关的项目。以[`pixelate`](https://gitcode.com/gh_mirrors/pi/pixelate/blob/master/pixelate.js)为例，我将介绍其中的一些计算细节。
 
@@ -298,9 +295,7 @@ Aseprite 是专门用于像素艺术设计的软件，而 PixelLab 是 Aseprite 
 
 - ❎ 利用现有的像素 AI 工具，如 PixelLab。
 
-  > <img
-  >   src={require('@site/static/img/Pixellab Animate Example.gif').default}
-  > />
+  > <img src={useBaseUrl('/img/Pixellab Animate Example.gif')} />
   > 虽然 PixelLab 提供了我需要的一切，但它的骨骼动画功能是针对专业像素艺术家的付费服务。由于我只打算
   > 进行一次测试，我可能会考虑暂时避免这笔费用，等到有更密集的工作需求时再购买。
 
@@ -322,7 +317,7 @@ Aseprite 是专门用于像素艺术设计的软件，而 PixelLab 是 Aseprite 
 
 感谢 2D 像素艺术社区内的分享，我们可以轻松找到相关的指导方案：
 
-<img src={require('@site/static/img/Run Cycles.gif').default} />
+<img src={useBaseUrl('/img/Run Cycles.gif')} />
 
 ### 生成
 
@@ -390,7 +385,7 @@ Aseprite 是专门用于像素艺术设计的软件，而 PixelLab 是 Aseprite 
 经过简单尝试，我获得了以下结果：
 ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502040201305.png?imageSlim)
 
-<img src={require('@site/static/img/Sprite Run.gif').default} />
+<img src={useBaseUrl('/img/Sprite Run.gif')} />
 
 然而，仍然存在一些问题：
 
@@ -412,7 +407,7 @@ Aseprite 是专门用于像素艺术设计的软件，而 PixelLab 是 Aseprite 
 
 ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502070706112.png?imageSlim)
 
-<img src={require('@site/static/img/Sprite Run 20x.gif').default} />
+<img src={useBaseUrl('/img/Sprite Run 20x.gif')} />
 
 **下一步考虑（待执行）：**
 
@@ -462,11 +457,11 @@ Aseprite 是专门用于像素艺术设计的软件，而 PixelLab 是 Aseprite 
 
 - 使用`Blender`将模型导出为.fbx 格式。
 - 将模型上传到`Mixamo`，执行自动骨骼绑定，并选择和应用一个奔跑动画模型。
-  <img src={require('@site/static/img/Mixamo Tifa Running.gif').default} />
+  <img src={useBaseUrl('/img/Mixamo Tifa Running.gif')} />
 - 在 Blender 中加载带有奔跑动画的.fbx 模型，并从特定相机角度渲染顺序帧。
 - 使用 SD 对顺序帧进行像素化。我添加了像素化处理，将其转换为真正的像素。
 - 使用 FFmpeg 导出 GIF。
-  <img src={require('@site/static/img/3DRender2D Pixel Tifa.gif').default} />
+  <img src={useBaseUrl('/img/3DRender2D Pixel Tifa.gif')} />
 
 虽然流畅度和角色一致性相当令人印象深刻，但它仍然只是一个简单压缩算法的产物；它是像素化的，但不是像素艺术。因此，目前有两个技术挑战：
 
@@ -524,7 +519,7 @@ Aseprite 是专门用于像素艺术设计的软件，而 PixelLab 是 Aseprite 
   />
 
 - 在 blender 中使用[pixel art add-on](https://lucasroedel.gumroad.com/l/pixel_art)，而不是 ComfyUI 中的 pixelate 自定义节点。
-  <img src={require('@site/static/img/Blender Pixel Art Addon.gif').default} />
+  <img src={useBaseUrl('/img/Blender Pixel Art Addon.gif')} />
 
 最终的结果如下：
 
@@ -537,11 +532,11 @@ Aseprite 是专门用于像素艺术设计的软件，而 PixelLab 是 Aseprite 
   }}
 >
   <img
-    src={require('@site/static/img/Dragon Girl Run.gif').default}
+    src={useBaseUrl('/img/Dragon Girl Run.gif')}
     style={{ width: 'auto', height: 'auto', flex: 1 }}
   />
   <img
-    src={require('@site/static/img/Dragon Girl Run 268.gif').default}
+    src={useBaseUrl('/img/Dragon Girl Run 268.gif')}
     style={{ width: '268px', height: '268px' }}
   />
 </div>

@@ -39,10 +39,7 @@ Therefore, I undertook some technical experiments.
 
 ### ❎pure compression
 
-<img
-  src={require('@site/static/img/Pixelate Demo.gif').default}
-  alt="pixelated-art"
-/>
+<img src={useBaseUrl('/img/Pixelate Demo.gif')} alt="pixelated-art" />
 
 Pixelation is already a well-established technique, with many projects related to image pixelation available on GitHub. Using [`pixelate`](https://gitcode.com/gh_mirrors/pi/pixelate/blob/master/pixelate.js) as an example, I will introduce some of the computational details involved.
 
@@ -298,9 +295,7 @@ However, this is the age of AI, isn't it? After some research, I discovered the 
 
 - ❎Utilize existing pixel AI tools such as PixelLab.
 
-  > <img
-  >   src={require('@site/static/img/Pixellab Animate Example.gif').default}
-  > />
+  > <img src={useBaseUrl('/img/Pixellab Animate Example.gif')} />
   > Although PixelLab provides everything I need, its skeletal animation features
   > are paid services aimed at professional pixel artists. Since I only intend to
   > conduct a single test, I might consider avoiding this expense for now and purchase
@@ -324,7 +319,7 @@ The running motion of a character has a specialized term known as RunCycle. This
 
 Thanks to the sharing within the 2D pixel art community, we can easily find related guidance schemes:
 
-<img src={require('@site/static/img/Run Cycles.gif').default} />
+<img src={useBaseUrl('/img/Run Cycles.gif')} />
 
 ### Generate
 
@@ -392,7 +387,7 @@ Ultimately, I constructed the workflow as illustrated:
 After a simple attempt, I obtained the following results:
 ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502040201305.png?imageSlim)
 
-<img src={require('@site/static/img/Sprite Run.gif').default} />
+<img src={useBaseUrl('/img/Sprite Run.gif')} />
 
 However, there are still some issues:
 
@@ -414,7 +409,7 @@ However, there is still the problem of losing character details (such as swingin
 
 ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202502070706112.png?imageSlim)
 
-<img src={require('@site/static/img/Sprite Run 20x.gif').default} />
+<img src={useBaseUrl('/img/Sprite Run 20x.gif')} />
 
 **Next steps to consider (pending execution):**
 
@@ -464,11 +459,11 @@ The following are the detailed steps of his process:
 
 - Export the model in .fbx format using `Blender`.
 - Upload the model to `Mixamo`, perform auto-rigging, and select and apply a running animation model.
-  <img src={require('@site/static/img/Mixamo Tifa Running.gif').default} />
+  <img src={useBaseUrl('/img/Mixamo Tifa Running.gif')} />
 - Load the .fbx model with the running animation in Blender and render the sequential frames from a specific camera angle.
 - Use SD to pixelate the sequential frames. I added pixelate to convert it into true pixel.
 - Use FFmpeg to export a GIF.
-  <img src={require('@site/static/img/3DRender2D Pixel Tifa.gif').default} />
+  <img src={useBaseUrl('/img/3DRender2D Pixel Tifa.gif')} />
 
 Although the smoothness and character consistency are quite impressive, it remains merely a product of a simple compression algorithm; it is pixelated, but not pixel art. Thus, there are currently two technical challenges:
 
@@ -527,7 +522,7 @@ I hope that one day I can find solutions to these issues.
   />
 
 - Use [pixel art add-on](https://lucasroedel.gumroad.com/l/pixel_art) in blender instead of pixelate custom node in ComfyUI.
-  <img src={require('@site/static/img/Blender Pixel Art Addon.gif').default} />
+  <img src={useBaseUrl('/img/Blender Pixel Art Addon.gif')} />
 
 So, that is the result:
 
@@ -540,11 +535,11 @@ So, that is the result:
   }}
 >
   <img
-    src={require('@site/static/img/Dragon Girl Run.gif').default}
+    src={useBaseUrl('/img/Dragon Girl Run.gif')}
     style={{ width: 'auto', height: 'auto', flex: 1 }}
   />
   <img
-    src={require('@site/static/img/Dragon Girl Run 268.gif').default}
+    src={useBaseUrl('/img/Dragon Girl Run 268.gif')}
     style={{ width: '268px', height: '268px' }}
   />
 </div>

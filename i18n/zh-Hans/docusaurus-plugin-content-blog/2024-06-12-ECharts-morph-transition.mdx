@@ -4,6 +4,8 @@ title: ECharts 形态过渡动画
 tags: [数据可视化, ECharts]
 ---
 
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
 **TLDR**
 
 本文探讨 ECharts 如何实现不同形状之间的形态过渡动画。我们将研究源代码中的核心实现，将过程分解为关键步骤，包括路径转换、结构对齐和最佳旋转角度计算。通过这种分析，我们将了解 ECharts 如何在保持视觉连续性的同时实现平滑的形状变换。
@@ -39,7 +41,7 @@ tags: [数据可视化, ECharts]
 
 ## 形状形态过渡
 
-<img src={require('@site/static/img/ECharts Shape Transition.gif').default} />
+<img src={useBaseUrl('/img/ECharts Shape Transition.gif')} />
 
 在 ECharts 中，使用 applyMorphAnimation 函数作为形态过渡的入口点。
 https://github.com/apache/echarts/blob/master/src/animation/morphTransitionHelper.ts#L110
@@ -476,9 +478,7 @@ function findBestMorphingRotation(
 
 ## 通用形态过渡
 
-<img
-  src={require('@site/static/img/ECharts Universal Transition.gif').default}
-/>
+<img src={useBaseUrl('/img/ECharts Universal Transition.gif')} />
 
 ### 一对多和多对一过渡
 

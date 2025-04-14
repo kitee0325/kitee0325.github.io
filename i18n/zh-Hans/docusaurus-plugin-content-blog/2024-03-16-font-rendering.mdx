@@ -4,11 +4,13 @@ title: 字体渲染
 tags: [字体, 设计]
 ---
 
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
 **TLDR**
 
 本文包含我关于字体渲染的笔记。
 
-<img src={require('@site/static/img/variable fonts.gif').default} />
+<img src={useBaseUrl('/img/variable fonts.gif')} />
 {/* truncate */}
 
 ## 渲染
@@ -186,5 +188,5 @@ Windows 对小字体大小禁用抗锯齿，仅对较大字体启用垂直抗锯
 
 这允许使用常见的排版技术，例如为了在每种大小上获得更好的可读性，为不同大小的标题设置不同的粗细，或为数据密集型显示使用稍窄的宽度。作为比较，在杂志的排版系统中，在整个出版物中使用 10-15 种或更多不同的粗细和宽度组合是很典型的——给出了比目前在网络上典型的（或者确实出于性能原因实际的）更广泛的样式范围。
 
-<img src={require('@site/static/img/variable fonts.gif').default} />
+<img src={useBaseUrl('/img/variable fonts.gif')} />
 [GSAP 3 ETC Variable Font Wave (codepen.io)](https://codepen.io/Chokcoco/pen/BamYMYg)

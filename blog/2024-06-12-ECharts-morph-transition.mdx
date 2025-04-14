@@ -4,6 +4,8 @@ title: ECharts Morph Transition
 tags: [Dataviz, ECharts]
 ---
 
+import useBaseUrl from '@docusaurus/useBaseUrl';
+
 **TLDR**
 
 This article explores how ECharts implements morphing transitions between different shapes. We'll examine the core implementation in the source code, breaking down the process into key steps including path conversion, structure alignment, and optimal rotation calculation. Through this analysis, we'll understand how ECharts achieves smooth shape transformations while maintaining visual continuity.
@@ -39,7 +41,7 @@ The following content requires a basic understanding of Bézier curves. If you a
 
 ## Shape morph transition
 
-<img src={require('@site/static/img/ECharts Shape Transition.gif').default} />
+<img src={useBaseUrl('/img/ECharts Shape Transition.gif')} />
 
 In ECharts, use the applyMorphAnimation function as the entry point for morphing transitions.
 https://github.com/apache/echarts/blob/master/src/animation/morphTransitionHelper.ts#L110
@@ -476,9 +478,7 @@ function findBestMorphingRotation(
 
 ## Universal morph transition
 
-<img
-  src={require('@site/static/img/ECharts Universal Transition.gif').default}
-/>
+<img src={useBaseUrl('/img/ECharts Universal Transition.gif')} />
 
 ### One-to-many and many-to-one transitions
 

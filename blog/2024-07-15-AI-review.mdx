@@ -4,7 +4,6 @@ title: AI-Review
 tags: [AI]
 ---
 
-
 import useBaseUrl from '@docusaurus/useBaseUrl';
 import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
@@ -164,7 +163,7 @@ So how does a neural network go from a basic model structure to the smart black 
 
 In the eyes of data-driven machine learning and statistics, intelligence is essentially giving you a bunch of points and using a function to fit the relationship between them. Here, X and Y can be any two variables that you care about, and once we learn a function that characterizes the trend of these points, we can get a reasonable output for any of the inputs, in other words, intelligence.
 
-<img src={require('@site/static/img/Machine Learning Function.gif').default} />
+<img src={useBaseUrl('/img/Machine Learning Function.gif')} />
 
 ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411181411583.png?imageSlim)
 
@@ -206,7 +205,7 @@ In fact, this approach is easily extended to higher dimensions.
 
 ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411181509129.png?imageSlim)
 
-<img src={require('@site/static/img/Loss Function 2 dimension.gif').default} />
+<img src={useBaseUrl('/img/Loss Function 2 dimension.gif')} />
 ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411181515160.png?imageSlim)
 
 Assuming that all parameters except for <InlineMath math="k_1" /> and <InlineMath math="k_2" /> are already at their optimal values, and we now want to find the optimal values for <InlineMath math="k_1" /> and <InlineMath math="k_2" />

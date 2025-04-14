@@ -4,7 +4,6 @@ title: AI综述
 tags: [AI]
 ---
 
-
 import useBaseUrl from '@docusaurus/useBaseUrl';
 import 'katex/dist/katex.min.css';
 import { InlineMath, BlockMath } from 'react-katex';
@@ -164,7 +163,7 @@ Transformer(注意力机制):
 
 在数据驱动的机器学习和统计学看来，智能本质上是给你一堆点，并用一个函数来拟合它们之间的关系。这里，X 和 Y 可以是你关心的任何两个变量，一旦我们学习了一个能够表征这些点趋势的函数，我们就可以为任何输入得到一个合理的输出，换句话说，就是智能。
 
-<img src={require('@site/static/img/Machine Learning Function.gif').default} />
+<img src={useBaseUrl('/img/Machine Learning Function.gif')} />
 
 ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411181411583.png?imageSlim)
 
@@ -206,7 +205,7 @@ Transformer(注意力机制):
 
 ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411181509129.png?imageSlim)
 
-<img src={require('@site/static/img/Loss Function 2 dimension.gif').default} />
+<img src={useBaseUrl('/img/Loss Function 2 dimension.gif')} />
 ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202411181515160.png?imageSlim)
 
 假设除了<InlineMath math="k_1" />和<InlineMath math="k_2" />之外的所有参数已经是最优值，我们现在想要找到<InlineMath math="k_1" />和<InlineMath math="k_2" />的最优值

@@ -13,7 +13,7 @@ import { InlineMath, BlockMath } from 'react-katex';
 
 This article contains my notes from Stanford's CS448B (Data Visualization) course, specifically focusing on the twelfth lecture about animation. I'll discuss the importance of animation in data visualization, the principles behind it, and explore various techniques for visualizing data, including the use of guides, expressiveness, effectiveness, support for comparison and pattern perception, grouping and sorting data, transforming data, reducing cognitive overhead, and consistency. I'll also cover various chart types, such as line charts, bar charts, stacked area charts, and others, providing examples and discussing their design considerations.
 
-<img src="/stanford-cs448b/biological motion.gif" />
+<img src={useBaseUrl('/stanford-cs448b/biological motion.gif')} />
 {/* truncate */}
 
 ## Original
@@ -46,7 +46,7 @@ How does animation help convey information?
 
 [U.S. Gun Deaths](https://guns.periscopic.com/?year=2013)
 
-<img src="/stanford-cs448b/U.S. gun deaths.gif" />
+<img src={useBaseUrl('/stanford-cs448b/U.S. gun deaths.gif')} />
 
 - Visual variable to encode data
 - Direct attention
@@ -63,14 +63,14 @@ How does animation help convey information?
 
 - Grouping based on biological motion
 
-  <img src="/stanford-cs448b/biological motion.gif" />
+  <img src={useBaseUrl('/stanford-cs448b/biological motion.gif')} />
 
 - Volume rendering
 
-  <img src="/stanford-cs448b/volume rendering.gif" />
+  <img src={useBaseUrl('/stanford-cs448b/volume rendering.gif')} />
 
 - Tracking multiple targets
-  <img src="/stanford-cs448b/track dot.gif" />
+  <img src={useBaseUrl('/stanford-cs448b/track dot.gif')} />
 
 > How many dots can we simultaneously track?  
 > **4 to 6** - difficulty increases significantly at 6
@@ -88,7 +88,7 @@ Shows transition better, but
 
 - Still may be too fast, or too slow
 - Too many objects may move at once
-  <img src="/stanford-cs448b/basic shape transition.gif" />
+  <img src={useBaseUrl('/stanford-cs448b/basic shape transition.gif')} />
 
 #### [DimpVis](https://vialab.ca/research/dimpvis)
 
@@ -115,12 +115,12 @@ Michotte demonstration 1.
 What do you see?  
 Most observers report that "the red ball hit the green ball." The green ball moved "because the red ball hit it." Thus, the red ball is perceived to "cause"' the green ball to move, even though the balls are nothing more than color disks on your screen that move according to a programme.
 
-<img src="/stanford-cs448b/michotte demonstration 1.gif" />
+<img src={useBaseUrl('/stanford-cs448b/michotte demonstration 1.gif')} />
 ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202410081300348.png?imageSlim)
 
 <hr />
 How does it work?
-<img src="/stanford-cs448b/Two Cylinder Stirling Engine.gif" />
+<img src={useBaseUrl('/stanford-cs448b/Two Cylinder Stirling Engine.gif')} />
 
 Difficulties in understanding animation
 
