@@ -1,0 +1,1548 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bezier Spline Teaching Tool</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background-color: #ffffff;
+      }
+      html {
+        background-color: #ffffff;
+      }
+      canvas {
+        border: 1px solid #ccc;
+        margin: 10px 0;
+        background-color: #f9f9f9;
+      }
+      .controls-container {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        width: 800px;
+      }
+      .button-row {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        align-items: center;
+      }
+      .slider-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      button {
+        padding: 8px 15px;
+        cursor: pointer;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+      }
+      button:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+      }
+      #t-slider {
+        flex-grow: 1;
+      }
+      .canvas-container {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .canvas-label {
+        font-weight: bold;
+        text-align: center;
+        margin-bottom: -5px;
+      }
+      label {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="controls-container">
+      <div class="button-row">
+        <button id="reset">Reset</button>
+        <button id="animate">Animate</button>
+        <label>
+          <input type="checkbox" id="colinear-toggle" />
+          Enable Align
+        </label>
+        <label>
+          <input type="checkbox" id="mirror-toggle" />
+          Enable Mirror
+        </label>
+      </div>
+      <div class="slider-row">
+        <input
+          type="range"
+          id="t-slider"
+          min="0"
+          max="1"
+          step="0.01"
+          value="0"
+        />
+      </div>
+    </div>
+
+    <div class="canvas-container">
+      <div class="canvas-label">Bezier Spline (4 Cubic Bezier Curves)</div>
+      <canvas id="bezier-canvas" width="800" height="500"></canvas>
+
+      <div class="canvas-label">First Derivative (Velocity)</div>
+      <canvas id="derivative-canvas" width="800" height="200"></canvas>
+
+      <div class="canvas-label">Second Derivative (Acceleration)</div>
+      <canvas id="second-derivative-canvas" width="800" height="200"></canvas>
+
+      <div class="canvas-label">Basis Functions</div>
+      <canvas id="basis-canvas" width="800" height="300"></canvas>
+    </div>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        // Canvas setup
+        const canvas = document.getElementById('bezier-canvas');
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+
+        // Basis function canvas
+        const basisCanvas = document.getElementById('basis-canvas');
+        const basisCtx = basisCanvas.getContext('2d');
+        const basisWidth = basisCanvas.width;
+        const basisHeight = basisCanvas.height;
+
+        // Derivative canvases
+        const derivativeCanvas = document.getElementById('derivative-canvas');
+        const derivativeCtx = derivativeCanvas.getContext('2d');
+        const derivativeWidth = derivativeCanvas.width;
+        const derivativeHeight = derivativeCanvas.height;
+
+        const secondDerivativeCanvas = document.getElementById(
+          'second-derivative-canvas'
+        );
+        const secondDerivativeCtx = secondDerivativeCanvas.getContext('2d');
+        const secondDerivativeWidth = secondDerivativeCanvas.width;
+        const secondDerivativeHeight = secondDerivativeCanvas.height;
+
+        // UI elements
+        const resetBtn = document.getElementById('reset');
+        const animateBtn = document.getElementById('animate');
+        const tSlider = document.getElementById('t-slider');
+        const colinearToggle = document.getElementById('colinear-toggle');
+        const mirrorToggle = document.getElementById('mirror-toggle');
+
+        // Constants
+        const POINT_RADIUS = 8;
+        const NUM_SEGMENTS = 4; // Number of cubic bezier segments
+        const POINTS_PER_SEGMENT = 4; // Each cubic bezier has 4 control points
+        const POINTS_TOTAL = NUM_SEGMENTS + 1; // We need 5 main control points (0,1,2,3,4)
+
+        // State
+        let controlPoints = []; // Main control points (at the top)
+        let tangentPoints = []; // Tangent control points
+        let segmentPoints = []; // Control points organized into segments
+        let isDragging = false;
+        let dragPointIndex = -1;
+        let dragIsMainPoint = true; // Whether dragging a main or tangent point
+        let isAnimating = false;
+        let animationId = null;
+        let t = 0; // Global t parameter [0,1] for the entire spline
+        let enableColinear = false; // Whether tangent points should maintain co-linearity
+        let enableMirror = false; // Whether control points should maintain mirror symmetry
+
+        // Event listeners
+        canvas.addEventListener('mousedown', handleMouseDown);
+        canvas.addEventListener('mousemove', handleMouseMove);
+        canvas.addEventListener('mouseup', () => {
+          isDragging = false;
+        });
+        canvas.addEventListener('mouseleave', () => {
+          isDragging = false;
+        });
+
+        resetBtn.addEventListener('click', initializePoints);
+        animateBtn.addEventListener('click', toggleAnimation);
+
+        tSlider.addEventListener('input', function () {
+          t = parseFloat(this.value);
+          stopAnimation();
+          drawAll();
+        });
+
+        colinearToggle.addEventListener('change', function () {
+          enableColinear = this.checked;
+
+          // If enabling co-linearity, immediately align all tangent points
+          if (enableColinear) {
+            alignAllTangents();
+            updateSegmentPoints();
+            drawAll();
+          }
+        });
+
+        mirrorToggle.addEventListener('change', function () {
+          enableMirror = this.checked;
+
+          // If enabling mirror symmetry, immediately mirror all points
+          if (enableMirror) {
+            // Direct mirroring of all control points' tangents
+            for (let i = 1; i < POINTS_TOTAL - 1; i++) {
+              // Find the left and right tangents for this control point
+              let leftTangent = null;
+              let rightTangent = null;
+
+              for (let j = 0; j < tangentPoints.length; j++) {
+                if (tangentPoints[j].mainPointIndex === i) {
+                  if (tangentPoints[j].isLeftTangent) {
+                    leftTangent = tangentPoints[j];
+                  } else {
+                    rightTangent = tangentPoints[j];
+                  }
+                }
+              }
+
+              // If we found both tangents, make them perfect mirrors
+              if (leftTangent && rightTangent) {
+                const mainPoint = controlPoints[i];
+
+                // For consistency, use the right (outgoing) tangent as reference
+                const dx = rightTangent.x - mainPoint.x;
+                const dy = rightTangent.y - mainPoint.y;
+
+                // Update the left tangent to be a perfect mirror of the right one
+                leftTangent.x = mainPoint.x - dx;
+                leftTangent.y = mainPoint.y - dy;
+              }
+            }
+            updateSegmentPoints();
+            drawAll();
+          }
+        });
+
+        // Event handlers
+        function handleMouseDown(e) {
+          const rect = canvas.getBoundingClientRect();
+          const mouseX = e.clientX - rect.left;
+          const mouseY = e.clientY - rect.top;
+
+          // First check if we're clicking on a main control point
+          for (let i = 0; i < controlPoints.length; i++) {
+            const point = controlPoints[i];
+            const distance = Math.sqrt(
+              (mouseX - point.x) ** 2 + (mouseY - point.y) ** 2
+            );
+
+            if (distance < POINT_RADIUS) {
+              isDragging = true;
+              dragPointIndex = i;
+              dragIsMainPoint = true;
+              return;
+            }
+          }
+
+          // Then check tangent control points
+          for (let i = 0; i < tangentPoints.length; i++) {
+            const point = tangentPoints[i];
+            const distance = Math.sqrt(
+              (mouseX - point.x) ** 2 + (mouseY - point.y) ** 2
+            );
+
+            if (distance < POINT_RADIUS) {
+              isDragging = true;
+              dragPointIndex = i;
+              dragIsMainPoint = false;
+              return;
+            }
+          }
+        }
+
+        function handleMouseMove(e) {
+          if (!isDragging) return;
+
+          const rect = canvas.getBoundingClientRect();
+          const mouseX = e.clientX - rect.left;
+          const mouseY = e.clientY - rect.top;
+
+          // Apply bounds checking to keep points within canvas
+          const newX = Math.max(0, Math.min(width, mouseX));
+          const newY = Math.max(0, Math.min(height, mouseY));
+
+          if (dragIsMainPoint) {
+            // Moving a main control point
+            controlPoints[dragPointIndex].x = newX;
+            controlPoints[dragPointIndex].y = newY;
+
+            // Also update any tangent points associated with this main point
+            for (let i = 0; i < tangentPoints.length; i++) {
+              if (tangentPoints[i].mainPointIndex === dragPointIndex) {
+                // Calculate the vector from main point to tangent
+                const dx = tangentPoints[i].x - controlPoints[dragPointIndex].x;
+                const dy = tangentPoints[i].y - controlPoints[dragPointIndex].y;
+
+                // Move the tangent point with the main point
+                tangentPoints[i].x = newX + dx;
+                tangentPoints[i].y = newY + dy;
+              }
+            }
+
+            // If mirror is enabled and we're moving a control point with two tangents,
+            // also mirror those tangents
+            if (
+              enableMirror &&
+              dragPointIndex > 0 &&
+              dragPointIndex < POINTS_TOTAL - 1
+            ) {
+              mirrorTangentsForPoint(dragPointIndex);
+            }
+          } else {
+            // Moving a tangent control point
+            tangentPoints[dragPointIndex].x = newX;
+            tangentPoints[dragPointIndex].y = newY;
+
+            const mainIndex = tangentPoints[dragPointIndex].mainPointIndex;
+
+            // If mirror is enabled and it's not a first or last point tangent,
+            // mirror the opposite tangent
+            if (enableMirror && mainIndex > 0 && mainIndex < POINTS_TOTAL - 1) {
+              mirrorTangentPoint(dragPointIndex);
+            }
+            // If co-linearity is enabled and it's a middle point, just update the opposite tangent
+            // to maintain co-linearity
+            else if (
+              enableColinear &&
+              mainIndex > 0 &&
+              mainIndex < POINTS_TOTAL - 1
+            ) {
+              const tangent = tangentPoints[dragPointIndex];
+              const mainPoint = controlPoints[mainIndex];
+
+              // Find the opposite tangent
+              for (let i = 0; i < tangentPoints.length; i++) {
+                if (
+                  i !== dragPointIndex &&
+                  tangentPoints[i].mainPointIndex === mainIndex &&
+                  tangentPoints[i].isLeftTangent !== tangent.isLeftTangent
+                ) {
+                  // Calculate vector from main point to this tangent
+                  const dx = tangent.x - mainPoint.x;
+                  const dy = tangent.y - mainPoint.y;
+                  const dist = Math.sqrt(dx * dx + dy * dy);
+
+                  // Update the opposite tangent to be colinear
+                  const oppDist = Math.sqrt(
+                    Math.pow(tangentPoints[i].x - mainPoint.x, 2) +
+                      Math.pow(tangentPoints[i].y - mainPoint.y, 2)
+                  );
+
+                  tangentPoints[i].x = mainPoint.x - (dx / dist) * oppDist;
+                  tangentPoints[i].y = mainPoint.y - (dy / dist) * oppDist;
+                  break;
+                }
+              }
+            }
+          }
+
+          // Update segment points after dragging
+          updateSegmentPoints();
+          drawAll();
+        }
+
+        // Initialize spline control points
+        function initializePoints() {
+          controlPoints = [];
+          tangentPoints = [];
+
+          // 生成随机曲线，首先定义画布边界
+          const padding = 100;
+          const minX = padding;
+          const maxX = width - padding;
+          const minY = padding;
+          const maxY = height - padding;
+
+          // 确保X方向均匀分布
+          const xStep = (maxX - minX) / (POINTS_TOTAL - 1);
+
+          // 首先生成主控制点
+          for (let i = 0; i < POINTS_TOTAL; i++) {
+            // X坐标均匀分布
+            const x = minX + i * xStep;
+            // Y坐标在区间内随机，但避免过于极端
+            const yRange = (maxY - minY) * 0.7; // 使用70%的可用空间
+            const yCenter = minY + (maxY - minY) / 2;
+            const y = yCenter + (Math.random() - 0.5) * yRange;
+
+            // 添加主控制点
+            controlPoints.push({ x, y });
+          }
+
+          // 现在为每个控制点生成随机的切线控制点
+          for (let i = 0; i < POINTS_TOTAL; i++) {
+            const point = controlPoints[i];
+
+            // 随机生成切线长度和角度的变化范围
+            const maxTangentLength = xStep * 0.8; // 最大切线长度为点间距的80%
+
+            if (i === 0) {
+              // 第一个点，只有右侧切线
+              // 随机角度，但保持在合理范围内
+              const angleVariation = (Math.random() - 0.5) * Math.PI * 0.8; // ±72度
+              const baseAngle = 0; // 基础方向向右
+              const angle = baseAngle + angleVariation;
+
+              // 随机长度
+              const length = maxTangentLength * (0.3 + Math.random() * 0.7); // 30%-100%范围内
+
+              const tangentX = Math.cos(angle) * length;
+              const tangentY = Math.sin(angle) * length;
+
+              // 添加右侧切线点
+              tangentPoints.push({
+                x: point.x + tangentX,
+                y: point.y + tangentY,
+                mainPointIndex: i,
+                isLeftTangent: false,
+              });
+            } else if (i === POINTS_TOTAL - 1) {
+              // 最后一个点，只有左侧切线
+              // 随机角度，但保持在合理范围内
+              const angleVariation = (Math.random() - 0.5) * Math.PI * 0.8;
+              const baseAngle = Math.PI; // 基础方向向左
+              const angle = baseAngle + angleVariation;
+
+              // 随机长度
+              const length = maxTangentLength * (0.3 + Math.random() * 0.7);
+
+              const tangentX = Math.cos(angle) * length;
+              const tangentY = Math.sin(angle) * length;
+
+              // 添加左侧切线点
+              tangentPoints.push({
+                x: point.x + tangentX,
+                y: point.y + tangentY,
+                mainPointIndex: i,
+                isLeftTangent: true,
+              });
+            } else {
+              // 中间点，有左右两个切线，完全随机
+              // 左侧切线
+              const leftAngleVariation = (Math.random() - 0.5) * Math.PI * 1.6; // 更广的角度范围
+              const leftBaseAngle = Math.PI; // 基础方向向左
+              const leftAngle = leftBaseAngle + leftAngleVariation;
+
+              const leftLength = maxTangentLength * (0.2 + Math.random() * 0.8);
+
+              const leftTangentX = Math.cos(leftAngle) * leftLength;
+              const leftTangentY = Math.sin(leftAngle) * leftLength;
+
+              // 右侧切线完全独立随机
+              const rightAngleVariation = (Math.random() - 0.5) * Math.PI * 1.6;
+              const rightBaseAngle = 0; // 基础方向向右
+              const rightAngle = rightBaseAngle + rightAngleVariation;
+
+              const rightLength =
+                maxTangentLength * (0.2 + Math.random() * 0.8);
+
+              const rightTangentX = Math.cos(rightAngle) * rightLength;
+              const rightTangentY = Math.sin(rightAngle) * rightLength;
+
+              // 添加左侧切线点
+              tangentPoints.push({
+                x: point.x + leftTangentX,
+                y: point.y + leftTangentY,
+                mainPointIndex: i,
+                isLeftTangent: true,
+              });
+
+              // 添加右侧切线点
+              tangentPoints.push({
+                x: point.x + rightTangentX,
+                y: point.y + rightTangentY,
+                mainPointIndex: i,
+                isLeftTangent: false,
+              });
+            }
+          }
+
+          // 如果开启了镜像模式或对齐模式，应用相应约束
+          if (enableMirror) {
+            for (let i = 1; i < POINTS_TOTAL - 1; i++) {
+              mirrorTangentsForPoint(i);
+            }
+          } else if (enableColinear) {
+            alignAllTangents();
+          }
+
+          updateSegmentPoints();
+          drawAll();
+        }
+
+        // Convert control points to bezier segments
+        function updateSegmentPoints() {
+          segmentPoints = [];
+
+          // For each segment, find its 4 control points
+          for (let i = 0; i < NUM_SEGMENTS; i++) {
+            const p0 = controlPoints[i]; // Start point
+            const p3 = controlPoints[i + 1]; // End point
+
+            // Find the tangent points for this segment
+            let p1, p2;
+
+            // Find the right (outgoing) tangent for the start point
+            for (let j = 0; j < tangentPoints.length; j++) {
+              const tangent = tangentPoints[j];
+              if (tangent.mainPointIndex === i && !tangent.isLeftTangent) {
+                p1 = tangent;
+                break;
+              }
+            }
+
+            // Find the left (incoming) tangent for the end point
+            for (let j = 0; j < tangentPoints.length; j++) {
+              const tangent = tangentPoints[j];
+              if (tangent.mainPointIndex === i + 1 && tangent.isLeftTangent) {
+                p2 = tangent;
+                break;
+              }
+            }
+
+            segmentPoints.push([p0, p1, p2, p3]);
+          }
+        }
+
+        // Animation functions
+        function toggleAnimation() {
+          if (isAnimating) {
+            stopAnimation();
+          } else {
+            startAnimation();
+          }
+        }
+
+        function startAnimation() {
+          isAnimating = true;
+          animateBtn.textContent = 'Stop';
+          t = 0;
+          tSlider.value = t;
+
+          // 记录上一帧的时间
+          let lastTime = performance.now();
+          const secondsPerSegment = 1; // 每个段1秒
+
+          function animate(currentTime) {
+            // 计算时间差（秒）
+            const deltaTime = (currentTime - lastTime) / 1000;
+            lastTime = currentTime;
+
+            // 根据段数调整t的增量
+            t += deltaTime / secondsPerSegment / NUM_SEGMENTS;
+
+            if (t > 1) {
+              t = 0;
+            }
+
+            tSlider.value = t;
+            drawAll();
+
+            animationId = requestAnimationFrame(animate);
+          }
+
+          animationId = requestAnimationFrame(animate);
+        }
+
+        function stopAnimation() {
+          if (animationId) {
+            cancelAnimationFrame(animationId);
+            animationId = null;
+          }
+          isAnimating = false;
+          animateBtn.textContent = 'Animate';
+        }
+
+        // Bezier calculation functions
+        function calculateBezierPoint(t, p0, p1, p2, p3) {
+          const t2 = t * t;
+          const t3 = t2 * t;
+          const mt = 1 - t;
+          const mt2 = mt * mt;
+          const mt3 = mt2 * mt;
+
+          // Cubic Bezier formula
+          return {
+            x: mt3 * p0.x + 3 * mt2 * t * p1.x + 3 * mt * t2 * p2.x + t3 * p3.x,
+            y: mt3 * p0.y + 3 * mt2 * t * p1.y + 3 * mt * t2 * p2.y + t3 * p3.y,
+          };
+        }
+
+        // Calculate a point on the entire spline for parameter t [0, 1]
+        function calculateSplinePoint(t) {
+          // Map global t [0, 1] to segment index and local t
+          const segmentIndex = Math.min(
+            NUM_SEGMENTS - 1,
+            Math.floor(t * NUM_SEGMENTS)
+          );
+          const localT = t * NUM_SEGMENTS - segmentIndex;
+
+          const segment = segmentPoints[segmentIndex];
+          return calculateBezierPoint(
+            localT,
+            segment[0],
+            segment[1],
+            segment[2],
+            segment[3]
+          );
+        }
+
+        // Bernstein basis functions
+        function bernstein(i, n, t) {
+          const binomial = [
+            [1], // n=0
+            [1, 1], // n=1
+            [1, 2, 1], // n=2
+            [1, 3, 3, 1], // n=3 (cubic)
+          ];
+
+          // Cubic Bezier uses Bernstein polynomials of degree 3
+          const coef = binomial[n][i];
+          return coef * Math.pow(t, i) * Math.pow(1 - t, n - i);
+        }
+
+        // Get color for a point based on its index
+        function getPointColor(index, totalPoints) {
+          const hue = (index / (totalPoints - 1)) * 240;
+          return `hsl(${hue}, 70%, 60%)`;
+        }
+
+        // Get segment color
+        function getSegmentColor(segmentIndex) {
+          // Different color for each segment matching the reference image
+          const colors = ['#e41a1c', '#377eb8', '#4daf4a', '#ffd700'];
+          return colors[segmentIndex % colors.length];
+        }
+
+        // Drawing functions
+        function drawAll() {
+          ctx.clearRect(0, 0, width, height);
+          basisCtx.clearRect(0, 0, basisWidth, basisHeight);
+          derivativeCtx.clearRect(0, 0, derivativeWidth, derivativeHeight);
+          secondDerivativeCtx.clearRect(
+            0,
+            0,
+            secondDerivativeWidth,
+            secondDerivativeHeight
+          );
+
+          // Set background color to match reference
+          ctx.fillStyle = '#1e2329';
+          ctx.fillRect(0, 0, width, height);
+
+          // Draw everything else on top
+          drawSpline();
+          drawConstructionLines();
+          drawControlPoints();
+          drawBasisFunctions();
+          drawDerivatives();
+          drawSecondDerivatives();
+          drawTMarker();
+        }
+
+        function drawControlPoints() {
+          // Draw tangent points and their connections to main points
+          for (let i = 0; i < tangentPoints.length; i++) {
+            const tangent = tangentPoints[i];
+            const mainPoint = controlPoints[tangent.mainPointIndex];
+
+            // Draw line connecting to main point
+            ctx.beginPath();
+            ctx.moveTo(mainPoint.x, mainPoint.y);
+            ctx.lineTo(tangent.x, tangent.y);
+
+            // Use the same color as the related segment
+            let segmentIndex;
+            if (tangent.isLeftTangent) {
+              segmentIndex = tangent.mainPointIndex - 1;
+            } else {
+              segmentIndex = tangent.mainPointIndex;
+            }
+            segmentIndex = Math.max(
+              0,
+              Math.min(NUM_SEGMENTS - 1, segmentIndex)
+            );
+
+            ctx.strokeStyle = getSegmentColor(segmentIndex);
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            // Draw the tangent point
+            ctx.beginPath();
+            ctx.arc(tangent.x, tangent.y, POINT_RADIUS / 1.5, 0, Math.PI * 2);
+            ctx.fillStyle = getSegmentColor(segmentIndex);
+            ctx.fill();
+            ctx.strokeStyle = '#333333';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          }
+
+          // Draw main points
+          for (let i = 0; i < controlPoints.length; i++) {
+            const point = controlPoints[i];
+
+            // Draw circle for main control point
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, POINT_RADIUS, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+            ctx.strokeStyle = '#333333';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Draw point index
+            ctx.fillStyle = '#000000';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(i.toString(), point.x, point.y);
+          }
+        }
+
+        function drawSpline() {
+          // Draw each bezier segment separately with different colors
+          for (let segIdx = 0; segIdx < segmentPoints.length; segIdx++) {
+            const segment = segmentPoints[segIdx];
+            const steps = 30;
+
+            ctx.beginPath();
+
+            for (let i = 0; i <= steps; i++) {
+              const localT = i / steps;
+              const point = calculateBezierPoint(
+                localT,
+                segment[0],
+                segment[1],
+                segment[2],
+                segment[3]
+              );
+
+              if (i === 0) {
+                ctx.moveTo(point.x, point.y);
+              } else {
+                ctx.lineTo(point.x, point.y);
+              }
+            }
+
+            ctx.strokeStyle = getSegmentColor(segIdx);
+            ctx.lineWidth = 3;
+            ctx.stroke();
+          }
+        }
+
+        function drawConstructionLines() {
+          // Map global t [0, 1] to segment index and local t
+          const segmentIndex = Math.min(
+            NUM_SEGMENTS - 1,
+            Math.floor(t * NUM_SEGMENTS)
+          );
+          const localT = t * NUM_SEGMENTS - segmentIndex;
+
+          // 检查segmentPoints是否已初始化且该段是否存在
+          if (!segmentPoints || !segmentPoints[segmentIndex]) {
+            return; // 如果段不存在，不绘制构造线
+          }
+
+          const segment = segmentPoints[segmentIndex];
+          const segmentColor = getSegmentColor(segmentIndex);
+
+          // Draw the interpolation lines for the active segment
+          const p0 = segment[0],
+            p1 = segment[1],
+            p2 = segment[2],
+            p3 = segment[3];
+
+          // First level interpolation
+          const q0 = {
+            x: (1 - localT) * p0.x + localT * p1.x,
+            y: (1 - localT) * p0.y + localT * p1.y,
+          };
+
+          const q1 = {
+            x: (1 - localT) * p1.x + localT * p2.x,
+            y: (1 - localT) * p1.y + localT * p2.y,
+          };
+
+          const q2 = {
+            x: (1 - localT) * p2.x + localT * p3.x,
+            y: (1 - localT) * p2.y + localT * p3.y,
+          };
+
+          // Connect control points for this segment
+          ctx.beginPath();
+          ctx.moveTo(p0.x, p0.y);
+          ctx.lineTo(p1.x, p1.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.lineTo(p3.x, p3.y);
+          ctx.strokeStyle = '#aaaaaa';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          // Draw q points (first level)
+          for (const point of [q0, q1, q2]) {
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, 4, 0, Math.PI * 2);
+            ctx.fillStyle = segmentColor;
+            ctx.fill();
+          }
+
+          // Connect q points (first level)
+          ctx.beginPath();
+          ctx.moveTo(q0.x, q0.y);
+          ctx.lineTo(q1.x, q1.y);
+          ctx.lineTo(q2.x, q2.y);
+          ctx.strokeStyle = segmentColor;
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          // Second level interpolation
+          const r0 = {
+            x: (1 - localT) * q0.x + localT * q1.x,
+            y: (1 - localT) * q0.y + localT * q1.y,
+          };
+
+          const r1 = {
+            x: (1 - localT) * q1.x + localT * q2.x,
+            y: (1 - localT) * q1.y + localT * q2.y,
+          };
+
+          // Draw r points (second level)
+          for (const point of [r0, r1]) {
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, 4, 0, Math.PI * 2);
+            ctx.fillStyle = segmentColor;
+            ctx.fill();
+          }
+
+          // Connect r points (second level)
+          ctx.beginPath();
+          ctx.moveTo(r0.x, r0.y);
+          ctx.lineTo(r1.x, r1.y);
+          ctx.strokeStyle = segmentColor;
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          // Final point
+          const finalPoint = {
+            x: (1 - localT) * r0.x + localT * r1.x,
+            y: (1 - localT) * r0.y + localT * r1.y,
+          };
+
+          // Draw the final point
+          ctx.beginPath();
+          ctx.arc(finalPoint.x, finalPoint.y, 6, 0, Math.PI * 2);
+          ctx.fillStyle = '#ffffff';
+          ctx.fill();
+          ctx.strokeStyle = '#000000';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+
+        function drawBasisFunctions() {
+          // Draw axes
+          basisCtx.beginPath();
+          // X-axis
+          basisCtx.moveTo(0, basisHeight - 30);
+          basisCtx.lineTo(basisWidth, basisHeight - 30);
+          // Y-axis
+          basisCtx.moveTo(30, 0);
+          basisCtx.lineTo(30, basisHeight);
+          basisCtx.strokeStyle = '#333';
+          basisCtx.lineWidth = 1;
+          basisCtx.stroke();
+
+          // X-axis labels
+          basisCtx.fillStyle = '#333';
+          basisCtx.font = '12px Arial';
+          basisCtx.textAlign = 'center';
+          basisCtx.textBaseline = 'top';
+          basisCtx.fillText('0', 30, basisHeight - 25);
+          basisCtx.fillText('1', basisWidth - 30, basisHeight - 25);
+          basisCtx.fillText('t', basisWidth / 2, basisHeight - 25);
+
+          // Y-axis labels
+          basisCtx.textAlign = 'right';
+          basisCtx.textBaseline = 'middle';
+          basisCtx.fillText('0', 25, basisHeight - 30);
+          basisCtx.fillText('1', 25, 30);
+
+          // Draw segment boundaries
+          for (let i = 1; i < NUM_SEGMENTS; i++) {
+            const x = 30 + (basisWidth - 60) * (i / NUM_SEGMENTS);
+            basisCtx.beginPath();
+            basisCtx.moveTo(x, 0);
+            basisCtx.lineTo(x, basisHeight - 30);
+            basisCtx.strokeStyle = '#aaaaaa';
+            basisCtx.setLineDash([5, 5]);
+            basisCtx.lineWidth = 1;
+            basisCtx.stroke();
+            basisCtx.setLineDash([]);
+
+            // Label segments
+            basisCtx.fillStyle = '#333';
+            basisCtx.textAlign = 'center';
+            basisCtx.textBaseline = 'bottom';
+            basisCtx.fillText(
+              `Segment ${i}`,
+              x - (basisWidth - 60) / (2 * NUM_SEGMENTS),
+              basisHeight - 5
+            );
+          }
+
+          // Add "Segment 0" label
+          basisCtx.fillText(
+            'Segment 0',
+            30 + (basisWidth - 60) / (2 * NUM_SEGMENTS),
+            basisHeight - 5
+          );
+          // Add "Segment 3" (last segment) label
+          basisCtx.fillText(
+            `Segment ${NUM_SEGMENTS - 1}`,
+            basisWidth - 30 - (basisWidth - 60) / (2 * NUM_SEGMENTS),
+            basisHeight - 5
+          );
+
+          // Draw basis functions for each segment
+          for (let segIdx = 0; segIdx < NUM_SEGMENTS; segIdx++) {
+            const segmentColor = getSegmentColor(segIdx);
+            const steps = 30;
+
+            // For each cubic bezier segment, draw the 4 basis functions
+            for (let i = 0; i < 4; i++) {
+              basisCtx.beginPath();
+
+              for (let step = 0; step <= steps; step++) {
+                const localT = step / steps;
+                const globalT = (segIdx + localT) / NUM_SEGMENTS;
+                const xPos = 30 + (basisWidth - 60) * globalT;
+
+                // Calculate basis function value (Bernstein polynomial)
+                const bValue = bernstein(i, 3, localT);
+                const yPos = basisHeight - 30 - bValue * (basisHeight - 60);
+
+                if (step === 0) {
+                  basisCtx.moveTo(xPos, yPos);
+                } else {
+                  basisCtx.lineTo(xPos, yPos);
+                }
+              }
+
+              basisCtx.strokeStyle = segmentColor;
+              basisCtx.lineWidth = 1;
+              basisCtx.stroke();
+            }
+          }
+        }
+
+        function drawTMarker() {
+          // Draw vertical line at current t value on the basis canvas
+          const xPos = 30 + (basisWidth - 60) * t;
+
+          basisCtx.beginPath();
+          basisCtx.moveTo(xPos, 0);
+          basisCtx.lineTo(xPos, basisHeight - 30);
+          basisCtx.strokeStyle = '#ff0000';
+          basisCtx.lineWidth = 2;
+          basisCtx.stroke();
+
+          // Show global t value
+          basisCtx.fillStyle = '#ff0000';
+          basisCtx.textAlign = 'center';
+          basisCtx.textBaseline = 'top';
+          basisCtx.font = '12px Arial';
+          basisCtx.fillText(`t = ${t.toFixed(2)}`, xPos, 5);
+
+          // Show segment and local t
+          const segmentIndex = Math.min(
+            NUM_SEGMENTS - 1,
+            Math.floor(t * NUM_SEGMENTS)
+          );
+          const localT = (t * NUM_SEGMENTS - segmentIndex).toFixed(2);
+          basisCtx.fillText(
+            `Segment: ${segmentIndex}, Local t: ${localT}`,
+            xPos,
+            20
+          );
+
+          // Draw current position on main canvas with velocity vector
+          if (segmentPoints && segmentPoints[segmentIndex]) {
+            const segment = segmentPoints[segmentIndex];
+            const currLocalT = t * NUM_SEGMENTS - segmentIndex;
+            const currentPoint = calculateBezierPoint(
+              currLocalT,
+              segment[0],
+              segment[1],
+              segment[2],
+              segment[3]
+            );
+
+            // Calculate current derivative (velocity)
+            const derivative = calculateBezierDerivative(
+              currLocalT,
+              segment[0],
+              segment[1],
+              segment[2],
+              segment[3]
+            );
+
+            // Calculate speed magnitude
+            const speed = Math.sqrt(
+              derivative.x * derivative.x + derivative.y * derivative.y
+            );
+
+            // Draw the current point
+            const segmentColor = getSegmentColor(segmentIndex);
+            ctx.beginPath();
+            ctx.arc(currentPoint.x, currentPoint.y, 8, 0, Math.PI * 2);
+            ctx.fillStyle = segmentColor;
+            ctx.fill();
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Draw current t value
+            ctx.fillStyle = '#ff0000';
+            ctx.font = '14px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(
+              `t = ${t.toFixed(2)}`,
+              currentPoint.x,
+              currentPoint.y - 10
+            );
+
+            // Draw velocity vector - scale for visibility but keep proportional to actual speed
+            const scaleFactor = 0.1;
+            const vectorX = derivative.x * scaleFactor;
+            const vectorY = derivative.y * scaleFactor;
+
+            if (speed > 0) {
+              // Draw the vector line
+              ctx.beginPath();
+              ctx.moveTo(currentPoint.x, currentPoint.y);
+              ctx.lineTo(currentPoint.x + vectorX, currentPoint.y + vectorY);
+              ctx.strokeStyle = segmentColor;
+              ctx.lineWidth = 2;
+              ctx.stroke();
+
+              // Draw arrowhead
+              const arrowSize = 8;
+              const angle = Math.atan2(vectorY, vectorX);
+
+              ctx.beginPath();
+              ctx.moveTo(currentPoint.x + vectorX, currentPoint.y + vectorY);
+              ctx.lineTo(
+                currentPoint.x +
+                  vectorX -
+                  arrowSize * Math.cos(angle - Math.PI / 6),
+                currentPoint.y +
+                  vectorY -
+                  arrowSize * Math.sin(angle - Math.PI / 6)
+              );
+              ctx.lineTo(
+                currentPoint.x +
+                  vectorX -
+                  arrowSize * Math.cos(angle + Math.PI / 6),
+                currentPoint.y +
+                  vectorY -
+                  arrowSize * Math.sin(angle + Math.PI / 6)
+              );
+              ctx.closePath();
+              ctx.fillStyle = segmentColor;
+              ctx.fill();
+
+              // Display the speed value
+              ctx.fillStyle = '#333333';
+              ctx.font = '12px Arial';
+              ctx.textAlign = 'left';
+              ctx.textBaseline = 'top';
+              ctx.fillText(
+                `Speed: ${speed.toFixed(1)}`,
+                currentPoint.x + 10,
+                currentPoint.y + 10
+              );
+            }
+          }
+
+          // 标记当前一阶导数值和二阶导数值
+          if (segmentPoints && segmentPoints[segmentIndex]) {
+            const segment = segmentPoints[segmentIndex];
+            const derivative = calculateBezierDerivative(
+              t * NUM_SEGMENTS - segmentIndex,
+              segment[0],
+              segment[1],
+              segment[2],
+              segment[3]
+            );
+
+            const speed = Math.sqrt(
+              derivative.x * derivative.x + derivative.y * derivative.y
+            );
+            derivativeCtx.fillStyle = '#ff0000';
+            derivativeCtx.textAlign = 'left';
+            derivativeCtx.fillText(`速度: ${speed.toFixed(1)}`, 50, 20);
+
+            const secondDerivative = calculateBezierSecondDerivative(
+              t * NUM_SEGMENTS - segmentIndex,
+              segment[0],
+              segment[1],
+              segment[2],
+              segment[3]
+            );
+
+            const acceleration = Math.sqrt(
+              secondDerivative.x * secondDerivative.x +
+                secondDerivative.y * secondDerivative.y
+            );
+
+            secondDerivativeCtx.fillStyle = '#ff0000';
+            secondDerivativeCtx.textAlign = 'left';
+            secondDerivativeCtx.fillText(
+              `加速度: ${acceleration.toFixed(1)}`,
+              50,
+              20
+            );
+          }
+        }
+
+        // Align all tangent points to be co-linear at their main points
+        function alignAllTangents() {
+          // For each main point that has two tangent points
+          for (let i = 1; i < POINTS_TOTAL - 1; i++) {
+            const mainPoint = controlPoints[i];
+            let leftTangent = null;
+            let rightTangent = null;
+
+            // Find the two tangent points for this main point
+            for (let j = 0; j < tangentPoints.length; j++) {
+              if (tangentPoints[j].mainPointIndex === i) {
+                if (tangentPoints[j].isLeftTangent) {
+                  leftTangent = tangentPoints[j];
+                } else {
+                  rightTangent = tangentPoints[j];
+                }
+              }
+            }
+
+            // If both tangents exist, align them
+            if (leftTangent && rightTangent) {
+              // If mirror is enabled, use mirror function which enforces both colinearity and equal length
+              if (enableMirror) {
+                mirrorTangentsForPoint(i);
+              }
+              // Otherwise just make them collinear without changing length
+              else {
+                // Calculate vector from main point to right tangent
+                const dx = rightTangent.x - mainPoint.x;
+                const dy = rightTangent.y - mainPoint.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                // Calculate distance from main point to left tangent
+                const leftDist = Math.sqrt(
+                  Math.pow(leftTangent.x - mainPoint.x, 2) +
+                    Math.pow(leftTangent.y - mainPoint.y, 2)
+                );
+
+                // Update left tangent to be co-linear with right tangent
+                if (dist > 0) {
+                  leftTangent.x = mainPoint.x - (dx / dist) * leftDist;
+                  leftTangent.y = mainPoint.y - (dy / dist) * leftDist;
+                }
+              }
+            }
+          }
+        }
+
+        // Helper functions for mirror symmetry
+
+        // Apply mirror symmetry to all points
+        function applyMirrorSymmetry() {
+          // For each main control point, make its tangent handles mirrored
+          // (equal length and collinear)
+          for (let i = 0; i < controlPoints.length; i++) {
+            mirrorTangentsForPoint(i);
+          }
+        }
+
+        // Mirror tangent handles for a specific control point
+        function mirrorTangentsForPoint(pointIndex) {
+          // Skip first and last points if they only have one tangent
+          if (pointIndex <= 0 || pointIndex >= POINTS_TOTAL - 1) return;
+
+          // Find left and right tangents for this control point
+          let leftTangent = null;
+          let rightTangent = null;
+
+          for (let i = 0; i < tangentPoints.length; i++) {
+            if (tangentPoints[i].mainPointIndex === pointIndex) {
+              if (tangentPoints[i].isLeftTangent) {
+                leftTangent = tangentPoints[i];
+              } else {
+                rightTangent = tangentPoints[i];
+              }
+            }
+          }
+
+          // If we found both tangents, make them mirrored
+          if (leftTangent && rightTangent) {
+            const mainPoint = controlPoints[pointIndex];
+
+            // Calculate distances from main point to each tangent
+            const leftDist = Math.sqrt(
+              Math.pow(leftTangent.x - mainPoint.x, 2) +
+                Math.pow(leftTangent.y - mainPoint.y, 2)
+            );
+
+            const rightDist = Math.sqrt(
+              Math.pow(rightTangent.x - mainPoint.x, 2) +
+                Math.pow(rightTangent.y - mainPoint.y, 2)
+            );
+
+            // Use the larger distance as the mirror distance
+            const mirrorDist = Math.max(leftDist, rightDist);
+
+            // Normalize the vectors
+            const leftDx = leftTangent.x - mainPoint.x;
+            const leftDy = leftTangent.y - mainPoint.y;
+            const leftLength = Math.sqrt(leftDx * leftDx + leftDy * leftDy);
+
+            const rightDx = rightTangent.x - mainPoint.x;
+            const rightDy = rightTangent.y - mainPoint.y;
+            const rightLength = Math.sqrt(
+              rightDx * rightDx + rightDy * rightDy
+            );
+
+            // Update the tangent positions to maintain direction but have equal length
+            if (leftLength > 0) {
+              leftTangent.x = mainPoint.x - (leftDx / leftLength) * mirrorDist;
+              leftTangent.y = mainPoint.y - (leftDy / leftLength) * mirrorDist;
+            }
+
+            if (rightLength > 0) {
+              rightTangent.x =
+                mainPoint.x + (rightDx / rightLength) * mirrorDist;
+              rightTangent.y =
+                mainPoint.y + (rightDy / rightLength) * mirrorDist;
+            }
+          }
+        }
+
+        // Mirror a tangent point when it's being dragged
+        function mirrorTangentPoint(index) {
+          const tangent = tangentPoints[index];
+          const mainIndex = tangent.mainPointIndex;
+
+          // Skip if this is a tangent of first or last point
+          if (mainIndex <= 0 || mainIndex >= POINTS_TOTAL - 1) return;
+
+          // Find the opposite tangent
+          let oppositeTangent = null;
+          for (let i = 0; i < tangentPoints.length; i++) {
+            if (
+              i !== index &&
+              tangentPoints[i].mainPointIndex === mainIndex &&
+              tangentPoints[i].isLeftTangent !== tangent.isLeftTangent
+            ) {
+              oppositeTangent = tangentPoints[i];
+              break;
+            }
+          }
+
+          if (oppositeTangent) {
+            const mainPoint = controlPoints[mainIndex];
+
+            // Calculate vector from main point to this tangent
+            const dx = tangent.x - mainPoint.x;
+            const dy = tangent.y - mainPoint.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (dist > 0) {
+              // Update the opposite tangent to be mirrored (same length, opposite direction)
+              // For a proper mirror, we need to go in exactly the opposite direction
+              oppositeTangent.x = mainPoint.x - dx;
+              oppositeTangent.y = mainPoint.y - dy;
+            }
+          }
+        }
+
+        // Calculate first derivative of a cubic Bezier curve at parameter t
+        function calculateBezierDerivative(t, p0, p1, p2, p3) {
+          const mt = 1 - t;
+          const mt2 = mt * mt;
+          const t2 = t * t;
+
+          // P'(t) = 3(1-t)²(P₁-P₀) + 6(1-t)t(P₂-P₁) + 3t²(P₃-P₂)
+          return {
+            x:
+              3 * mt2 * (p1.x - p0.x) +
+              6 * mt * t * (p2.x - p1.x) +
+              3 * t2 * (p3.x - p2.x),
+            y:
+              3 * mt2 * (p1.y - p0.y) +
+              6 * mt * t * (p2.y - p1.y) +
+              3 * t2 * (p3.y - p2.y),
+          };
+        }
+
+        // Calculate second derivative of a cubic Bezier curve at parameter t
+        function calculateBezierSecondDerivative(t, p0, p1, p2, p3) {
+          const mt = 1 - t;
+
+          // P''(t) = 6(1-t)(P₂-2P₁+P₀) + 6t(P₃-2P₂+P₁)
+          return {
+            x:
+              6 * mt * (p2.x - 2 * p1.x + p0.x) +
+              6 * t * (p3.x - 2 * p2.x + p1.x),
+            y:
+              6 * mt * (p2.y - 2 * p1.y + p0.y) +
+              6 * t * (p3.y - 2 * p2.y + p1.y),
+          };
+        }
+
+        function drawDerivatives() {
+          // Set up axes
+          setupDerivativeAxes(derivativeCtx, derivativeWidth, derivativeHeight);
+
+          // Draw each segment's first derivative
+          for (let segIdx = 0; segIdx < segmentPoints.length; segIdx++) {
+            const segment = segmentPoints[segIdx];
+            if (!segment) continue;
+
+            const steps = 100;
+            const segmentColor = getSegmentColor(segIdx);
+
+            derivativeCtx.beginPath();
+
+            for (let i = 0; i <= steps; i++) {
+              const localT = i / steps;
+              const globalT = (segIdx + localT) / NUM_SEGMENTS;
+
+              // Calculate derivative at this point
+              const derivative = calculateBezierDerivative(
+                localT,
+                segment[0],
+                segment[1],
+                segment[2],
+                segment[3]
+              );
+
+              // Calculate magnitude of derivative (speed)
+              const speed = Math.sqrt(
+                derivative.x * derivative.x + derivative.y * derivative.y
+              );
+
+              // Map to canvas coordinates
+              const xPos = 40 + (derivativeWidth - 80) * globalT;
+              const yPos =
+                derivativeHeight -
+                30 -
+                (speed / 1000) * (derivativeHeight - 60);
+
+              if (i === 0) {
+                derivativeCtx.moveTo(xPos, yPos);
+              } else {
+                derivativeCtx.lineTo(xPos, yPos);
+              }
+            }
+
+            derivativeCtx.strokeStyle = segmentColor;
+            derivativeCtx.lineWidth = 2;
+            derivativeCtx.stroke();
+          }
+
+          // Mark current position
+          markCurrentPosition(derivativeCtx, derivativeWidth, derivativeHeight);
+        }
+
+        function drawSecondDerivatives() {
+          // Set up axes
+          setupDerivativeAxes(
+            secondDerivativeCtx,
+            secondDerivativeWidth,
+            secondDerivativeHeight
+          );
+
+          // Draw each segment's second derivative
+          for (let segIdx = 0; segIdx < segmentPoints.length; segIdx++) {
+            const segment = segmentPoints[segIdx];
+            if (!segment) continue;
+
+            const steps = 100;
+            const segmentColor = getSegmentColor(segIdx);
+
+            secondDerivativeCtx.beginPath();
+
+            for (let i = 0; i <= steps; i++) {
+              const localT = i / steps;
+              const globalT = (segIdx + localT) / NUM_SEGMENTS;
+
+              // Calculate second derivative at this point
+              const secondDerivative = calculateBezierSecondDerivative(
+                localT,
+                segment[0],
+                segment[1],
+                segment[2],
+                segment[3]
+              );
+
+              // Calculate magnitude of second derivative (acceleration)
+              const acceleration = Math.sqrt(
+                secondDerivative.x * secondDerivative.x +
+                  secondDerivative.y * secondDerivative.y
+              );
+
+              // Map to canvas coordinates
+              const xPos = 40 + (secondDerivativeWidth - 80) * globalT;
+              const yPos =
+                secondDerivativeHeight / 2 -
+                (acceleration / 2000) * (secondDerivativeHeight / 2 - 30);
+
+              if (i === 0) {
+                secondDerivativeCtx.moveTo(xPos, yPos);
+              } else {
+                secondDerivativeCtx.lineTo(xPos, yPos);
+              }
+            }
+
+            secondDerivativeCtx.strokeStyle = segmentColor;
+            secondDerivativeCtx.lineWidth = 2;
+            secondDerivativeCtx.stroke();
+          }
+
+          // Draw horizontal middle line for reference (since acceleration can be negative in concept)
+          secondDerivativeCtx.beginPath();
+          secondDerivativeCtx.moveTo(40, secondDerivativeHeight / 2);
+          secondDerivativeCtx.lineTo(
+            secondDerivativeWidth - 40,
+            secondDerivativeHeight / 2
+          );
+          secondDerivativeCtx.strokeStyle = '#888';
+          secondDerivativeCtx.setLineDash([5, 3]);
+          secondDerivativeCtx.lineWidth = 1;
+          secondDerivativeCtx.stroke();
+          secondDerivativeCtx.setLineDash([]);
+
+          // Mark current position
+          markCurrentPosition(
+            secondDerivativeCtx,
+            secondDerivativeWidth,
+            secondDerivativeHeight
+          );
+        }
+
+        // Helper function to set up axes for derivative plots
+        function setupDerivativeAxes(ctx, canvasWidth, canvasHeight) {
+          // Draw axes
+          ctx.beginPath();
+          // X-axis
+          ctx.moveTo(40, canvasHeight - 30);
+          ctx.lineTo(canvasWidth - 40, canvasHeight - 30);
+          // Y-axis
+          ctx.moveTo(40, canvasHeight - 30);
+          ctx.lineTo(40, 20);
+          ctx.strokeStyle = '#555';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          // X-axis labels
+          ctx.fillStyle = '#333';
+          ctx.font = '12px Arial';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'top';
+          ctx.fillText('t', canvasWidth / 2, canvasHeight - 15);
+
+          // Segment boundaries
+          for (let i = 1; i < NUM_SEGMENTS; i++) {
+            const x = 40 + (canvasWidth - 80) * (i / NUM_SEGMENTS);
+            ctx.beginPath();
+            ctx.moveTo(x, 20);
+            ctx.lineTo(x, canvasHeight - 30);
+            ctx.strokeStyle = '#aaaaaa';
+            ctx.setLineDash([3, 3]);
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            ctx.setLineDash([]);
+          }
+        }
+
+        // Helper function to mark current position on derivative plots
+        function markCurrentPosition(ctx, canvasWidth, canvasHeight) {
+          const xPos = 40 + (canvasWidth - 80) * t;
+
+          ctx.beginPath();
+          ctx.moveTo(xPos, 20);
+          ctx.lineTo(xPos, canvasHeight - 30);
+          ctx.strokeStyle = '#ff0000';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          // Show current t value
+          ctx.fillStyle = '#ff0000';
+          ctx.textAlign = 'center';
+          ctx.font = '12px Arial';
+          ctx.fillText(`t=${t.toFixed(2)}`, xPos, 5);
+        }
+
+        // Initialize
+        initializePoints();
+
+        // After initialization, force apply mirroring if it's enabled by default
+        if (enableMirror) {
+          // Direct mirroring of all control points' tangents
+          for (let i = 1; i < POINTS_TOTAL - 1; i++) {
+            // Find the left and right tangents for this control point
+            let leftTangent = null;
+            let rightTangent = null;
+
+            for (let j = 0; j < tangentPoints.length; j++) {
+              if (tangentPoints[j].mainPointIndex === i) {
+                if (tangentPoints[j].isLeftTangent) {
+                  leftTangent = tangentPoints[j];
+                } else {
+                  rightTangent = tangentPoints[j];
+                }
+              }
+            }
+
+            // If we found both tangents, make them perfect mirrors
+            if (leftTangent && rightTangent) {
+              const mainPoint = controlPoints[i];
+
+              // For consistency, use the right (outgoing) tangent as reference
+              const dx = rightTangent.x - mainPoint.x;
+              const dy = rightTangent.y - mainPoint.y;
+
+              // Update the left tangent to be a perfect mirror of the right one
+              leftTangent.x = mainPoint.x - dx;
+              leftTangent.y = mainPoint.y - dy;
+            }
+          }
+          updateSegmentPoints();
+          drawAll();
+        }
+
+        startAnimation(); // Start animation automatically when page loads
+      });
+    </script>
+  </body>
+</html>

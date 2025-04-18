@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bezier Curve Teaching Tool</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background-color: #ffffff;
+      }
+      html {
+        background-color: #ffffff;
+      }
+      canvas {
+        border: 1px solid #ccc;
+        margin: 10px 0;
+        background-color: #f9f9f9;
+      }
+      .controls-container {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        width: 800px;
+      }
+      .button-row {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+      }
+      .slider-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      button {
+        padding: 8px 15px;
+        cursor: pointer;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+      }
+      button:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+      }
+      #t-slider {
+        flex-grow: 1;
+      }
+      .canvas-container {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .canvas-label {
+        font-weight: bold;
+        text-align: center;
+        margin-bottom: -5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="controls-container">
+      <div class="button-row">
+        <button id="add-point">Add Point</button>
+        <button id="remove-point">Remove Point</button>
+        <button id="reset">Reset</button>
+        <button id="animate">Animate</button>
+      </div>
+      <div class="slider-row">
+        <input
+          type="range"
+          id="t-slider"
+          min="0"
+          max="1"
+          step="0.01"
+          value="0"
+        />
+      </div>
+    </div>
+
+    <div class="canvas-container">
+      <div class="canvas-label">Bezier Curve</div>
+      <canvas id="bezier-canvas" width="800" height="500"></canvas>
+
+      <div class="canvas-label">Bernstein Basis Functions</div>
+      <canvas id="basis-canvas" width="800" height="300"></canvas>
+    </div>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        // Canvas setup
+        const canvas = document.getElementById('bezier-canvas');
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+
+        // Basis function canvas
+        const basisCanvas = document.getElementById('basis-canvas');
+        const basisCtx = basisCanvas.getContext('2d');
+        const basisWidth = basisCanvas.width;
+        const basisHeight = basisCanvas.height;
+
+        // UI elements
+        const addPointBtn = document.getElementById('add-point');
+        const removePointBtn = document.getElementById('remove-point');
+        const resetBtn = document.getElementById('reset');
+        const animateBtn = document.getElementById('animate');
+        const tSlider = document.getElementById('t-slider');
+
+        // State
+        let points = [];
+        let isDragging = false;
+        let dragPointIndex = -1;
+        let isAnimating = false;
+        let animationId = null;
+        let t = 0;
+
+        // Constants
+        const POINT_RADIUS = 8;
+        const MIN_POINTS = 2;
+        const MAX_POINTS = 10;
+        const MIN_X_SPACING = 50; // Minimum spacing between points horizontally
+
+        // Initialize with elegant curve points
+        function initializePoints() {
+          // Create an elegant sine-like curve
+          points = [];
+          const numInitialPoints = 4;
+          const xStep = width / (numInitialPoints + 1);
+
+          for (let i = 0; i < numInitialPoints; i++) {
+            const x = xStep * (i + 1);
+            // Create a gentle wave pattern
+            const y =
+              height / 2 +
+              Math.sin((i / (numInitialPoints - 1)) * Math.PI) * (height / 4);
+            points.push({ x, y });
+          }
+
+          updateControls();
+          drawAll();
+        }
+
+        // Event listeners
+        canvas.addEventListener('mousedown', handleMouseDown);
+        canvas.addEventListener('mousemove', handleMouseMove);
+        canvas.addEventListener('mouseup', () => {
+          isDragging = false;
+        });
+        canvas.addEventListener('mouseleave', () => {
+          isDragging = false;
+        });
+
+        addPointBtn.addEventListener('click', addRightmostPoint);
+        removePointBtn.addEventListener('click', removeLastPoint);
+        resetBtn.addEventListener('click', initializePoints);
+        animateBtn.addEventListener('click', toggleAnimation);
+
+        tSlider.addEventListener('input', function () {
+          t = parseFloat(this.value);
+          stopAnimation();
+          drawAll();
+        });
+
+        // Point manipulation functions
+        function redistributePoints() {
+          if (points.length < 2) return;
+
+          // Always redistribute points evenly across the canvas
+          const padding = width * 0.1; // 10% padding on each side
+          const newStep = (width - 2 * padding) / (points.length - 1);
+
+          // Keep vertical positions but adjust horizontal positions
+          for (let i = 0; i < points.length; i++) {
+            points[i].x = padding + i * newStep;
+          }
+        }
+
+        function addRightmostPoint() {
+          if (points.length < MAX_POINTS) {
+            let newY;
+
+            // Set Y position with some curve continuity
+            if (points.length > 0) {
+              // Base new Y on the last point with some variation
+              const lastY = points[points.length - 1].y;
+              const variation = height * 0.2; // 20% of canvas height
+              newY = Math.max(
+                50,
+                Math.min(height - 50, lastY + (Math.random() - 0.5) * variation)
+              );
+            } else {
+              newY = Math.random() * (height - 100) + 50;
+            }
+
+            // Add point temporarily at the right edge
+            points.push({ x: width - 50, y: newY });
+
+            // Always redistribute all points after adding
+            redistributePoints();
+
+            updateControls();
+            drawAll();
+          }
+        }
+
+        function removeLastPoint() {
+          if (points.length > MIN_POINTS) {
+            points.pop();
+
+            // Always redistribute all points after removing
+            redistributePoints();
+
+            updateControls();
+            drawAll();
+          }
+        }
+
+        function updateControls() {
+          addPointBtn.disabled = points.length >= MAX_POINTS;
+          removePointBtn.disabled = points.length <= MIN_POINTS;
+        }
+
+        // Event handlers
+        function handleMouseDown(e) {
+          const rect = canvas.getBoundingClientRect();
+          const mouseX = e.clientX - rect.left;
+          const mouseY = e.clientY - rect.top;
+
+          // Check if we're clicking on a point
+          for (let i = 0; i < points.length; i++) {
+            const point = points[i];
+            const distance = Math.sqrt(
+              (mouseX - point.x) ** 2 + (mouseY - point.y) ** 2
+            );
+
+            if (distance < POINT_RADIUS) {
+              isDragging = true;
+              dragPointIndex = i;
+              return;
+            }
+          }
+        }
+
+        function handleMouseMove(e) {
+          if (!isDragging || dragPointIndex === -1) return;
+
+          const rect = canvas.getBoundingClientRect();
+          const mouseX = e.clientX - rect.left;
+          const mouseY = e.clientY - rect.top;
+
+          // Remove left-to-right constraints, allow free dragging
+          // Only apply bounds checking to keep points within canvas
+          points[dragPointIndex].x = Math.max(0, Math.min(width, mouseX));
+          points[dragPointIndex].y = Math.max(0, Math.min(height, mouseY));
+
+          drawAll();
+        }
+
+        // Animation functions
+        function toggleAnimation() {
+          if (isAnimating) {
+            stopAnimation();
+          } else {
+            startAnimation();
+          }
+        }
+
+        function startAnimation() {
+          isAnimating = true;
+          animateBtn.textContent = 'Stop';
+          t = 0;
+          tSlider.value = t;
+
+          function animate() {
+            t += 0.005;
+            if (t > 1) {
+              t = 0;
+            }
+
+            tSlider.value = t;
+            drawAll();
+
+            animationId = requestAnimationFrame(animate);
+          }
+
+          animationId = requestAnimationFrame(animate);
+        }
+
+        function stopAnimation() {
+          if (animationId) {
+            cancelAnimationFrame(animationId);
+            animationId = null;
+          }
+          isAnimating = false;
+          animateBtn.textContent = 'Animate';
+        }
+
+        // Bezier calculation functions
+        function calculateBezierPoint(t, controlPoints) {
+          if (controlPoints.length === 1) {
+            return controlPoints[0];
+          }
+
+          const newPoints = [];
+          for (let i = 0; i < controlPoints.length - 1; i++) {
+            newPoints.push({
+              x: (1 - t) * controlPoints[i].x + t * controlPoints[i + 1].x,
+              y: (1 - t) * controlPoints[i].y + t * controlPoints[i + 1].y,
+            });
+          }
+
+          return calculateBezierPoint(t, newPoints);
+        }
+
+        // Factorial function for bernstein polynomial
+        function factorial(n) {
+          if (n <= 1) return 1;
+          return n * factorial(n - 1);
+        }
+
+        // Binomial coefficient (n choose k)
+        function binomialCoefficient(n, k) {
+          return factorial(n) / (factorial(k) * factorial(n - k));
+        }
+
+        // Bernstein polynomial - the basis function for Bezier curves
+        function bernstein(i, n, t) {
+          return (
+            binomialCoefficient(n, i) * Math.pow(t, i) * Math.pow(1 - t, n - i)
+          );
+        }
+
+        // Get color for a point based on its index
+        function getPointColor(index, totalPoints) {
+          const hue = (index / (totalPoints - 1)) * 240;
+          return `hsl(${hue}, 70%, 60%)`;
+        }
+
+        // Drawing functions
+        function drawAll() {
+          ctx.clearRect(0, 0, width, height);
+          basisCtx.clearRect(0, 0, basisWidth, basisHeight);
+
+          if (points.length < 2) return;
+
+          // Draw the full Bezier curve
+          drawBezierCurve();
+
+          // Draw the construction for the current t value
+          drawConstruction(t);
+
+          // Draw control points
+          drawControlPoints();
+
+          // Draw basis functions
+          drawBasisFunctions();
+
+          // Draw current t marker on basis functions
+          drawTMarker();
+        }
+
+        function drawControlPoints() {
+          // Draw control polygon
+          ctx.beginPath();
+          ctx.moveTo(points[0].x, points[0].y);
+          for (let i = 1; i < points.length; i++) {
+            ctx.lineTo(points[i].x, points[i].y);
+          }
+          ctx.strokeStyle = '#aaaaaa';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          // Draw points
+          const n = points.length - 1; // degree of the Bezier curve
+          for (let i = 0; i < points.length; i++) {
+            const pointColor = getPointColor(i, points.length);
+
+            ctx.beginPath();
+            ctx.arc(points[i].x, points[i].y, POINT_RADIUS, 0, Math.PI * 2);
+            ctx.fillStyle = pointColor;
+            ctx.fill();
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Draw point index
+            ctx.fillStyle = '#333';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(i.toString(), points[i].x, points[i].y);
+          }
+        }
+
+        function drawBezierCurve() {
+          ctx.beginPath();
+          const steps = 100;
+
+          for (let i = 0; i <= steps; i++) {
+            const curT = i / steps;
+            const point = calculateBezierPoint(curT, points);
+
+            if (i === 0) {
+              ctx.moveTo(point.x, point.y);
+            } else {
+              ctx.lineTo(point.x, point.y);
+            }
+          }
+
+          ctx.strokeStyle = '#0066cc';
+          ctx.lineWidth = 3;
+          ctx.stroke();
+        }
+
+        function drawConstruction(t) {
+          let currentPoints = [...points];
+          let allPoints = [currentPoints];
+
+          // Calculate all intermediate points for visualization
+          while (currentPoints.length > 1) {
+            const nextLevelPoints = [];
+
+            for (let i = 0; i < currentPoints.length - 1; i++) {
+              nextLevelPoints.push({
+                x: (1 - t) * currentPoints[i].x + t * currentPoints[i + 1].x,
+                y: (1 - t) * currentPoints[i].y + t * currentPoints[i + 1].y,
+              });
+            }
+
+            allPoints.push(nextLevelPoints);
+            currentPoints = nextLevelPoints;
+          }
+
+          // Draw all construction lines with different colors based on level
+          for (let level = 0; level < allPoints.length - 1; level++) {
+            const levelPoints = allPoints[level];
+            ctx.strokeStyle = getColorForLevel(level, allPoints.length - 1);
+            ctx.lineWidth = Math.max(3 - level * 0.5, 1);
+
+            // Draw lines connecting points at this level
+            if (level > 0) {
+              for (let i = 0; i < levelPoints.length; i++) {
+                const point = levelPoints[i];
+                ctx.beginPath();
+                ctx.arc(point.x, point.y, 5 - level * 0.5, 0, Math.PI * 2);
+                ctx.fillStyle = getColorForLevel(level, allPoints.length - 1);
+                ctx.fill();
+              }
+            }
+
+            // Draw lines for this level's interpolation
+            for (let i = 0; i < levelPoints.length - 1; i++) {
+              ctx.beginPath();
+              ctx.moveTo(levelPoints[i].x, levelPoints[i].y);
+              ctx.lineTo(levelPoints[i + 1].x, levelPoints[i + 1].y);
+              ctx.stroke();
+            }
+          }
+
+          // Draw the final point (the point on the curve at parameter t)
+          const finalPoint = allPoints[allPoints.length - 1][0];
+          ctx.beginPath();
+          ctx.arc(finalPoint.x, finalPoint.y, 8, 0, Math.PI * 2);
+          ctx.fillStyle = '#ff0000';
+          ctx.fill();
+          ctx.strokeStyle = '#000';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+
+        function drawBasisFunctions() {
+          const n = points.length - 1; // degree of the Bezier curve
+          const steps = 100;
+
+          // Draw axes
+          basisCtx.beginPath();
+          // X-axis
+          basisCtx.moveTo(0, basisHeight - 30);
+          basisCtx.lineTo(basisWidth, basisHeight - 30);
+          // Y-axis
+          basisCtx.moveTo(30, 0);
+          basisCtx.lineTo(30, basisHeight);
+          basisCtx.strokeStyle = '#333';
+          basisCtx.lineWidth = 1;
+          basisCtx.stroke();
+
+          // X-axis labels
+          basisCtx.fillStyle = '#333';
+          basisCtx.font = '12px Arial';
+          basisCtx.textAlign = 'center';
+          basisCtx.textBaseline = 'top';
+          basisCtx.fillText('0', 30, basisHeight - 25);
+          basisCtx.fillText('1', basisWidth - 30, basisHeight - 25);
+          basisCtx.fillText('t', basisWidth / 2, basisHeight - 25);
+
+          // Y-axis labels
+          basisCtx.textAlign = 'right';
+          basisCtx.textBaseline = 'middle';
+          basisCtx.fillText('0', 25, basisHeight - 30);
+          basisCtx.fillText('1', 25, 30);
+
+          // Draw each basis function with same color as the corresponding control point
+          for (let i = 0; i <= n; i++) {
+            basisCtx.beginPath();
+
+            for (let step = 0; step <= steps; step++) {
+              const tValue = step / steps;
+              const xPos = 30 + (basisWidth - 60) * tValue;
+              const bValue = bernstein(i, n, tValue);
+              const yPos = basisHeight - 30 - bValue * (basisHeight - 60);
+
+              if (step === 0) {
+                basisCtx.moveTo(xPos, yPos);
+              } else {
+                basisCtx.lineTo(xPos, yPos);
+              }
+            }
+
+            // Use the same color as the control point with the same index
+            basisCtx.strokeStyle = getPointColor(i, n + 1);
+            basisCtx.lineWidth = 2;
+            basisCtx.stroke();
+
+            // Label each basis function
+            const maxT = i / n; // position where the function reaches its maximum (for n choose i)
+            const maxBValue = bernstein(i, n, maxT);
+            const labelX = 30 + (basisWidth - 60) * maxT;
+            const labelY = basisHeight - 30 - maxBValue * (basisHeight - 60);
+
+            basisCtx.fillStyle = getPointColor(i, n + 1);
+            basisCtx.textAlign = 'center';
+            basisCtx.textBaseline = 'bottom';
+            basisCtx.font = '12px Arial';
+            basisCtx.fillText(`B${i},${n}`, labelX, labelY - 5);
+          }
+        }
+
+        function drawTMarker() {
+          // Draw vertical line at current t value
+          const xPos = 30 + (basisWidth - 60) * t;
+
+          basisCtx.beginPath();
+          basisCtx.moveTo(xPos, 0);
+          basisCtx.lineTo(xPos, basisHeight - 30);
+          basisCtx.strokeStyle = '#ff0000';
+          basisCtx.lineWidth = 2;
+          basisCtx.stroke();
+
+          // Draw a dot on each basis function at current t
+          const n = points.length - 1;
+          for (let i = 0; i <= n; i++) {
+            const bValue = bernstein(i, n, t);
+            const yPos = basisHeight - 30 - bValue * (basisHeight - 60);
+
+            basisCtx.beginPath();
+            basisCtx.arc(xPos, yPos, 5, 0, Math.PI * 2);
+            basisCtx.fillStyle = getPointColor(i, n + 1);
+            basisCtx.fill();
+            basisCtx.strokeStyle = '#333';
+            basisCtx.lineWidth = 1;
+            basisCtx.stroke();
+
+            // Show value text
+            basisCtx.fillStyle = '#333';
+            basisCtx.textAlign = 'left';
+            basisCtx.textBaseline = 'middle';
+            basisCtx.font = '10px Arial';
+            basisCtx.fillText(bValue.toFixed(2), xPos + 8, yPos);
+          }
+
+          // Show t value
+          basisCtx.fillStyle = '#ff0000';
+          basisCtx.textAlign = 'center';
+          basisCtx.textBaseline = 'top';
+          basisCtx.font = '12px Arial';
+          basisCtx.fillText(`t = ${t.toFixed(2)}`, xPos, 5);
+        }
+
+        function getColorForLevel(level, maxLevel) {
+          // Original control polygon (level 0) uses gray
+          if (level === 0) return '#aaaaaa';
+
+          // For intermediate construction lines, use a gradient from our color scheme
+          return getPointColor(level, maxLevel + 1);
+        }
+
+        // Initialize
+        initializePoints();
+        startAnimation(); // Start animation automatically when page loads
+      });
+    </script>
+  </body>
+</html>

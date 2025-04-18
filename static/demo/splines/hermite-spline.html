@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hermite to Bezier Spline Conversion</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background-color: #ffffff;
+      }
+      html {
+        background-color: #ffffff;
+      }
+      canvas {
+        border: 1px solid #ccc;
+        margin: 10px 0;
+        background-color: #f9f9f9;
+      }
+      .controls-container {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        width: 800px;
+      }
+      .button-row {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+      }
+      .slider-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      button {
+        padding: 8px 15px;
+        cursor: pointer;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+      }
+      button:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+      }
+      #t-slider {
+        flex-grow: 1;
+      }
+      .canvas-container {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .canvas-label {
+        font-weight: bold;
+        text-align: center;
+        margin-bottom: -5px;
+      }
+      .mode-toggle {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="controls-container">
+      <div class="button-row">
+        <button id="reset">Reset</button>
+        <button id="animate">Animate</button>
+        <div class="mode-toggle">
+          <input type="checkbox" id="show-bezier" checked />
+          <label for="show-bezier">Show Bezier Control Points</label>
+        </div>
+      </div>
+      <div class="slider-row">
+        <input
+          type="range"
+          id="t-slider"
+          min="0"
+          max="1"
+          step="0.01"
+          value="0"
+        />
+      </div>
+    </div>
+
+    <div class="canvas-container">
+      <div class="canvas-label">Hermite/Bezier Spline</div>
+      <canvas id="spline-canvas" width="800" height="500"></canvas>
+
+      <div class="canvas-label">Velocity (First Derivative)</div>
+      <canvas id="derivative-canvas" width="800" height="200"></canvas>
+    </div>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        // Canvas setup
+        const canvas = document.getElementById('spline-canvas');
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+
+        // Derivative canvas
+        const derivativeCanvas = document.getElementById('derivative-canvas');
+        const derivativeCtx = derivativeCanvas.getContext('2d');
+        const derivativeWidth = derivativeCanvas.width;
+        const derivativeHeight = derivativeCanvas.height;
+
+        // UI elements
+        const resetBtn = document.getElementById('reset');
+        const animateBtn = document.getElementById('animate');
+        const tSlider = document.getElementById('t-slider');
+        const showBezierToggle = document.getElementById('show-bezier');
+
+        // State
+        const POINT_RADIUS = 8;
+        const NUM_POINTS = 5; // Number of Hermite points
+        const NUM_SEGMENTS = NUM_POINTS - 1; // Number of segments
+        let controlPoints = []; // Array of { x, y, vx, vy } for Hermite points
+        let bezierControlPoints = []; // Array of { x, y, mainPointIndex, isBezierLeft }
+        let isDragging = false;
+        let dragPointIndex = -1;
+        let dragPointType = null; // 'main', 'velocity', 'bezier'
+        let isAnimating = false;
+        let animationId = null;
+        let t = 0; // Global t parameter [0,1]
+        let showBezier = true;
+
+        // Segment colors - vibrant and distinct colors for each segment
+        const segmentColors = [
+          '#e41a1c', // Red
+          '#377eb8', // Blue
+          '#4daf4a', // Green
+          '#ffd700', // Yellow
+        ];
+
+        // Get color for a segment index
+        function getSegmentColor(segmentIndex) {
+          return segmentColors[segmentIndex % segmentColors.length];
+        }
+
+        // Initialize points
+        function initializePoints() {
+          controlPoints = [];
+          bezierControlPoints = [];
+
+          // Create Hermite points with positions and velocities
+          const padding = 100;
+          const minX = padding;
+          const maxX = width - padding;
+          const minY = padding;
+          const maxY = height - padding;
+          const xStep = (maxX - minX) / (NUM_POINTS - 1);
+
+          for (let i = 0; i < NUM_POINTS; i++) {
+            const x = minX + i * xStep;
+            const yRange = (maxY - minY) * 0.7;
+            const yCenter = minY + (maxY - minY) / 2;
+            const y = yCenter + (Math.random() - 0.5) * yRange;
+
+            // Add velocity vectors (based on random angles)
+            const velocityMagnitude = 80 + Math.random() * 60;
+            const angle = Math.random() * Math.PI * 2;
+            const vx = Math.cos(angle) * velocityMagnitude;
+            const vy = Math.sin(angle) * velocityMagnitude;
+
+            controlPoints.push({ x, y, vx, vy });
+          }
+
+          updateBezierControlPoints();
+          drawAll();
+        }
+
+        // Update Bezier control points based on Hermite points
+        function updateBezierControlPoints() {
+          bezierControlPoints = [];
+
+          for (let i = 0; i < NUM_POINTS; i++) {
+            const point = controlPoints[i];
+
+            // Each internal point has two Bezier control points (left and right)
+            if (i > 0) {
+              // Left Bezier control point (incoming)
+              bezierControlPoints.push({
+                x: point.x - point.vx / 3,
+                y: point.y - point.vy / 3,
+                mainPointIndex: i,
+                isBezierLeft: true,
+              });
+            }
+
+            if (i < NUM_POINTS - 1) {
+              // Right Bezier control point (outgoing)
+              bezierControlPoints.push({
+                x: point.x + point.vx / 3,
+                y: point.y + point.vy / 3,
+                mainPointIndex: i,
+                isBezierLeft: false,
+              });
+            }
+          }
+        }
+
+        // Update Hermite velocity vectors based on Bezier control points
+        function updateHermiteVelocity(bezierIndex) {
+          const bezierPoint = bezierControlPoints[bezierIndex];
+          const mainPoint = controlPoints[bezierPoint.mainPointIndex];
+
+          if (bezierPoint.isBezierLeft) {
+            // The control point is on the left of the main point
+            mainPoint.vx = (mainPoint.x - bezierPoint.x) * 3;
+            mainPoint.vy = (mainPoint.y - bezierPoint.y) * 3;
+          } else {
+            // The control point is on the right of the main point
+            mainPoint.vx = (bezierPoint.x - mainPoint.x) * 3;
+            mainPoint.vy = (bezierPoint.y - mainPoint.y) * 3;
+          }
+
+          // Update the other Bezier control point for this main point
+          for (let i = 0; i < bezierControlPoints.length; i++) {
+            if (
+              i !== bezierIndex &&
+              bezierControlPoints[i].mainPointIndex ===
+                bezierPoint.mainPointIndex &&
+              bezierControlPoints[i].isBezierLeft !== bezierPoint.isBezierLeft
+            ) {
+              const otherBezier = bezierControlPoints[i];
+              if (otherBezier.isBezierLeft) {
+                otherBezier.x = mainPoint.x - mainPoint.vx / 3;
+                otherBezier.y = mainPoint.y - mainPoint.vy / 3;
+              } else {
+                otherBezier.x = mainPoint.x + mainPoint.vx / 3;
+                otherBezier.y = mainPoint.y + mainPoint.vy / 3;
+              }
+              break;
+            }
+          }
+        }
+
+        // Event listeners
+        canvas.addEventListener('mousedown', handleMouseDown);
+        canvas.addEventListener('mousemove', handleMouseMove);
+        canvas.addEventListener('mouseup', () => {
+          isDragging = false;
+          dragPointIndex = -1;
+          dragPointType = null;
+        });
+        canvas.addEventListener('mouseleave', () => {
+          isDragging = false;
+          dragPointIndex = -1;
+          dragPointType = null;
+        });
+
+        resetBtn.addEventListener('click', initializePoints);
+        animateBtn.addEventListener('click', toggleAnimation);
+
+        tSlider.addEventListener('input', function () {
+          t = parseFloat(this.value);
+          stopAnimation();
+          drawAll();
+        });
+
+        showBezierToggle.addEventListener('change', function () {
+          showBezier = this.checked;
+          drawAll();
+        });
+
+        // Event handlers
+        function handleMouseDown(e) {
+          const rect = canvas.getBoundingClientRect();
+          const mouseX = e.clientX - rect.left;
+          const mouseY = e.clientY - rect.top;
+
+          // Check if clicking on a main control point
+          for (let i = 0; i < controlPoints.length; i++) {
+            const point = controlPoints[i];
+            const distToPoint = Math.sqrt(
+              (mouseX - point.x) ** 2 + (mouseY - point.y) ** 2
+            );
+
+            if (distToPoint < POINT_RADIUS) {
+              isDragging = true;
+              dragPointIndex = i;
+              dragPointType = 'main';
+              return;
+            }
+
+            // Check if clicking on a velocity endpoint
+            const velocityEndpoint = {
+              x: point.x + point.vx,
+              y: point.y + point.vy,
+            };
+
+            const distToVelocity = Math.sqrt(
+              (mouseX - velocityEndpoint.x) ** 2 +
+                (mouseY - velocityEndpoint.y) ** 2
+            );
+
+            if (distToVelocity < POINT_RADIUS) {
+              isDragging = true;
+              dragPointIndex = i;
+              dragPointType = 'velocity';
+              return;
+            }
+          }
+
+          // Check if clicking on a Bezier control point
+          if (showBezier) {
+            for (let i = 0; i < bezierControlPoints.length; i++) {
+              const point = bezierControlPoints[i];
+              const distToPoint = Math.sqrt(
+                (mouseX - point.x) ** 2 + (mouseY - point.y) ** 2
+              );
+
+              if (distToPoint < POINT_RADIUS) {
+                isDragging = true;
+                dragPointIndex = i;
+                dragPointType = 'bezier';
+                return;
+              }
+            }
+          }
+        }
+
+        function handleMouseMove(e) {
+          if (!isDragging) return;
+
+          const rect = canvas.getBoundingClientRect();
+          const mouseX = e.clientX - rect.left;
+          const mouseY = e.clientY - rect.top;
+
+          // Apply bounds checking
+          const newX = Math.max(0, Math.min(width, mouseX));
+          const newY = Math.max(0, Math.min(height, mouseY));
+
+          if (dragPointType === 'main') {
+            const point = controlPoints[dragPointIndex];
+
+            // Calculate displacement
+            const dx = newX - point.x;
+            const dy = newY - point.y;
+
+            // Update main point position
+            point.x = newX;
+            point.y = newY;
+
+            // Update related Bezier control points
+            for (let i = 0; i < bezierControlPoints.length; i++) {
+              if (bezierControlPoints[i].mainPointIndex === dragPointIndex) {
+                bezierControlPoints[i].x += dx;
+                bezierControlPoints[i].y += dy;
+              }
+            }
+          } else if (dragPointType === 'velocity') {
+            const point = controlPoints[dragPointIndex];
+
+            // Update velocity vector
+            point.vx = newX - point.x;
+            point.vy = newY - point.y;
+
+            // Update related Bezier control points
+            for (let i = 0; i < bezierControlPoints.length; i++) {
+              if (bezierControlPoints[i].mainPointIndex === dragPointIndex) {
+                if (bezierControlPoints[i].isBezierLeft) {
+                  bezierControlPoints[i].x = point.x - point.vx / 3;
+                  bezierControlPoints[i].y = point.y - point.vy / 3;
+                } else {
+                  bezierControlPoints[i].x = point.x + point.vx / 3;
+                  bezierControlPoints[i].y = point.y + point.vy / 3;
+                }
+              }
+            }
+          } else if (dragPointType === 'bezier') {
+            // Update Bezier control point
+            bezierControlPoints[dragPointIndex].x = newX;
+            bezierControlPoints[dragPointIndex].y = newY;
+
+            // Update corresponding Hermite velocity
+            updateHermiteVelocity(dragPointIndex);
+          }
+
+          drawAll();
+        }
+
+        // Animation functions
+        function toggleAnimation() {
+          if (isAnimating) {
+            stopAnimation();
+          } else {
+            startAnimation();
+          }
+        }
+
+        function startAnimation() {
+          // Make sure points are initialized before starting animation
+          if (!controlPoints || controlPoints.length < NUM_POINTS) {
+            initializePoints();
+          }
+
+          isAnimating = true;
+          animateBtn.textContent = 'Stop';
+          t = 0;
+          tSlider.value = t;
+
+          let lastTime = performance.now();
+          const secondsPerCycle = 3;
+
+          function animate(currentTime) {
+            const deltaTime = (currentTime - lastTime) / 1000;
+            lastTime = currentTime;
+
+            t += deltaTime / secondsPerCycle;
+            if (t > 1) {
+              t = 0;
+            }
+
+            tSlider.value = t;
+            drawAll();
+
+            animationId = requestAnimationFrame(animate);
+          }
+
+          animationId = requestAnimationFrame(animate);
+        }
+
+        function stopAnimation() {
+          if (animationId) {
+            cancelAnimationFrame(animationId);
+            animationId = null;
+          }
+          isAnimating = false;
+          animateBtn.textContent = 'Animate';
+        }
+
+        // Hermite interpolation functions
+        function h00(t) {
+          return 2 * t * t * t - 3 * t * t + 1;
+        }
+        function h10(t) {
+          return t * t * t - 2 * t * t + t;
+        }
+        function h01(t) {
+          return -2 * t * t * t + 3 * t * t;
+        }
+        function h11(t) {
+          return t * t * t - t * t;
+        }
+
+        // Calculate point on Hermite spline for parameter t
+        function calculateHermitePoint(globalT) {
+          // Map global t [0,1] to segment index and local t
+          const segmentIndex = Math.min(
+            NUM_SEGMENTS - 1,
+            Math.floor(globalT * NUM_SEGMENTS)
+          );
+          const localT = globalT * NUM_SEGMENTS - segmentIndex;
+
+          // Check if control points have been initialized properly
+          if (
+            !controlPoints ||
+            controlPoints.length < 2 ||
+            !controlPoints[segmentIndex] ||
+            !controlPoints[segmentIndex + 1]
+          ) {
+            return { x: width / 2, y: height / 2 }; // Return center point if points aren't ready
+          }
+
+          const p0 = controlPoints[segmentIndex];
+          const p1 = controlPoints[segmentIndex + 1];
+
+          return {
+            x:
+              h00(localT) * p0.x +
+              h10(localT) * p0.vx +
+              h01(localT) * p1.x +
+              h11(localT) * p1.vx,
+            y:
+              h00(localT) * p0.y +
+              h10(localT) * p0.vy +
+              h01(localT) * p1.y +
+              h11(localT) * p1.vy,
+          };
+        }
+
+        // Calculate derivative (velocity) at a point on the spline
+        function calculateHermiteDerivative(globalT) {
+          // Map global t [0,1] to segment index and local t
+          const segmentIndex = Math.min(
+            NUM_SEGMENTS - 1,
+            Math.floor(globalT * NUM_SEGMENTS)
+          );
+          const localT = globalT * NUM_SEGMENTS - segmentIndex;
+
+          // Check if control points have been initialized properly
+          if (
+            !controlPoints ||
+            controlPoints.length < 2 ||
+            !controlPoints[segmentIndex] ||
+            !controlPoints[segmentIndex + 1]
+          ) {
+            return { x: 0, y: 0 }; // Return zero vector if points aren't ready
+          }
+
+          const p0 = controlPoints[segmentIndex];
+          const p1 = controlPoints[segmentIndex + 1];
+
+          // Derivatives of the basis functions
+          const dh00 = 6 * localT * localT - 6 * localT;
+          const dh10 = 3 * localT * localT - 4 * localT + 1;
+          const dh01 = -6 * localT * localT + 6 * localT;
+          const dh11 = 3 * localT * localT - 2 * localT;
+
+          // Scale by NUM_SEGMENTS because we're compressing t into [0,1]
+          return {
+            x:
+              (dh00 * p0.x + dh10 * p0.vx + dh01 * p1.x + dh11 * p1.vx) *
+              NUM_SEGMENTS,
+            y:
+              (dh00 * p0.y + dh10 * p0.vy + dh01 * p1.y + dh11 * p1.vy) *
+              NUM_SEGMENTS,
+          };
+        }
+
+        // Drawing functions
+        function drawAll() {
+          ctx.clearRect(0, 0, width, height);
+          derivativeCtx.clearRect(0, 0, derivativeWidth, derivativeHeight);
+
+          // Set background color
+          ctx.fillStyle = '#1e2329';
+          ctx.fillRect(0, 0, width, height);
+
+          drawSpline();
+          drawControlPoints();
+          drawVelocityFunction();
+          drawCurrentPosition();
+        }
+
+        function drawSpline() {
+          // Draw each segment with a different color
+          for (let segIdx = 0; segIdx < NUM_SEGMENTS; segIdx++) {
+            ctx.beginPath();
+
+            const steps = 50;
+
+            for (let i = 0; i <= steps; i++) {
+              // Calculate local t [0,1] for this segment
+              const localT = i / steps;
+              // Map to global t for the entire curve
+              const globalT = (segIdx + localT) / NUM_SEGMENTS;
+              const point = calculateHermitePoint(globalT);
+
+              if (i === 0) {
+                ctx.moveTo(point.x, point.y);
+              } else {
+                ctx.lineTo(point.x, point.y);
+              }
+            }
+
+            ctx.strokeStyle = getSegmentColor(segIdx);
+            ctx.lineWidth = 3;
+            ctx.stroke();
+          }
+        }
+
+        function drawControlPoints() {
+          // Draw lines connecting control points
+          ctx.beginPath();
+          for (let i = 0; i < controlPoints.length; i++) {
+            const point = controlPoints[i];
+            if (i === 0) {
+              ctx.moveTo(point.x, point.y);
+            } else {
+              ctx.lineTo(point.x, point.y);
+            }
+          }
+          ctx.strokeStyle = '#aaaaaa';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          // Draw Bezier control points and their connections if enabled
+          if (showBezier) {
+            for (let i = 0; i < bezierControlPoints.length; i++) {
+              const bezier = bezierControlPoints[i];
+              const mainPoint = controlPoints[bezier.mainPointIndex];
+
+              // Draw line connecting to main point
+              ctx.beginPath();
+              ctx.moveTo(mainPoint.x, mainPoint.y);
+              ctx.lineTo(bezier.x, bezier.y);
+              ctx.strokeStyle = bezier.isBezierLeft ? '#cc3366' : '#3366cc';
+              ctx.lineWidth = 1;
+              ctx.stroke();
+
+              // Draw Bezier control point
+              ctx.beginPath();
+              ctx.arc(bezier.x, bezier.y, POINT_RADIUS - 2, 0, Math.PI * 2);
+              ctx.fillStyle = bezier.isBezierLeft ? '#cc3366' : '#3366cc';
+              ctx.fill();
+              ctx.strokeStyle = '#333333';
+              ctx.lineWidth = 1;
+              ctx.stroke();
+            }
+          }
+
+          // Draw velocity vectors
+          for (let i = 0; i < controlPoints.length; i++) {
+            const point = controlPoints[i];
+
+            // Draw velocity vector
+            ctx.beginPath();
+            ctx.moveTo(point.x, point.y);
+            ctx.lineTo(point.x + point.vx, point.y + point.vy);
+            ctx.strokeStyle = '#33cc66';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Draw velocity endpoint
+            ctx.beginPath();
+            ctx.arc(
+              point.x + point.vx,
+              point.y + point.vy,
+              POINT_RADIUS - 2,
+              0,
+              Math.PI * 2
+            );
+            ctx.fillStyle = '#33cc66';
+            ctx.fill();
+            ctx.strokeStyle = '#333333';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          }
+
+          // Draw main control points
+          for (let i = 0; i < controlPoints.length; i++) {
+            const point = controlPoints[i];
+
+            // Draw control point
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, POINT_RADIUS, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+            ctx.strokeStyle = '#333333';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Draw point index
+            ctx.fillStyle = '#000000';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(i.toString(), point.x, point.y);
+          }
+
+          // Draw point conversion labels
+          if (showBezier) {
+            for (let i = 0; i < NUM_POINTS; i++) {
+              const point = controlPoints[i];
+
+              // Find bezier control points
+              let leftBezier = null,
+                rightBezier = null;
+
+              for (let j = 0; j < bezierControlPoints.length; j++) {
+                if (bezierControlPoints[j].mainPointIndex === i) {
+                  if (bezierControlPoints[j].isBezierLeft) {
+                    leftBezier = bezierControlPoints[j];
+                  } else {
+                    rightBezier = bezierControlPoints[j];
+                  }
+                }
+              }
+
+              // Draw labels
+              ctx.font = '12px Arial';
+              ctx.fillStyle = '#ffffff';
+              ctx.textBaseline = 'bottom';
+
+              if (leftBezier) {
+                ctx.textAlign = 'right';
+                ctx.fillText(`P${i - 1},3`, leftBezier.x - 5, leftBezier.y - 5);
+              }
+
+              if (rightBezier) {
+                ctx.textAlign = 'left';
+                ctx.fillText(`P${i},1`, rightBezier.x + 5, rightBezier.y - 5);
+              }
+
+              // Draw relationship label between v/3 and bezier control points
+              if (i > 0 && i < NUM_POINTS - 1) {
+                ctx.textAlign = 'center';
+                ctx.fillText(
+                  `v${i}/3`,
+                  (point.x + point.x + point.vx / 3) / 2,
+                  (point.y + point.y + point.vy / 3) / 2 - 5
+                );
+                ctx.fillText(
+                  `-v${i}/3`,
+                  (point.x + point.x - point.vx / 3) / 2,
+                  (point.y + point.y - point.vy / 3) / 2 - 5
+                );
+              }
+            }
+          }
+        }
+
+        function drawVelocityFunction() {
+          // Setup axes
+          setupDerivativeAxes();
+
+          // Make sure we have enough points to draw the curve
+          if (!controlPoints || controlPoints.length < NUM_POINTS) {
+            return;
+          }
+
+          // Calculate maximum speed for scaling
+          let maxSpeed = 0;
+          const steps = 200; // Increase steps for smoother curve
+          const samples = [];
+
+          // First pass to collect all speeds and find maximum
+          for (let i = 0; i <= steps; i++) {
+            const globalT = i / steps;
+            const derivative = calculateHermiteDerivative(globalT);
+            const speed = Math.sqrt(
+              derivative.x * derivative.x + derivative.y * derivative.y
+            );
+            samples.push({ t: globalT, speed: speed });
+            maxSpeed = Math.max(maxSpeed, speed);
+          }
+
+          // Add some margin to max speed
+          maxSpeed = maxSpeed * 1.1;
+
+          // Draw velocity function with different colors for each segment
+          for (let segIdx = 0; segIdx < NUM_SEGMENTS; segIdx++) {
+            derivativeCtx.beginPath();
+
+            // 重新计算每个段的采样点索引范围
+            // 确保最后一个段能够正确显示
+            const segmentStartT = segIdx / NUM_SEGMENTS;
+            const segmentEndT = (segIdx + 1) / NUM_SEGMENTS;
+
+            let firstPoint = true;
+
+            // 遍历所有样本点，选择属于当前段的点
+            for (let i = 0; i < samples.length; i++) {
+              const sample = samples[i];
+
+              // 确保样本点存在
+              if (!sample) continue;
+
+              // 如果样本点在当前段范围内（包括终点）
+              if (sample.t >= segmentStartT && sample.t <= segmentEndT) {
+                // 添加一个小的容差，确保段边界点被包含
+                // 对于最后一个段，确保包含t=1的点
+                if (
+                  segIdx === NUM_SEGMENTS - 1 &&
+                  Math.abs(sample.t - 1) < 0.01
+                ) {
+                  // 最后一个段特殊处理终点
+                } else if (
+                  segIdx < NUM_SEGMENTS - 1 &&
+                  sample.t >= segmentEndT
+                ) {
+                  // 对于非最后一个段，排除终点（会被下一个段包含）
+                  continue;
+                }
+
+                // 映射到画布坐标
+                const xPos = 40 + (derivativeWidth - 80) * sample.t;
+                const yPos =
+                  derivativeHeight -
+                  30 -
+                  (sample.speed / maxSpeed) * (derivativeHeight - 60);
+
+                if (firstPoint) {
+                  derivativeCtx.moveTo(xPos, yPos);
+                  firstPoint = false;
+                } else {
+                  derivativeCtx.lineTo(xPos, yPos);
+                }
+              }
+            }
+
+            // 确保终点被连接
+            if (segIdx === NUM_SEGMENTS - 1) {
+              const endT = 1.0;
+              const endDerivative = calculateHermiteDerivative(endT);
+              const endSpeed = Math.sqrt(
+                endDerivative.x * endDerivative.x +
+                  endDerivative.y * endDerivative.y
+              );
+              const endX = 40 + (derivativeWidth - 80) * endT;
+              const endY =
+                derivativeHeight -
+                30 -
+                (endSpeed / maxSpeed) * (derivativeHeight - 60);
+
+              derivativeCtx.lineTo(endX, endY);
+            }
+
+            derivativeCtx.strokeStyle = getSegmentColor(segIdx);
+            derivativeCtx.lineWidth = 2;
+            derivativeCtx.stroke();
+          }
+
+          // Draw segment boundaries clearer on velocity graph
+          for (let i = 1; i < NUM_SEGMENTS; i++) {
+            const x = 40 + (derivativeWidth - 80) * (i / NUM_SEGMENTS);
+            derivativeCtx.beginPath();
+            derivativeCtx.moveTo(x, 20);
+            derivativeCtx.lineTo(x, derivativeHeight - 30);
+            derivativeCtx.strokeStyle = '#666666';
+            derivativeCtx.setLineDash([5, 3]);
+            derivativeCtx.lineWidth = 1;
+            derivativeCtx.stroke();
+            derivativeCtx.setLineDash([]);
+          }
+
+          // Only mark current velocity if we have valid data
+          if (maxSpeed > 0) {
+            markCurrentVelocity(maxSpeed);
+          }
+        }
+
+        function setupDerivativeAxes() {
+          // Clear the canvas first
+          derivativeCtx.clearRect(0, 0, derivativeWidth, derivativeHeight);
+
+          // Fill with light background
+          derivativeCtx.fillStyle = '#f9f9f9';
+          derivativeCtx.fillRect(0, 0, derivativeWidth, derivativeHeight);
+
+          // Draw axes
+          derivativeCtx.beginPath();
+          // X-axis
+          derivativeCtx.moveTo(40, derivativeHeight - 30);
+          derivativeCtx.lineTo(derivativeWidth - 40, derivativeHeight - 30);
+          // Y-axis
+          derivativeCtx.moveTo(40, derivativeHeight - 30);
+          derivativeCtx.lineTo(40, 20);
+          derivativeCtx.strokeStyle = '#555';
+          derivativeCtx.lineWidth = 1;
+          derivativeCtx.stroke();
+
+          // X-axis labels
+          derivativeCtx.fillStyle = '#333';
+          derivativeCtx.font = '12px Arial';
+          derivativeCtx.textAlign = 'center';
+          derivativeCtx.textBaseline = 'top';
+          derivativeCtx.fillText(
+            't',
+            derivativeWidth / 2,
+            derivativeHeight - 15
+          );
+        }
+
+        function markCurrentVelocity(maxSpeed) {
+          const xPos = 40 + (derivativeWidth - 80) * t;
+
+          // Calculate current velocity
+          const derivative = calculateHermiteDerivative(t);
+          const speed = Math.sqrt(
+            derivative.x * derivative.x + derivative.y * derivative.y
+          );
+
+          // Mark point on the curve
+          const yPos =
+            derivativeHeight -
+            30 -
+            (speed / maxSpeed) * (derivativeHeight - 60);
+
+          // Determine which segment we're in
+          const currentSegment = Math.min(
+            NUM_SEGMENTS - 1,
+            Math.floor(t * NUM_SEGMENTS)
+          );
+          const segmentColor = getSegmentColor(currentSegment);
+
+          // Vertical line at current t
+          derivativeCtx.beginPath();
+          derivativeCtx.moveTo(xPos, 20);
+          derivativeCtx.lineTo(xPos, derivativeHeight - 30);
+          derivativeCtx.strokeStyle = '#ff0000';
+          derivativeCtx.lineWidth = 2;
+          derivativeCtx.stroke();
+
+          // Point on curve
+          derivativeCtx.beginPath();
+          derivativeCtx.arc(xPos, yPos, 5, 0, Math.PI * 2);
+          derivativeCtx.fillStyle = segmentColor;
+          derivativeCtx.fill();
+          derivativeCtx.strokeStyle = '#ffffff';
+          derivativeCtx.lineWidth = 1;
+          derivativeCtx.stroke();
+
+          // Show current speed value and t value with better formatting
+          derivativeCtx.fillStyle = '#ff0000';
+          derivativeCtx.textAlign = 'left';
+          derivativeCtx.font = '12px Arial';
+          derivativeCtx.fillText(`t = ${t.toFixed(2)}`, 50, 20);
+          derivativeCtx.fillText(`Speed: ${speed.toFixed(1)}`, 50, 40);
+          derivativeCtx.fillText(`Segment: ${currentSegment}`, 50, 60);
+        }
+
+        function drawCurrentPosition() {
+          // Calculate and draw current point on the spline
+          const point = calculateHermitePoint(t);
+
+          // Determine which segment we're in
+          const currentSegment = Math.min(
+            NUM_SEGMENTS - 1,
+            Math.floor(t * NUM_SEGMENTS)
+          );
+          const segmentColor = getSegmentColor(currentSegment);
+
+          // Draw the point
+          ctx.beginPath();
+          ctx.arc(point.x, point.y, 8, 0, Math.PI * 2);
+          ctx.fillStyle = segmentColor;
+          ctx.fill();
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          // Show current t
+          ctx.fillStyle = '#ff0000';
+          ctx.font = '14px Arial';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+          ctx.fillText(`t = ${t.toFixed(2)}`, point.x, point.y - 10);
+
+          // Calculate and draw current tangent/velocity
+          const derivative = calculateHermiteDerivative(t);
+          const magnitude = Math.sqrt(
+            derivative.x * derivative.x + derivative.y * derivative.y
+          );
+
+          // 缩放因子，使向量长度适合画布显示
+          const scaleFactor = 0.5;
+
+          if (magnitude > 0) {
+            // 直接使用导数值，只应用缩放因子，而不是归一化为固定长度
+            const vectorX = derivative.x * scaleFactor;
+            const vectorY = derivative.y * scaleFactor;
+
+            ctx.beginPath();
+            ctx.moveTo(point.x, point.y);
+            ctx.lineTo(point.x + vectorX, point.y + vectorY);
+            ctx.strokeStyle = segmentColor;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Draw arrowhead
+            const arrowSize = 8;
+            const angle = Math.atan2(vectorY, vectorX);
+
+            ctx.beginPath();
+            ctx.moveTo(point.x + vectorX, point.y + vectorY);
+            ctx.lineTo(
+              point.x + vectorX - arrowSize * Math.cos(angle - Math.PI / 6),
+              point.y + vectorY - arrowSize * Math.sin(angle - Math.PI / 6)
+            );
+            ctx.lineTo(
+              point.x + vectorX - arrowSize * Math.cos(angle + Math.PI / 6),
+              point.y + vectorY - arrowSize * Math.sin(angle + Math.PI / 6)
+            );
+            ctx.closePath();
+            ctx.fillStyle = segmentColor;
+            ctx.fill();
+
+            // 显示速度大小
+            ctx.fillStyle = '#333333';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'top';
+            ctx.fillText(
+              `Speed: ${magnitude.toFixed(1)}`,
+              point.x + 10,
+              point.y + 10
+            );
+          }
+        }
+
+        // Initialize
+        initializePoints();
+        startAnimation(); // Auto-start animation
+      });
+    </script>
+  </body>
+</html>

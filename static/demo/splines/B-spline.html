@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>B-Spline Demo</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background-color: #ffffff;
+      }
+      html {
+        background-color: #ffffff;
+      }
+      canvas {
+        border: 1px solid #ccc;
+        margin: 10px 0;
+        background-color: #f9f9f9;
+      }
+      .controls-container {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        width: 800px;
+      }
+      .button-row {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+      }
+      .slider-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      button {
+        padding: 8px 15px;
+        cursor: pointer;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+      }
+      button:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+      }
+      #t-slider {
+        flex-grow: 1;
+      }
+      .canvas-container {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .canvas-label {
+        font-weight: bold;
+        text-align: center;
+        margin-bottom: -5px;
+      }
+      .mode-toggle {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="controls-container">
+      <div class="button-row">
+        <button id="reset">Reset</button>
+        <button id="animate">Animate</button>
+        <div class="mode-toggle">
+          <input type="checkbox" id="show-curvature" checked />
+          <label for="show-curvature">Show Curvature Combs</label>
+        </div>
+        <button id="add-point">Add Point</button>
+        <button id="remove-point">Remove Point</button>
+      </div>
+      <div class="slider-row">
+        <label for="t-slider">t:</label>
+        <input
+          type="range"
+          id="t-slider"
+          min="0"
+          max="1"
+          step="0.01"
+          value="0"
+        />
+        <span id="t-value">0.00</span>
+      </div>
+    </div>
+
+    <div class="canvas-container">
+      <div class="canvas-label">B-Spline Curve</div>
+      <canvas id="main-canvas" width="800" height="400"></canvas>
+
+      <div class="canvas-label">Basis Functions</div>
+      <canvas id="basis-canvas" width="800" height="200"></canvas>
+
+      <div class="canvas-label">First Derivative</div>
+      <canvas id="first-derivative-canvas" width="800" height="200"></canvas>
+
+      <div class="canvas-label">Second Derivative</div>
+      <canvas id="second-derivative-canvas" width="800" height="200"></canvas>
+    </div>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        // Canvas setup
+        const mainCanvas = document.getElementById('main-canvas');
+        const mainCtx = mainCanvas.getContext('2d');
+        const mainWidth = mainCanvas.width;
+        const mainHeight = mainCanvas.height;
+
+        // Basis functions canvas
+        const basisCanvas = document.getElementById('basis-canvas');
+        const basisCtx = basisCanvas.getContext('2d');
+        const basisWidth = basisCanvas.width;
+        const basisHeight = basisCanvas.height;
+
+        // First derivative canvas
+        const firstDerivCanvas = document.getElementById(
+          'first-derivative-canvas'
+        );
+        const firstDerivCtx = firstDerivCanvas.getContext('2d');
+        const firstDerivWidth = firstDerivCanvas.width;
+        const firstDerivHeight = firstDerivCanvas.height;
+
+        // Second derivative canvas
+        const secondDerivCanvas = document.getElementById(
+          'second-derivative-canvas'
+        );
+        const secondDerivCtx = secondDerivCanvas.getContext('2d');
+        const secondDerivWidth = secondDerivCanvas.width;
+        const secondDerivHeight = secondDerivCanvas.height;
+
+        // UI elements
+        const resetBtn = document.getElementById('reset');
+        const animateBtn = document.getElementById('animate');
+        const tSlider = document.getElementById('t-slider');
+        const tValue = document.getElementById('t-value');
+        const showCurvatureToggle = document.getElementById('show-curvature');
+        const addPointBtn = document.getElementById('add-point');
+        const removePointBtn = document.getElementById('remove-point');
+
+        // State
+        const POINT_RADIUS = 8;
+        const DEGREE = 3; // Cubic B-spline
+        let NUM_POINTS = 6; // Initial number of control points
+        let controlPoints = []; // Array of { x, y }
+        let knots = []; // Knot vector
+        let isDragging = false;
+        let dragPointIndex = -1;
+        let isAnimating = false;
+        let animationId = null;
+        let t = 0; // Global t parameter [0,1]
+        let showCurvature = true;
+
+        // Segment colors - vibrant and distinct colors
+        const segmentColors = [
+          '#e41a1c', // Red
+          '#377eb8', // Blue
+          '#4daf4a', // Green
+          '#ff7f00', // Orange
+          '#984ea3', // Purple
+          '#ffff33', // Yellow
+          '#a65628', // Brown
+          '#f781bf', // Pink
+        ];
+
+        // Get color for a segment index
+        function getSegmentColor(segmentIndex) {
+          return segmentColors[segmentIndex % segmentColors.length];
+        }
+
+        // Generate uniform knot vector
+        function generateKnots() {
+          const n = NUM_POINTS - 1; // Index of last control point
+          const m = n + DEGREE + 1; // Number of knots
+
+          knots = [];
+
+          // For cubic B-spline, we need DEGREE+1 knots at start and end
+          for (let i = 0; i <= m; i++) {
+            if (i < DEGREE + 1) {
+              knots.push(0);
+            } else if (i > n) {
+              knots.push(1);
+            } else {
+              knots.push((i - DEGREE) / (n - DEGREE + 1));
+            }
+          }
+        }
+
+        // Initialize points
+        function initializePoints() {
+          controlPoints = [];
+
+          // Create control points
+          const padding = 50;
+          const minX = padding;
+          const maxX = mainWidth - padding;
+          const minY = padding;
+          const maxY = mainHeight - padding;
+          const xStep = (maxX - minX) / (NUM_POINTS - 1);
+
+          for (let i = 0; i < NUM_POINTS; i++) {
+            const x = minX + i * xStep;
+            const yRange = (maxY - minY) * 0.7;
+            const yCenter = minY + (maxY - minY) / 2;
+            const y = yCenter + (Math.random() - 0.5) * yRange;
+
+            controlPoints.push({ x, y });
+          }
+
+          generateKnots();
+          drawAll();
+        }
+
+        // B-spline basis function (Cox-de Boor recursion formula)
+        function basisFunction(i, k, u) {
+          if (k === 0) {
+            return (u >= knots[i] && u < knots[i + 1]) ||
+              (u === 1 && i === knots.length - DEGREE - 2)
+              ? 1
+              : 0;
+          }
+
+          let c1 = 0,
+            c2 = 0;
+
+          const d1 = knots[i + k] - knots[i];
+          if (d1 > 0) {
+            c1 = ((u - knots[i]) / d1) * basisFunction(i, k - 1, u);
+          }
+
+          const d2 = knots[i + k + 1] - knots[i + 1];
+          if (d2 > 0) {
+            c2 = ((knots[i + k + 1] - u) / d2) * basisFunction(i + 1, k - 1, u);
+          }
+
+          return c1 + c2;
+        }
+
+        // Calculate derivative of basis function
+        function basisFunctionDerivative(i, k, u, derivative = 1) {
+          if (derivative === 0) {
+            return basisFunction(i, k, u);
+          }
+
+          if (k === 0) {
+            return 0;
+          }
+
+          let term1 = 0,
+            term2 = 0;
+
+          const d1 = knots[i + k] - knots[i];
+          if (d1 > 0) {
+            term1 =
+              (k / d1) * basisFunctionDerivative(i, k - 1, u, derivative - 1);
+          }
+
+          const d2 = knots[i + k + 1] - knots[i + 1];
+          if (d2 > 0) {
+            term2 =
+              (-k / d2) *
+              basisFunctionDerivative(i + 1, k - 1, u, derivative - 1);
+          }
+
+          return term1 + term2;
+        }
+
+        // Calculate point on B-spline for parameter u
+        function calculateBSplinePoint(u) {
+          let x = 0,
+            y = 0;
+
+          for (let i = 0; i < NUM_POINTS; i++) {
+            const basis = basisFunction(i, DEGREE, u);
+            x += controlPoints[i].x * basis;
+            y += controlPoints[i].y * basis;
+          }
+
+          return { x, y };
+        }
+
+        // Calculate first derivative at a point on the spline
+        function calculateFirstDerivative(u) {
+          let dx = 0,
+            dy = 0;
+
+          for (let i = 0; i < NUM_POINTS; i++) {
+            const derivBasis = basisFunctionDerivative(i, DEGREE, u, 1);
+            dx += controlPoints[i].x * derivBasis;
+            dy += controlPoints[i].y * derivBasis;
+          }
+
+          return { x: dx, y: dy };
+        }
+
+        // Calculate second derivative at a point on the spline
+        function calculateSecondDerivative(u) {
+          let ddx = 0,
+            ddy = 0;
+
+          for (let i = 0; i < NUM_POINTS; i++) {
+            const derivBasis = basisFunctionDerivative(i, DEGREE, u, 2);
+            ddx += controlPoints[i].x * derivBasis;
+            ddy += controlPoints[i].y * derivBasis;
+          }
+
+          return { x: ddx, y: ddy };
+        }
+
+        // Calculate curvature at a point on the spline
+        function calculateCurvature(u) {
+          const firstDeriv = calculateFirstDerivative(u);
+          const secondDeriv = calculateSecondDerivative(u);
+
+          const dx = firstDeriv.x;
+          const dy = firstDeriv.y;
+          const ddx = secondDeriv.x;
+          const ddy = secondDeriv.y;
+
+          const numerator = dx * ddy - dy * ddx;
+          const denominator = Math.pow(dx * dx + dy * dy, 1.5);
+
+          if (denominator === 0) return 0;
+          return numerator / denominator;
+        }
+
+        // Event listeners
+        mainCanvas.addEventListener('mousedown', handleMouseDown);
+        mainCanvas.addEventListener('mousemove', handleMouseMove);
+        mainCanvas.addEventListener('mouseup', () => {
+          isDragging = false;
+          dragPointIndex = -1;
+        });
+        mainCanvas.addEventListener('mouseleave', () => {
+          isDragging = false;
+          dragPointIndex = -1;
+        });
+
+        resetBtn.addEventListener('click', initializePoints);
+        animateBtn.addEventListener('click', toggleAnimation);
+        addPointBtn.addEventListener('click', addControlPoint);
+        removePointBtn.addEventListener('click', removeControlPoint);
+
+        tSlider.addEventListener('input', function () {
+          t = parseFloat(this.value);
+          tValue.textContent = t.toFixed(2);
+          stopAnimation();
+          drawAll();
+        });
+
+        showCurvatureToggle.addEventListener('change', function () {
+          showCurvature = this.checked;
+          drawAll();
+        });
+
+        // Add a new control point
+        function addControlPoint() {
+          if (NUM_POINTS >= 12) return; // Limit to 12 points
+
+          // Add at the end with interpolated position
+          if (NUM_POINTS >= 2) {
+            const lastPoint = controlPoints[NUM_POINTS - 1];
+            const secondLastPoint = controlPoints[NUM_POINTS - 2];
+
+            // Extrapolate position
+            const newX = lastPoint.x + (lastPoint.x - secondLastPoint.x);
+            const newY = lastPoint.y + (lastPoint.y - secondLastPoint.y);
+
+            controlPoints.push({ x: newX, y: newY });
+          } else {
+            controlPoints.push({
+              x: mainWidth / 2,
+              y: mainHeight / 2,
+            });
+          }
+
+          NUM_POINTS++;
+          generateKnots();
+          drawAll();
+          updateRemoveButtonState();
+        }
+
+        // Remove the last control point
+        function removeControlPoint() {
+          if (NUM_POINTS <= 4) return; // Minimum 4 points for cubic B-spline
+
+          controlPoints.pop();
+          NUM_POINTS--;
+          generateKnots();
+          drawAll();
+          updateRemoveButtonState();
+        }
+
+        function updateRemoveButtonState() {
+          removePointBtn.disabled = NUM_POINTS <= 4;
+        }
+
+        // Event handlers
+        function handleMouseDown(e) {
+          const rect = mainCanvas.getBoundingClientRect();
+          const mouseX = e.clientX - rect.left;
+          const mouseY = e.clientY - rect.top;
+
+          // Check if clicking on a control point
+          for (let i = 0; i < controlPoints.length; i++) {
+            const point = controlPoints[i];
+            const distToPoint = Math.sqrt(
+              (mouseX - point.x) ** 2 + (mouseY - point.y) ** 2
+            );
+
+            if (distToPoint < POINT_RADIUS) {
+              isDragging = true;
+              dragPointIndex = i;
+              return;
+            }
+          }
+        }
+
+        function handleMouseMove(e) {
+          if (!isDragging) return;
+
+          const rect = mainCanvas.getBoundingClientRect();
+          const mouseX = e.clientX - rect.left;
+          const mouseY = e.clientY - rect.top;
+
+          // Apply bounds checking
+          const newX = Math.max(0, Math.min(mainWidth, mouseX));
+          const newY = Math.max(0, Math.min(mainHeight, mouseY));
+
+          // Update control point position
+          controlPoints[dragPointIndex].x = newX;
+          controlPoints[dragPointIndex].y = newY;
+
+          drawAll();
+        }
+
+        // Animation functions
+        function toggleAnimation() {
+          if (isAnimating) {
+            stopAnimation();
+          } else {
+            startAnimation();
+          }
+        }
+
+        function startAnimation() {
+          isAnimating = true;
+          animateBtn.textContent = 'Stop';
+          t = 0;
+          tSlider.value = t;
+          tValue.textContent = t.toFixed(2);
+
+          let lastTime = performance.now();
+          const secondsPerCycle = 3;
+
+          function animate(currentTime) {
+            const deltaTime = (currentTime - lastTime) / 1000;
+            lastTime = currentTime;
+
+            t += deltaTime / secondsPerCycle;
+            if (t > 1) {
+              t = 0;
+            }
+
+            tSlider.value = t;
+            tValue.textContent = t.toFixed(2);
+            drawAll();
+
+            animationId = requestAnimationFrame(animate);
+          }
+
+          animationId = requestAnimationFrame(animate);
+        }
+
+        function stopAnimation() {
+          if (animationId) {
+            cancelAnimationFrame(animationId);
+            animationId = null;
+          }
+          isAnimating = false;
+          animateBtn.textContent = 'Animate';
+        }
+
+        // Drawing functions
+        function drawAll() {
+          clearCanvases();
+          drawSpline();
+          drawControlPoints();
+          drawCurrentPosition();
+          drawBasisFunctions();
+          drawFirstDerivative();
+          drawSecondDerivative();
+        }
+
+        function clearCanvases() {
+          mainCtx.clearRect(0, 0, mainWidth, mainHeight);
+          basisCtx.clearRect(0, 0, basisWidth, basisHeight);
+          firstDerivCtx.clearRect(0, 0, firstDerivWidth, firstDerivHeight);
+          secondDerivCtx.clearRect(0, 0, secondDerivWidth, secondDerivHeight);
+
+          // Set main canvas background
+          mainCtx.fillStyle = '#f9f9f9';
+          mainCtx.fillRect(0, 0, mainWidth, mainHeight);
+        }
+
+        function drawSpline() {
+          // Draw the B-spline curve
+          mainCtx.beginPath();
+
+          const steps = 200;
+          let lastPoint = null;
+
+          for (let i = 0; i <= steps; i++) {
+            const u = i / steps;
+            const point = calculateBSplinePoint(u);
+
+            if (i === 0) {
+              mainCtx.moveTo(point.x, point.y);
+            } else {
+              mainCtx.lineTo(point.x, point.y);
+            }
+
+            lastPoint = point;
+          }
+
+          mainCtx.strokeStyle = '#333333';
+          mainCtx.lineWidth = 2;
+          mainCtx.stroke();
+
+          // Draw curvature combs if enabled
+          if (showCurvature) {
+            const curvatureScale = 1000; // Scale factor for curvature visualization
+            const combPoints = [];
+
+            for (let i = 0; i <= steps; i++) {
+              const u = i / steps;
+              const point = calculateBSplinePoint(u);
+              const deriv = calculateFirstDerivative(u);
+              const curvature = calculateCurvature(u);
+
+              // Calculate normal vector (perpendicular to tangent)
+              const tangentMagnitude = Math.sqrt(
+                deriv.x * deriv.x + deriv.y * deriv.y
+              );
+              if (tangentMagnitude > 0) {
+                const nx = -deriv.y / tangentMagnitude;
+                const ny = deriv.x / tangentMagnitude;
+
+                // Draw curvature comb
+                mainCtx.beginPath();
+                mainCtx.moveTo(point.x, point.y);
+
+                const combLength = Math.abs(curvature) * curvatureScale;
+                const combEndX = point.x + nx * combLength;
+                const combEndY = point.y + ny * combLength;
+
+                mainCtx.lineTo(combEndX, combEndY);
+
+                // Store the end points for drawing the curve connecting them
+                combPoints.push({ x: combEndX, y: combEndY });
+
+                mainCtx.strokeStyle = '#999999';
+                mainCtx.lineWidth = 1;
+                mainCtx.stroke();
+              }
+            }
+
+            // Draw curve connecting the comb end points
+            mainCtx.beginPath();
+            for (let i = 0; i < combPoints.length; i++) {
+              if (i === 0) {
+                mainCtx.moveTo(combPoints[i].x, combPoints[i].y);
+              } else {
+                mainCtx.lineTo(combPoints[i].x, combPoints[i].y);
+              }
+            }
+            mainCtx.strokeStyle = '#666666';
+            mainCtx.lineWidth = 1.5;
+            mainCtx.stroke();
+          }
+        }
+
+        function drawControlPoints() {
+          // Draw lines connecting control points
+          mainCtx.beginPath();
+          for (let i = 0; i < controlPoints.length; i++) {
+            const point = controlPoints[i];
+            if (i === 0) {
+              mainCtx.moveTo(point.x, point.y);
+            } else {
+              mainCtx.lineTo(point.x, point.y);
+            }
+          }
+          mainCtx.strokeStyle = '#aaaaaa';
+          mainCtx.lineWidth = 1;
+          mainCtx.setLineDash([5, 5]);
+          mainCtx.stroke();
+          mainCtx.setLineDash([]);
+
+          // Draw control points
+          for (let i = 0; i < controlPoints.length; i++) {
+            const point = controlPoints[i];
+
+            mainCtx.beginPath();
+            mainCtx.arc(point.x, point.y, POINT_RADIUS, 0, Math.PI * 2);
+            mainCtx.fillStyle = '#ffffff';
+            mainCtx.fill();
+            mainCtx.strokeStyle = '#333333';
+            mainCtx.lineWidth = 2;
+            mainCtx.stroke();
+
+            // Draw point index
+            mainCtx.fillStyle = '#000000';
+            mainCtx.font = 'bold 14px Arial';
+            mainCtx.textAlign = 'center';
+            mainCtx.textBaseline = 'middle';
+            mainCtx.fillText(i.toString(), point.x, point.y);
+          }
+        }
+
+        function drawCurrentPosition() {
+          const point = calculateBSplinePoint(t);
+          const derivative = calculateFirstDerivative(t);
+          const secondDerivative = calculateSecondDerivative(t);
+
+          // Calculate velocity magnitude (speed)
+          const speed = Math.sqrt(
+            derivative.x * derivative.x + derivative.y * derivative.y
+          );
+
+          // Draw the point
+          mainCtx.beginPath();
+          mainCtx.arc(point.x, point.y, 8, 0, Math.PI * 2);
+          mainCtx.fillStyle = '#ff0000';
+          mainCtx.fill();
+          mainCtx.strokeStyle = '#ffffff';
+          mainCtx.lineWidth = 2;
+          mainCtx.stroke();
+
+          // Show current t
+          mainCtx.fillStyle = '#ff0000';
+          mainCtx.font = '14px Arial';
+          mainCtx.textAlign = 'center';
+          mainCtx.textBaseline = 'bottom';
+          mainCtx.fillText(`t = ${t.toFixed(2)}`, point.x, point.y - 15);
+
+          // Draw velocity vector
+          if (speed > 0) {
+            // Use direct scaling to preserve actual magnitude
+            const scaleFactor = 0.3; // Scale factor for visualization (can be adjusted)
+            const vectorX = derivative.x * scaleFactor;
+            const vectorY = derivative.y * scaleFactor;
+
+            // Endpoint of velocity vector
+            const velocityEndX = point.x + vectorX;
+            const velocityEndY = point.y + vectorY;
+
+            // Draw velocity vector (blue)
+            mainCtx.beginPath();
+            mainCtx.moveTo(point.x, point.y);
+            mainCtx.lineTo(velocityEndX, velocityEndY);
+            mainCtx.strokeStyle = '#66aaff'; // Light blue
+            mainCtx.lineWidth = 2;
+            mainCtx.stroke();
+
+            // Draw velocity arrowhead
+            const arrowSize = 8;
+            const angle = Math.atan2(vectorY, vectorX);
+
+            mainCtx.beginPath();
+            mainCtx.moveTo(velocityEndX, velocityEndY);
+            mainCtx.lineTo(
+              velocityEndX - arrowSize * Math.cos(angle - Math.PI / 6),
+              velocityEndY - arrowSize * Math.sin(angle - Math.PI / 6)
+            );
+            mainCtx.lineTo(
+              velocityEndX - arrowSize * Math.cos(angle + Math.PI / 6),
+              velocityEndY - arrowSize * Math.sin(angle + Math.PI / 6)
+            );
+            mainCtx.closePath();
+            mainCtx.fillStyle = '#66aaff';
+            mainCtx.fill();
+
+            // Calculate acceleration (second derivative) magnitude
+            const accelMagnitude = Math.sqrt(
+              secondDerivative.x * secondDerivative.x +
+                secondDerivative.y * secondDerivative.y
+            );
+
+            if (accelMagnitude > 0) {
+              // Scale acceleration vector for visualization
+              const accelScaleFactor = 0.1; // Might need tuning
+              const accelVectorX = secondDerivative.x * accelScaleFactor;
+              const accelVectorY = secondDerivative.y * accelScaleFactor;
+
+              // Draw acceleration vector (red) from the end of velocity vector
+              mainCtx.beginPath();
+              mainCtx.moveTo(velocityEndX, velocityEndY);
+              mainCtx.lineTo(
+                velocityEndX + accelVectorX,
+                velocityEndY + accelVectorY
+              );
+              mainCtx.strokeStyle = '#ff4466'; // Red
+              mainCtx.lineWidth = 2;
+              mainCtx.stroke();
+
+              // Draw acceleration arrowhead
+              const accelAngle = Math.atan2(accelVectorY, accelVectorX);
+
+              mainCtx.beginPath();
+              mainCtx.moveTo(
+                velocityEndX + accelVectorX,
+                velocityEndY + accelVectorY
+              );
+              mainCtx.lineTo(
+                velocityEndX +
+                  accelVectorX -
+                  arrowSize * Math.cos(accelAngle - Math.PI / 6),
+                velocityEndY +
+                  accelVectorY -
+                  arrowSize * Math.sin(accelAngle - Math.PI / 6)
+              );
+              mainCtx.lineTo(
+                velocityEndX +
+                  accelVectorX -
+                  arrowSize * Math.cos(accelAngle + Math.PI / 6),
+                velocityEndY +
+                  accelVectorY -
+                  arrowSize * Math.sin(accelAngle + Math.PI / 6)
+              );
+              mainCtx.closePath();
+              mainCtx.fillStyle = '#ff4466';
+              mainCtx.fill();
+            }
+
+            // Display velocity and acceleration magnitude
+            mainCtx.fillStyle = '#333333';
+            mainCtx.font = '12px Arial';
+            mainCtx.textAlign = 'left';
+            mainCtx.textBaseline = 'top';
+            mainCtx.fillText(
+              `Speed: ${speed.toFixed(2)}`,
+              point.x + 15,
+              point.y + 5
+            );
+            mainCtx.fillText(
+              `Accel: ${accelMagnitude.toFixed(2)}`,
+              point.x + 15,
+              point.y + 25
+            );
+          }
+        }
+
+        function drawBasisFunctions() {
+          setupAxes(basisCtx, basisWidth, basisHeight, 'Basis Functions');
+
+          // Draw each basis function with a different color
+          for (let i = 0; i < NUM_POINTS; i++) {
+            basisCtx.beginPath();
+
+            for (let step = 0; step <= 200; step++) {
+              const u = step / 200;
+              const basisValue = basisFunction(i, DEGREE, u);
+
+              // Map to canvas coordinates
+              const x = 40 + (basisWidth - 80) * u;
+              const y = basisHeight - 30 - basisValue * (basisHeight - 60);
+
+              if (step === 0) {
+                basisCtx.moveTo(x, y);
+              } else {
+                basisCtx.lineTo(x, y);
+              }
+            }
+
+            basisCtx.strokeStyle = getSegmentColor(i);
+            basisCtx.lineWidth = 2;
+            basisCtx.stroke();
+
+            // Label for this basis function
+            const u = 0.5; // Position label around middle
+            const basisValue = basisFunction(i, DEGREE, u);
+            const x = 40 + (basisWidth - 80) * u;
+            const y = basisHeight - 30 - basisValue * (basisHeight - 60);
+
+            // Only add label if basis function has significant value at this point
+            if (basisValue > 0.1) {
+              basisCtx.fillStyle = getSegmentColor(i);
+              basisCtx.font = '10px Arial';
+              basisCtx.textAlign = 'center';
+              basisCtx.fillText(`N${(i, 3)}`, x, y - 5);
+            }
+          }
+
+          // Mark current t position
+          markPosition(basisCtx, basisWidth, basisHeight, t);
+        }
+
+        function drawFirstDerivative() {
+          setupAxes(
+            firstDerivCtx,
+            firstDerivWidth,
+            firstDerivHeight,
+            'First Derivative'
+          );
+
+          // Find max derivative magnitude for scaling
+          let maxDeriv = 0;
+          const samples = [];
+
+          for (let step = 0; step <= 200; step++) {
+            const u = step / 200;
+            const deriv = calculateFirstDerivative(u);
+            const magnitude = Math.sqrt(deriv.x * deriv.x + deriv.y * deriv.y);
+            samples.push({ u, magnitude });
+            maxDeriv = Math.max(maxDeriv, magnitude);
+          }
+
+          // Add margin to max
+          maxDeriv *= 1.1;
+
+          // Draw the first derivative function
+          firstDerivCtx.beginPath();
+
+          for (let i = 0; i < samples.length; i++) {
+            const sample = samples[i];
+
+            // Map to canvas coordinates
+            const x = 40 + (firstDerivWidth - 80) * sample.u;
+            const y =
+              firstDerivHeight -
+              30 -
+              (sample.magnitude / maxDeriv) * (firstDerivHeight - 60);
+
+            if (i === 0) {
+              firstDerivCtx.moveTo(x, y);
+            } else {
+              firstDerivCtx.lineTo(x, y);
+            }
+          }
+
+          firstDerivCtx.strokeStyle = '#0066cc';
+          firstDerivCtx.lineWidth = 2;
+          firstDerivCtx.stroke();
+
+          // Mark current t position and value
+          const currentDeriv = calculateFirstDerivative(t);
+          const currentMagnitude = Math.sqrt(
+            currentDeriv.x * currentDeriv.x + currentDeriv.y * currentDeriv.y
+          );
+          const currentX = 40 + (firstDerivWidth - 80) * t;
+          const currentY =
+            firstDerivHeight -
+            30 -
+            (currentMagnitude / maxDeriv) * (firstDerivHeight - 60);
+
+          firstDerivCtx.beginPath();
+          firstDerivCtx.arc(currentX, currentY, 5, 0, Math.PI * 2);
+          firstDerivCtx.fillStyle = '#ff0000';
+          firstDerivCtx.fill();
+
+          // Show current value
+          firstDerivCtx.fillStyle = '#ff0000';
+          firstDerivCtx.font = '12px Arial';
+          firstDerivCtx.textAlign = 'left';
+          firstDerivCtx.fillText(
+            `Value: ${currentMagnitude.toFixed(2)}`,
+            50,
+            20
+          );
+        }
+
+        function drawSecondDerivative() {
+          setupAxes(
+            secondDerivCtx,
+            secondDerivWidth,
+            secondDerivHeight,
+            'Second Derivative'
+          );
+
+          // Find max second derivative magnitude for scaling
+          let maxSecondDeriv = 0;
+          const samples = [];
+
+          for (let step = 0; step <= 200; step++) {
+            const u = step / 200;
+            const secondDeriv = calculateSecondDerivative(u);
+            const magnitude = Math.sqrt(
+              secondDeriv.x * secondDeriv.x + secondDeriv.y * secondDeriv.y
+            );
+            samples.push({ u, magnitude });
+            maxSecondDeriv = Math.max(maxSecondDeriv, magnitude);
+          }
+
+          // Add margin to max
+          maxSecondDeriv *= 1.1;
+          maxSecondDeriv = maxSecondDeriv || 1; // Prevent division by zero
+
+          // Draw the second derivative function
+          secondDerivCtx.beginPath();
+
+          for (let i = 0; i < samples.length; i++) {
+            const sample = samples[i];
+
+            // Map to canvas coordinates
+            const x = 40 + (secondDerivWidth - 80) * sample.u;
+            const y =
+              secondDerivHeight -
+              30 -
+              (sample.magnitude / maxSecondDeriv) * (secondDerivHeight - 60);
+
+            if (i === 0) {
+              secondDerivCtx.moveTo(x, y);
+            } else {
+              secondDerivCtx.lineTo(x, y);
+            }
+          }
+
+          secondDerivCtx.strokeStyle = '#cc3300';
+          secondDerivCtx.lineWidth = 2;
+          secondDerivCtx.stroke();
+
+          // Mark current t position and value
+          const currentSecondDeriv = calculateSecondDerivative(t);
+          const currentMagnitude = Math.sqrt(
+            currentSecondDeriv.x * currentSecondDeriv.x +
+              currentSecondDeriv.y * currentSecondDeriv.y
+          );
+          const currentX = 40 + (secondDerivWidth - 80) * t;
+          const currentY =
+            secondDerivHeight -
+            30 -
+            (currentMagnitude / maxSecondDeriv) * (secondDerivHeight - 60);
+
+          secondDerivCtx.beginPath();
+          secondDerivCtx.arc(currentX, currentY, 5, 0, Math.PI * 2);
+          secondDerivCtx.fillStyle = '#ff0000';
+          secondDerivCtx.fill();
+
+          // Show current value
+          secondDerivCtx.fillStyle = '#ff0000';
+          secondDerivCtx.font = '12px Arial';
+          secondDerivCtx.textAlign = 'left';
+          secondDerivCtx.fillText(
+            `Value: ${currentMagnitude.toFixed(2)}`,
+            50,
+            20
+          );
+        }
+
+        function setupAxes(ctx, width, height, title) {
+          // Fill with light background
+          ctx.fillStyle = '#f9f9f9';
+          ctx.fillRect(0, 0, width, height);
+
+          // Draw title
+          ctx.fillStyle = '#333333';
+          ctx.font = 'bold 12px Arial';
+          ctx.textAlign = 'right';
+          ctx.fillText(title, width - 10, 15);
+
+          // Draw axes
+          ctx.beginPath();
+          // X-axis
+          ctx.moveTo(40, height - 30);
+          ctx.lineTo(width - 40, height - 30);
+          // Y-axis
+          ctx.moveTo(40, height - 30);
+          ctx.lineTo(40, 20);
+          ctx.strokeStyle = '#555555';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          // X-axis labels
+          ctx.fillStyle = '#333333';
+          ctx.font = '12px Arial';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'top';
+          ctx.fillText('0', 40, height - 25);
+          ctx.fillText('0.5', width / 2, height - 25);
+          ctx.fillText('1', width - 40, height - 25);
+
+          // X-axis title
+          ctx.fillText('u', width / 2, height - 5);
+        }
+
+        function markPosition(ctx, width, height, u) {
+          const x = 40 + (width - 80) * u;
+
+          // Vertical line at current t
+          ctx.beginPath();
+          ctx.moveTo(x, 20);
+          ctx.lineTo(x, height - 30);
+          ctx.strokeStyle = '#ff0000';
+          ctx.lineWidth = 1;
+          ctx.setLineDash([3, 3]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+
+        // Initialize
+        initializePoints();
+        updateRemoveButtonState();
+
+        // Start animation after a short delay
+        setTimeout(startAnimation, 500);
+      });
+    </script>
+  </body>
+</html>

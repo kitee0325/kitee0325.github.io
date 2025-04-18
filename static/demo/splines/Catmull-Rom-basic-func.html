@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Catmull-Rom 基函数可视化</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: 20px;
+        background-color: white;
+      }
+      canvas {
+        border: 1px solid #ccc;
+        margin-bottom: 20px;
+        background-color: white;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="catmullRomCanvas" width="800" height="400"></canvas>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        const canvas = document.getElementById('catmullRomCanvas');
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+
+        // 清空画布
+        ctx.clearRect(0, 0, width, height);
+
+        // 绘制坐标轴
+        drawAxis();
+
+        // 绘制函数
+        drawFunction(h1, 'red');
+        drawFunction(h2, 'green');
+        drawFunction(h3, 'blue');
+        drawFunction(h4, 'purple');
+
+        // 绘制图例
+        drawLegend();
+
+        // Catmull-Rom 基函数
+        function h1(t) {
+          return 0.5 * (-Math.pow(t, 3) + 2 * Math.pow(t, 2) - t);
+        }
+
+        function h2(t) {
+          return 0.5 * (3 * Math.pow(t, 3) - 5 * Math.pow(t, 2) + 2);
+        }
+
+        function h3(t) {
+          return 0.5 * (-3 * Math.pow(t, 3) + 4 * Math.pow(t, 2) + t);
+        }
+
+        function h4(t) {
+          return 0.5 * (Math.pow(t, 3) - Math.pow(t, 2));
+        }
+
+        // 绘制坐标轴
+        function drawAxis() {
+          ctx.beginPath();
+          ctx.strokeStyle = '#888';
+          ctx.lineWidth = 1;
+
+          // X轴
+          ctx.moveTo(50, height * 0.7);
+          ctx.lineTo(width - 50, height * 0.7);
+          ctx.stroke();
+
+          // Y轴
+          ctx.moveTo(50, 50);
+          ctx.lineTo(50, height * 0.7 + 50);
+          ctx.stroke();
+
+          // X轴刻度
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'top';
+          ctx.fillStyle = '#000';
+          for (let i = 0; i <= 10; i++) {
+            const x = 50 + (i / 10) * (width - 100);
+            ctx.beginPath();
+            ctx.moveTo(x, height * 0.7 - 5);
+            ctx.lineTo(x, height * 0.7 + 5);
+            ctx.stroke();
+            ctx.fillText((i / 10).toFixed(1), x, height * 0.7 + 10);
+          }
+
+          // Y轴刻度 - 减少下半部分的显示
+          ctx.textAlign = 'right';
+          ctx.textBaseline = 'middle';
+          for (let i = -2; i <= 5; i++) {
+            const y = height * 0.7 - i * 40;
+            ctx.beginPath();
+            ctx.moveTo(45, y);
+            ctx.lineTo(55, y);
+            ctx.stroke();
+            ctx.fillText((i * 0.2).toFixed(1), 40, y);
+          }
+
+          // 轴标签
+          ctx.fillText('t', width - 30, height * 0.7 + 5);
+          ctx.fillText('h(t)', 40, 30);
+        }
+
+        // 绘制函数
+        function drawFunction(func, color) {
+          ctx.beginPath();
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2;
+
+          const xScale = width - 100;
+          const yScale = 200;
+          const xOffset = 50;
+          const yOffset = height * 0.7;
+
+          for (let x = 0; x <= xScale; x++) {
+            const t = x / xScale;
+            const y = func(t) * -yScale;
+
+            if (x === 0) {
+              ctx.moveTo(x + xOffset, y + yOffset);
+            } else {
+              ctx.lineTo(x + xOffset, y + yOffset);
+            }
+          }
+
+          ctx.stroke();
+        }
+
+        // 绘制图例
+        function drawLegend() {
+          const legendX = width - 150;
+          const legendY = 70;
+          const itemHeight = 25;
+          const colorBoxSize = 15;
+
+          ctx.font = '14px Arial';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+
+          // 图例项 h₁(t)
+          ctx.fillStyle = 'red';
+          ctx.fillRect(legendX, legendY, colorBoxSize, colorBoxSize);
+          ctx.fillStyle = 'black';
+          ctx.fillText(
+            'h₁(t)',
+            legendX + colorBoxSize + 5,
+            legendY + colorBoxSize / 2
+          );
+
+          // 图例项 h₂(t)
+          ctx.fillStyle = 'green';
+          ctx.fillRect(
+            legendX,
+            legendY + itemHeight,
+            colorBoxSize,
+            colorBoxSize
+          );
+          ctx.fillStyle = 'black';
+          ctx.fillText(
+            'h₂(t)',
+            legendX + colorBoxSize + 5,
+            legendY + itemHeight + colorBoxSize / 2
+          );
+
+          // 图例项 h₃(t)
+          ctx.fillStyle = 'blue';
+          ctx.fillRect(
+            legendX,
+            legendY + itemHeight * 2,
+            colorBoxSize,
+            colorBoxSize
+          );
+          ctx.fillStyle = 'black';
+          ctx.fillText(
+            'h₃(t)',
+            legendX + colorBoxSize + 5,
+            legendY + itemHeight * 2 + colorBoxSize / 2
+          );
+
+          // 图例项 h₄(t)
+          ctx.fillStyle = 'purple';
+          ctx.fillRect(
+            legendX,
+            legendY + itemHeight * 3,
+            colorBoxSize,
+            colorBoxSize
+          );
+          ctx.fillStyle = 'black';
+          ctx.fillText(
+            'h₄(t)',
+            legendX + colorBoxSize + 5,
+            legendY + itemHeight * 3 + colorBoxSize / 2
+          );
+        }
+      });
+    </script>
+  </body>
+</html>

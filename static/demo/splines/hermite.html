@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hermite Curve Teaching Tool</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background-color: #ffffff;
+      }
+      html {
+        background-color: #ffffff;
+      }
+      canvas {
+        border: 1px solid #ccc;
+        margin: 10px 0;
+        background-color: #f9f9f9;
+      }
+      .controls-container {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        width: 800px;
+      }
+      .button-row {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+      }
+      .slider-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      button {
+        padding: 8px 15px;
+        cursor: pointer;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+      }
+      button:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+      }
+      #t-slider {
+        flex-grow: 1;
+      }
+      .canvas-container {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .canvas-label {
+        font-weight: bold;
+        text-align: center;
+        margin-bottom: -5px;
+      }
+      .vector-length-control {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 10px;
+      }
+      .vector-length-control label {
+        min-width: 120px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="controls-container">
+      <div class="button-row">
+        <button id="reset">Reset</button>
+        <button id="animate">Animate</button>
+      </div>
+      <div class="slider-row">
+        <input
+          type="range"
+          id="t-slider"
+          min="0"
+          max="1"
+          step="0.01"
+          value="0"
+        />
+      </div>
+    </div>
+
+    <div class="canvas-container">
+      <div class="canvas-label">Hermite Curve</div>
+      <canvas id="hermite-canvas" width="800" height="500"></canvas>
+
+      <div class="canvas-label">Hermite Basis Functions</div>
+      <canvas id="basis-canvas" width="800" height="300"></canvas>
+    </div>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        // Canvas setup
+        const canvas = document.getElementById('hermite-canvas');
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+
+        // Basis function canvas
+        const basisCanvas = document.getElementById('basis-canvas');
+        const basisCtx = basisCanvas.getContext('2d');
+        const basisWidth = basisCanvas.width;
+        const basisHeight = basisCanvas.height;
+
+        // UI elements
+        const resetBtn = document.getElementById('reset');
+        const animateBtn = document.getElementById('animate');
+        const tSlider = document.getElementById('t-slider');
+
+        // State
+        let startPoint = { x: 0, y: 0 };
+        let endPoint = { x: 0, y: 0 };
+        let startVelocity = { x: 0, y: 0 };
+        let endVelocity = { x: 0, y: 0 };
+        let isDragging = false;
+        let dragPoint = null;
+        let dragVelocity = null;
+        let isAnimating = false;
+        let animationId = null;
+        let t = 0;
+
+        // Constants
+        const POINT_RADIUS = 8;
+        const VELOCITY_SCALE = 0.3; // Scale for displaying velocity vectors
+
+        // Initialize with default values
+        function initializePoints() {
+          startPoint = { x: width * 0.2, y: height * 0.5 };
+          endPoint = { x: width * 0.8, y: height * 0.5 };
+
+          // Initial velocity vectors (horizontal)
+          startVelocity = { x: 100, y: 0 };
+          endVelocity = { x: -100, y: 0 };
+
+          drawAll();
+        }
+
+        // Event listeners
+        canvas.addEventListener('mousedown', handleMouseDown);
+        canvas.addEventListener('mousemove', handleMouseMove);
+        canvas.addEventListener('mouseup', () => {
+          isDragging = false;
+          dragPoint = null;
+          dragVelocity = null;
+        });
+        canvas.addEventListener('mouseleave', () => {
+          isDragging = false;
+          dragPoint = null;
+          dragVelocity = null;
+        });
+
+        resetBtn.addEventListener('click', initializePoints);
+        animateBtn.addEventListener('click', toggleAnimation);
+
+        tSlider.addEventListener('input', function () {
+          t = parseFloat(this.value);
+          stopAnimation();
+          drawAll();
+        });
+
+        // Event handlers
+        function handleMouseDown(e) {
+          const rect = canvas.getBoundingClientRect();
+          const mouseX = e.clientX - rect.left;
+          const mouseY = e.clientY - rect.top;
+
+          // Check if we're clicking on a point or vector control point
+          const distToStart = distance(
+            mouseX,
+            mouseY,
+            startPoint.x,
+            startPoint.y
+          );
+          const distToEnd = distance(mouseX, mouseY, endPoint.x, endPoint.y);
+
+          // Calculate positions of velocity control points
+          const startVelocityPoint = {
+            x: startPoint.x + startVelocity.x * VELOCITY_SCALE,
+            y: startPoint.y + startVelocity.y * VELOCITY_SCALE,
+          };
+
+          const endVelocityPoint = {
+            x: endPoint.x + endVelocity.x * VELOCITY_SCALE,
+            y: endPoint.y + endVelocity.y * VELOCITY_SCALE,
+          };
+
+          const distToStartVelocity = distance(
+            mouseX,
+            mouseY,
+            startVelocityPoint.x,
+            startVelocityPoint.y
+          );
+          const distToEndVelocity = distance(
+            mouseX,
+            mouseY,
+            endVelocityPoint.x,
+            endVelocityPoint.y
+          );
+
+          if (distToStart < POINT_RADIUS) {
+            isDragging = true;
+            dragPoint = 'start';
+            return;
+          }
+
+          if (distToEnd < POINT_RADIUS) {
+            isDragging = true;
+            dragPoint = 'end';
+            return;
+          }
+
+          if (distToStartVelocity < POINT_RADIUS) {
+            isDragging = true;
+            dragVelocity = 'start';
+            return;
+          }
+
+          if (distToEndVelocity < POINT_RADIUS) {
+            isDragging = true;
+            dragVelocity = 'end';
+            return;
+          }
+        }
+
+        function handleMouseMove(e) {
+          if (!isDragging) return;
+
+          const rect = canvas.getBoundingClientRect();
+          const mouseX = e.clientX - rect.left;
+          const mouseY = e.clientY - rect.top;
+
+          // Constrain to canvas bounds
+          const boundedX = Math.max(0, Math.min(width, mouseX));
+          const boundedY = Math.max(0, Math.min(height, mouseY));
+
+          if (dragPoint === 'start') {
+            startPoint.x = boundedX;
+            startPoint.y = boundedY;
+          } else if (dragPoint === 'end') {
+            endPoint.x = boundedX;
+            endPoint.y = boundedY;
+          } else if (dragVelocity === 'start') {
+            // Update velocity vector based on mouse position relative to startPoint
+            startVelocity.x = (boundedX - startPoint.x) / VELOCITY_SCALE;
+            startVelocity.y = (boundedY - startPoint.y) / VELOCITY_SCALE;
+          } else if (dragVelocity === 'end') {
+            // Update velocity vector based on mouse position relative to endPoint
+            endVelocity.x = (boundedX - endPoint.x) / VELOCITY_SCALE;
+            endVelocity.y = (boundedY - endPoint.y) / VELOCITY_SCALE;
+          }
+
+          drawAll();
+        }
+
+        // Utility function to calculate distance between points
+        function distance(x1, y1, x2, y2) {
+          return Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+        }
+
+        // Animation functions
+        function toggleAnimation() {
+          if (isAnimating) {
+            stopAnimation();
+          } else {
+            startAnimation();
+          }
+        }
+
+        function startAnimation() {
+          isAnimating = true;
+          animateBtn.textContent = 'Stop';
+          t = 0;
+          tSlider.value = t;
+
+          function animate() {
+            t += 0.005;
+            if (t > 1) {
+              t = 0;
+            }
+
+            tSlider.value = t;
+            drawAll();
+
+            animationId = requestAnimationFrame(animate);
+          }
+
+          animationId = requestAnimationFrame(animate);
+        }
+
+        function stopAnimation() {
+          if (animationId) {
+            cancelAnimationFrame(animationId);
+            animationId = null;
+          }
+          isAnimating = false;
+          animateBtn.textContent = 'Animate';
+        }
+
+        // Hermite basis functions
+        function h0(t) {
+          return 2 * t * t * t - 3 * t * t + 1;
+        }
+
+        function h1(t) {
+          return -2 * t * t * t + 3 * t * t;
+        }
+
+        function h2(t) {
+          return t * t * t - 2 * t * t + t;
+        }
+
+        function h3(t) {
+          return t * t * t - t * t;
+        }
+
+        // Calculate point on Hermite curve for parameter t
+        function calculateHermitePoint(t) {
+          const h0t = h0(t);
+          const h1t = h1(t);
+          const h2t = h2(t);
+          const h3t = h3(t);
+
+          return {
+            x:
+              h0t * startPoint.x +
+              h1t * endPoint.x +
+              h2t * startVelocity.x +
+              h3t * endVelocity.x,
+            y:
+              h0t * startPoint.y +
+              h1t * endPoint.y +
+              h2t * startVelocity.y +
+              h3t * endVelocity.y,
+          };
+        }
+
+        // Drawing functions
+        function drawAll() {
+          ctx.clearRect(0, 0, width, height);
+          basisCtx.clearRect(0, 0, basisWidth, basisHeight);
+
+          // Draw the Hermite curve
+          drawHermiteCurve();
+
+          // Draw control points and velocity vectors
+          drawControlPoints();
+
+          // Draw basis functions
+          drawBasisFunctions();
+
+          // Draw current t marker on basis functions
+          drawTMarker();
+        }
+
+        function drawControlPoints() {
+          // Draw line connecting control points
+          ctx.beginPath();
+          ctx.moveTo(startPoint.x, startPoint.y);
+          ctx.lineTo(endPoint.x, endPoint.y);
+          ctx.strokeStyle = '#aaaaaa';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          // Draw start point
+          ctx.beginPath();
+          ctx.arc(startPoint.x, startPoint.y, POINT_RADIUS, 0, Math.PI * 2);
+          ctx.fillStyle = '#3366cc';
+          ctx.fill();
+          ctx.strokeStyle = '#333';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          // Draw end point
+          ctx.beginPath();
+          ctx.arc(endPoint.x, endPoint.y, POINT_RADIUS, 0, Math.PI * 2);
+          ctx.fillStyle = '#cc3366';
+          ctx.fill();
+          ctx.strokeStyle = '#333';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          // Draw start velocity vector
+          const startVelocityEndpoint = {
+            x: startPoint.x + startVelocity.x * VELOCITY_SCALE,
+            y: startPoint.y + startVelocity.y * VELOCITY_SCALE,
+          };
+
+          ctx.beginPath();
+          ctx.moveTo(startPoint.x, startPoint.y);
+          ctx.lineTo(startVelocityEndpoint.x, startVelocityEndpoint.y);
+          ctx.strokeStyle = '#3366cc';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          // Draw start velocity control point
+          ctx.beginPath();
+          ctx.arc(
+            startVelocityEndpoint.x,
+            startVelocityEndpoint.y,
+            POINT_RADIUS - 2,
+            0,
+            Math.PI * 2
+          );
+          ctx.fillStyle = '#3366cc';
+          ctx.fill();
+          ctx.strokeStyle = '#333';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          // Draw end velocity vector
+          const endVelocityEndpoint = {
+            x: endPoint.x + endVelocity.x * VELOCITY_SCALE,
+            y: endPoint.y + endVelocity.y * VELOCITY_SCALE,
+          };
+
+          ctx.beginPath();
+          ctx.moveTo(endPoint.x, endPoint.y);
+          ctx.lineTo(endVelocityEndpoint.x, endVelocityEndpoint.y);
+          ctx.strokeStyle = '#cc3366';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          // Draw end velocity control point
+          ctx.beginPath();
+          ctx.arc(
+            endVelocityEndpoint.x,
+            endVelocityEndpoint.y,
+            POINT_RADIUS - 2,
+            0,
+            Math.PI * 2
+          );
+          ctx.fillStyle = '#cc3366';
+          ctx.fill();
+          ctx.strokeStyle = '#333';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          // Draw labels
+          ctx.fillStyle = '#333';
+          ctx.font = '12px Arial';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+          ctx.fillText('P₀', startPoint.x, startPoint.y - 10);
+          ctx.fillText('P₁', endPoint.x, endPoint.y - 10);
+          ctx.fillText(
+            'v₀',
+            startVelocityEndpoint.x,
+            startVelocityEndpoint.y - 10
+          );
+          ctx.fillText('v₁', endVelocityEndpoint.x, endVelocityEndpoint.y - 10);
+        }
+
+        function drawHermiteCurve() {
+          ctx.beginPath();
+          const steps = 100;
+
+          for (let i = 0; i <= steps; i++) {
+            const curT = i / steps;
+            const point = calculateHermitePoint(curT);
+
+            if (i === 0) {
+              ctx.moveTo(point.x, point.y);
+            } else {
+              ctx.lineTo(point.x, point.y);
+            }
+          }
+
+          ctx.strokeStyle = '#0066cc';
+          ctx.lineWidth = 3;
+          ctx.stroke();
+
+          // Draw the point at the current t value
+          const currentPoint = calculateHermitePoint(t);
+          ctx.beginPath();
+          ctx.arc(currentPoint.x, currentPoint.y, 8, 0, Math.PI * 2);
+          ctx.fillStyle = '#ff0000';
+          ctx.fill();
+          ctx.strokeStyle = '#000';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+
+        function drawBasisFunctions() {
+          // Draw axes
+          basisCtx.beginPath();
+          // X-axis
+          basisCtx.moveTo(0, basisHeight - 30);
+          basisCtx.lineTo(basisWidth, basisHeight - 30);
+          // Y-axis
+          basisCtx.moveTo(30, 0);
+          basisCtx.lineTo(30, basisHeight);
+          basisCtx.strokeStyle = '#333';
+          basisCtx.lineWidth = 1;
+          basisCtx.stroke();
+
+          // X-axis labels
+          basisCtx.fillStyle = '#333';
+          basisCtx.font = '12px Arial';
+          basisCtx.textAlign = 'center';
+          basisCtx.textBaseline = 'top';
+          basisCtx.fillText('0', 30, basisHeight - 25);
+          basisCtx.fillText('1', basisWidth - 30, basisHeight - 25);
+          basisCtx.fillText('t', basisWidth / 2, basisHeight - 25);
+
+          // Y-axis labels
+          basisCtx.textAlign = 'right';
+          basisCtx.textBaseline = 'middle';
+          basisCtx.fillText('0', 25, basisHeight - 30);
+          basisCtx.fillText('1', 25, 30);
+          basisCtx.fillText('-1', 25, basisHeight - 30 + (basisHeight - 60));
+
+          // Draw the four Hermite basis functions
+          drawBasisFunction(h0, '#3366cc', 'H₀(t)'); // Blue for start point
+          drawBasisFunction(h1, '#cc3366', 'H₁(t)'); // Red for end point
+          drawBasisFunction(h2, '#33cc66', 'H₂(t)'); // Green for start velocity
+          drawBasisFunction(h3, '#cc9933', 'H₃(t)'); // Yellow for end velocity
+        }
+
+        function drawBasisFunction(func, color, label) {
+          basisCtx.beginPath();
+          const steps = 100;
+
+          for (let i = 0; i <= steps; i++) {
+            const tValue = i / steps;
+            const xPos = 30 + (basisWidth - 60) * tValue;
+            const funcValue = func(tValue);
+
+            // Scale the function value to fit in our canvas
+            // Note: Some Hermite basis functions go outside [0,1] range
+            const yPos =
+              basisHeight - 30 - (funcValue * (basisHeight - 60)) / 2;
+
+            if (i === 0) {
+              basisCtx.moveTo(xPos, yPos);
+            } else {
+              basisCtx.lineTo(xPos, yPos);
+            }
+          }
+
+          basisCtx.strokeStyle = color;
+          basisCtx.lineWidth = 2;
+          basisCtx.stroke();
+
+          // Add label for the function
+          // Find a good position for the label (near the peak or middle of the function)
+          let labelPos = 0.5;
+          if (func === h0) labelPos = 0.2;
+          if (func === h1) labelPos = 0.8;
+          if (func === h2) labelPos = 0.3;
+          if (func === h3) labelPos = 0.7;
+
+          const xPos = 30 + (basisWidth - 60) * labelPos;
+          const yPos =
+            basisHeight - 30 - (func(labelPos) * (basisHeight - 60)) / 2;
+
+          basisCtx.fillStyle = color;
+          basisCtx.textAlign = 'center';
+          basisCtx.textBaseline = 'bottom';
+          basisCtx.font = '12px Arial';
+          basisCtx.fillText(label, xPos, yPos - 5);
+        }
+
+        function drawTMarker() {
+          // Draw vertical line at current t value
+          const xPos = 30 + (basisWidth - 60) * t;
+
+          basisCtx.beginPath();
+          basisCtx.moveTo(xPos, 0);
+          basisCtx.lineTo(xPos, basisHeight - 30);
+          basisCtx.strokeStyle = '#ff0000';
+          basisCtx.lineWidth = 2;
+          basisCtx.stroke();
+
+          // Draw a dot on each basis function at current t
+          const basisFunctions = [
+            { func: h0, color: '#3366cc' },
+            { func: h1, color: '#cc3366' },
+            { func: h2, color: '#33cc66' },
+            { func: h3, color: '#cc9933' },
+          ];
+
+          for (const bf of basisFunctions) {
+            const value = bf.func(t);
+            const yPos = basisHeight - 30 - (value * (basisHeight - 60)) / 2;
+
+            basisCtx.beginPath();
+            basisCtx.arc(xPos, yPos, 5, 0, Math.PI * 2);
+            basisCtx.fillStyle = bf.color;
+            basisCtx.fill();
+            basisCtx.strokeStyle = '#333';
+            basisCtx.lineWidth = 1;
+            basisCtx.stroke();
+
+            // Show value text
+            basisCtx.fillStyle = '#333';
+            basisCtx.textAlign = 'left';
+            basisCtx.textBaseline = 'middle';
+            basisCtx.font = '10px Arial';
+            basisCtx.fillText(value.toFixed(2), xPos + 8, yPos);
+          }
+
+          // Show t value
+          basisCtx.fillStyle = '#ff0000';
+          basisCtx.textAlign = 'center';
+          basisCtx.textBaseline = 'top';
+          basisCtx.font = '12px Arial';
+          basisCtx.fillText(`t = ${t.toFixed(2)}`, xPos, 5);
+        }
+
+        // Initialize
+        initializePoints();
+        startAnimation(); // Start animation automatically when page loads
+      });
+    </script>
+  </body>
+</html>

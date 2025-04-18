@@ -1,0 +1,1363 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cardinal Spline Demonstration</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background-color: #ffffff;
+      }
+      html {
+        background-color: #ffffff;
+      }
+      canvas {
+        border: 1px solid #ccc;
+        margin: 10px 0;
+        background-color: #f9f9f9;
+      }
+      .controls-container {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        width: 800px;
+      }
+      .button-row {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+      }
+      .slider-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .slider-label {
+        min-width: 160px;
+      }
+      button {
+        padding: 8px 15px;
+        cursor: pointer;
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        border-radius: 4px;
+      }
+      button:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+      }
+      input[type='range'] {
+        flex-grow: 1;
+      }
+      .checkbox-container {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        margin-left: 10px;
+      }
+      .canvas-container {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .canvas-label {
+        font-weight: bold;
+        text-align: center;
+        margin-bottom: -5px;
+      }
+      .mirror-point {
+        stroke-dasharray: 4, 4;
+        stroke: #ff5722;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="controls-container">
+      <div class="button-row">
+        <button id="reset">Reset</button>
+        <button id="animate">Animate</button>
+        <div class="checkbox-container">
+          <input type="checkbox" id="show-curvature" />
+          <label for="show-curvature">Show Curvature Comb</label>
+        </div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">Animation Parameter (t):</div>
+        <input
+          type="range"
+          id="t-slider"
+          min="0"
+          max="1"
+          step="0.01"
+          value="0"
+        />
+        <div id="t-value">0.00</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">Tension:</div>
+        <input
+          type="range"
+          id="tension-slider"
+          min="0.1"
+          max="2"
+          step="0.1"
+          value="1"
+        />
+        <div id="tension-value">1.00</div>
+      </div>
+    </div>
+
+    <div class="canvas-container">
+      <div class="canvas-label">Cardinal Spline</div>
+      <canvas id="spline-canvas" width="800" height="500"></canvas>
+
+      <div class="canvas-label">Velocity (First Derivative)</div>
+      <canvas id="derivative-canvas" width="800" height="200"></canvas>
+    </div>
+
+    <script>
+      document.addEventListener('DOMContentLoaded', function () {
+        // Canvas setup
+        const canvas = document.getElementById('spline-canvas');
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+
+        // Derivative canvas
+        const derivativeCanvas = document.getElementById('derivative-canvas');
+        const derivativeCtx = derivativeCanvas.getContext('2d');
+        const derivativeWidth = derivativeCanvas.width;
+        const derivativeHeight = derivativeCanvas.height;
+
+        // UI elements
+        const resetBtn = document.getElementById('reset');
+        const animateBtn = document.getElementById('animate');
+        const tSlider = document.getElementById('t-slider');
+        const tValue = document.getElementById('t-value');
+        const tensionSlider = document.getElementById('tension-slider');
+        const tensionValue = document.getElementById('tension-value');
+        const showCurvatureToggle = document.getElementById('show-curvature');
+
+        // State
+        const POINT_RADIUS = 8;
+        const NUM_POINTS = 5; // Number of control points
+        const NUM_SEGMENTS = NUM_POINTS - 1; // Number of segments
+        let controlPoints = []; // Array of { x, y } points
+        let isDragging = false;
+        let dragPointIndex = -1;
+        let isAnimating = false;
+        let animationId = null;
+        let t = 0; // Global t parameter [0,1]
+        let tension = 1.0; // Cardinal spline tension parameter
+        let showCurvature = false; // Flag to toggle curvature comb display
+        const ORANGE_COLOR_INDEX = 3; // Added for clarity
+
+        // Segment colors - vibrant and distinct colors for each segment
+        const segmentColors = [
+          '#e41a1c', // Red
+          '#377eb8', // Blue
+          '#4daf4a', // Green
+          '#ffd700', // Yellow
+        ];
+
+        // Get color for a segment index
+        function getSegmentColor(segmentIndex) {
+          return segmentColors[segmentIndex % segmentColors.length];
+        }
+
+        // Get color for velocity vectors - different from segment colors
+        function getVelocityColor(segmentIndex) {
+          // Use different colors for velocity vectors
+          const velocityColors = [
+            '#9932cc', // Dark Orchid
+            '#00bfff', // Deep Sky Blue
+            '#32cd32', // Lime Green
+            '#ffa500', // Orange
+          ];
+          return velocityColors[segmentIndex % velocityColors.length];
+        }
+
+        // Initialize points
+        function initializePoints() {
+          controlPoints = [];
+
+          // Create control points
+          const padding = 100;
+          const minX = padding;
+          const maxX = width - padding;
+          const minY = padding;
+          const maxY = height - padding;
+          const xStep = (maxX - minX) / (NUM_POINTS - 1);
+
+          // First generate all points with random y positions
+          for (let i = 0; i < NUM_POINTS; i++) {
+            const x = minX + i * xStep;
+            const yRange = (maxY - minY) * 0.7;
+            const yCenter = minY + (maxY - minY) / 2;
+            const y = yCenter + (Math.random() - 0.5) * yRange;
+
+            controlPoints.push({ x, y });
+          }
+
+          // Adjust positions of first and last points to ensure mirror points are reasonable
+          if (NUM_POINTS >= 2) {
+            // For the first point (P0) and second point (P1)
+            // Make sure P1 is not too far from P0, so that P-1 (mirror) stays reasonably close
+            const p0 = controlPoints[0];
+            const p1 = controlPoints[1];
+            const maxOffset = 150; // Maximum allowed distance between P0 and P1
+
+            // Calculate current distance between P0 and P1
+            const dx = p1.x - p0.x;
+            const dy = p1.y - p0.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            // If distance is too large, adjust P1 to be closer to P0
+            if (dist > maxOffset) {
+              const scale = maxOffset / dist;
+              controlPoints[1].x = p0.x + dx * scale;
+              controlPoints[1].y = p0.y + dy * scale;
+            }
+
+            // For the last point (Pn) and second last point (Pn-1)
+            const pn = controlPoints[NUM_POINTS - 1];
+            const pn_1 = controlPoints[NUM_POINTS - 2];
+
+            // Calculate current distance between Pn and Pn-1
+            const dx2 = pn.x - pn_1.x;
+            const dy2 = pn.y - pn_1.y;
+            const dist2 = Math.sqrt(dx2 * dx2 + dy2 * dy2);
+
+            // If distance is too large, adjust Pn to be closer to Pn-1
+            if (dist2 > maxOffset) {
+              const scale2 = maxOffset / dist2;
+              controlPoints[NUM_POINTS - 1].x = pn_1.x + dx2 * scale2;
+              controlPoints[NUM_POINTS - 1].y = pn_1.y + dy2 * scale2;
+            }
+          }
+
+          drawAll();
+        }
+
+        // Calculate velocity vectors for Cardinal spline
+        function getCardinalVelocity(index) {
+          // For Cardinal splines, velocity at point Pi is tension * (P_{i+1} - P_{i-1})
+          if (index <= 0 || index >= controlPoints.length - 1) {
+            // Special case for endpoints - will be handled separately
+            return { vx: 0, vy: 0 };
+          }
+
+          const prev = controlPoints[index - 1];
+          const next = controlPoints[index + 1];
+
+          return {
+            vx: tension * (next.x - prev.x),
+            vy: tension * (next.y - prev.y),
+          };
+        }
+
+        // Calculate endpoint velocities - for the first and last points
+        function getEndpointVelocity(isFirst) {
+          if (isFirst) {
+            // For first point
+            if (controlPoints.length < 2) return { vx: 0, vy: 0 };
+
+            // Mirror the second point across the first point
+            const p0 = controlPoints[0];
+            const p1 = controlPoints[1];
+
+            // Imagine p_{-1} as the reflection of p1 across p0
+            // This would make p_{-1} = p0 - (p1 - p0) = 2*p0 - p1
+            // So the velocity at p0 would be tension * (p1 - p_{-1})
+            // = tension * (p1 - (2*p0 - p1)) = tension * (2*p1 - 2*p0)
+            return {
+              vx: tension * 2 * (p1.x - p0.x),
+              vy: tension * 2 * (p1.y - p0.y),
+            };
+          } else {
+            // For last point
+            if (controlPoints.length < 2) return { vx: 0, vy: 0 };
+
+            const pn = controlPoints[controlPoints.length - 1];
+            const pn_1 = controlPoints[controlPoints.length - 2];
+
+            // Similar reflection principle for the last point
+            return {
+              vx: tension * 2 * (pn.x - pn_1.x),
+              vy: tension * 2 * (pn.y - pn_1.y),
+            };
+          }
+        }
+
+        // Get the mirrored point for endpoint visualization
+        function getMirroredPoint(isFirst) {
+          if (isFirst) {
+            // Mirror the second point across the first point
+            if (controlPoints.length < 2) return null;
+
+            const p0 = controlPoints[0];
+            const p1 = controlPoints[1];
+
+            // Calculate mirrored point - no boundary restrictions
+            return {
+              x: 2 * p0.x - p1.x,
+              y: 2 * p0.y - p1.y,
+            };
+          } else {
+            // Mirror the second-to-last point across the last point
+            if (controlPoints.length < 2) return null;
+
+            const pn = controlPoints[controlPoints.length - 1];
+            const pn_1 = controlPoints[controlPoints.length - 2];
+
+            // Calculate mirrored point - no boundary restrictions
+            return {
+              x: 2 * pn.x - pn_1.x,
+              y: 2 * pn.y - pn_1.y,
+            };
+          }
+        }
+
+        // Event listeners
+        canvas.addEventListener('mousedown', handleMouseDown);
+        canvas.addEventListener('mousemove', handleMouseMove);
+        canvas.addEventListener('mouseup', () => {
+          isDragging = false;
+          dragPointIndex = -1;
+        });
+        canvas.addEventListener('mouseleave', () => {
+          isDragging = false;
+          dragPointIndex = -1;
+        });
+
+        resetBtn.addEventListener('click', initializePoints);
+        animateBtn.addEventListener('click', toggleAnimation);
+
+        tSlider.addEventListener('input', function () {
+          t = parseFloat(this.value);
+          tValue.textContent = t.toFixed(2);
+          stopAnimation();
+          drawAll();
+        });
+
+        tensionSlider.addEventListener('input', function () {
+          tension = parseFloat(this.value);
+          tensionValue.textContent = tension.toFixed(2);
+          drawAll();
+        });
+
+        showCurvatureToggle.addEventListener('change', function () {
+          showCurvature = this.checked;
+          drawAll();
+        });
+
+        // Event handlers
+        function handleMouseDown(e) {
+          const rect = canvas.getBoundingClientRect();
+          const mouseX = e.clientX - rect.left;
+          const mouseY = e.clientY - rect.top;
+
+          // Check if clicking on a control point
+          for (let i = 0; i < controlPoints.length; i++) {
+            const point = controlPoints[i];
+            const distToPoint = Math.sqrt(
+              (mouseX - point.x) ** 2 + (mouseY - point.y) ** 2
+            );
+
+            if (distToPoint < POINT_RADIUS) {
+              isDragging = true;
+              dragPointIndex = i;
+              return;
+            }
+          }
+        }
+
+        function handleMouseMove(e) {
+          if (!isDragging) return;
+
+          const rect = canvas.getBoundingClientRect();
+          const mouseX = e.clientX - rect.left;
+          const mouseY = e.clientY - rect.top;
+
+          // Apply bounds checking
+          const newX = Math.max(0, Math.min(width, mouseX));
+          const newY = Math.max(0, Math.min(height, mouseY));
+
+          // Update point position
+          controlPoints[dragPointIndex].x = newX;
+          controlPoints[dragPointIndex].y = newY;
+
+          drawAll();
+        }
+
+        // Animation functions
+        function toggleAnimation() {
+          if (isAnimating) {
+            stopAnimation();
+          } else {
+            startAnimation();
+          }
+        }
+
+        function startAnimation() {
+          // Make sure points are initialized before starting animation
+          if (!controlPoints || controlPoints.length < NUM_POINTS) {
+            initializePoints();
+          }
+
+          isAnimating = true;
+          animateBtn.textContent = 'Stop';
+          t = 0;
+          tSlider.value = t;
+          tValue.textContent = t.toFixed(2);
+
+          let lastTime = performance.now();
+          const secondsPerCycle = 3;
+
+          function animate(currentTime) {
+            const deltaTime = (currentTime - lastTime) / 1000;
+            lastTime = currentTime;
+
+            t += deltaTime / secondsPerCycle;
+            if (t > 1) {
+              t = 0;
+            }
+
+            tSlider.value = t;
+            tValue.textContent = t.toFixed(2);
+            drawAll();
+
+            animationId = requestAnimationFrame(animate);
+          }
+
+          animationId = requestAnimationFrame(animate);
+        }
+
+        function stopAnimation() {
+          if (animationId) {
+            cancelAnimationFrame(animationId);
+            animationId = null;
+          }
+          isAnimating = false;
+          animateBtn.textContent = 'Animate';
+        }
+
+        // Hermite interpolation functions (used for Cardinal splines)
+        function h00(t) {
+          return 2 * t * t * t - 3 * t * t + 1;
+        }
+        function h10(t) {
+          return t * t * t - 2 * t * t + t;
+        }
+        function h01(t) {
+          return -2 * t * t * t + 3 * t * t;
+        }
+        function h11(t) {
+          return t * t * t - t * t;
+        }
+
+        // Calculate point on Cardinal spline for parameter t
+        function calculateSplinePoint(globalT) {
+          // Map global t [0,1] to segment index and local t
+          const segmentIndex = Math.min(
+            NUM_SEGMENTS - 1,
+            Math.floor(globalT * NUM_SEGMENTS)
+          );
+          const localT = globalT * NUM_SEGMENTS - segmentIndex;
+
+          // Check if control points have been initialized properly
+          if (
+            !controlPoints ||
+            controlPoints.length < 2 ||
+            !controlPoints[segmentIndex] ||
+            !controlPoints[segmentIndex + 1]
+          ) {
+            return { x: width / 2, y: height / 2 }; // Return center point if points aren't ready
+          }
+
+          const p0 = controlPoints[segmentIndex];
+          const p1 = controlPoints[segmentIndex + 1];
+
+          // Get velocity vectors using cardinal spline rules
+          let v0, v1;
+
+          if (segmentIndex === 0) {
+            v0 = getEndpointVelocity(true);
+          } else {
+            v0 = getCardinalVelocity(segmentIndex);
+          }
+
+          if (segmentIndex === NUM_SEGMENTS - 1) {
+            v1 = getEndpointVelocity(false);
+          } else {
+            v1 = getCardinalVelocity(segmentIndex + 1);
+          }
+
+          return {
+            x:
+              h00(localT) * p0.x +
+              h10(localT) * v0.vx +
+              h01(localT) * p1.x +
+              h11(localT) * v1.vx,
+            y:
+              h00(localT) * p0.y +
+              h10(localT) * v0.vy +
+              h01(localT) * p1.y +
+              h11(localT) * v1.vy,
+          };
+        }
+
+        // Calculate derivative (velocity) at a point on the spline
+        function calculateSplineDerivative(globalT) {
+          // Map global t [0,1] to segment index and local t
+          const segmentIndex = Math.min(
+            NUM_SEGMENTS - 1,
+            Math.floor(globalT * NUM_SEGMENTS)
+          );
+          const localT = globalT * NUM_SEGMENTS - segmentIndex;
+
+          // Check if control points have been initialized properly
+          if (
+            !controlPoints ||
+            controlPoints.length < 2 ||
+            !controlPoints[segmentIndex] ||
+            !controlPoints[segmentIndex + 1]
+          ) {
+            return { x: 0, y: 0 }; // Return zero vector if points aren't ready
+          }
+
+          const p0 = controlPoints[segmentIndex];
+          const p1 = controlPoints[segmentIndex + 1];
+
+          // Get velocity vectors
+          let v0, v1;
+
+          if (segmentIndex === 0) {
+            v0 = getEndpointVelocity(true);
+          } else {
+            v0 = getCardinalVelocity(segmentIndex);
+          }
+
+          if (segmentIndex === NUM_SEGMENTS - 1) {
+            v1 = getEndpointVelocity(false);
+          } else {
+            v1 = getCardinalVelocity(segmentIndex + 1);
+          }
+
+          // Derivatives of the basis functions
+          const dh00 = 6 * localT * localT - 6 * localT;
+          const dh10 = 3 * localT * localT - 4 * localT + 1;
+          const dh01 = -6 * localT * localT + 6 * localT;
+          const dh11 = 3 * localT * localT - 2 * localT;
+
+          // Scale by NUM_SEGMENTS because we're compressing t into [0,1]
+          return {
+            x:
+              (dh00 * p0.x + dh10 * v0.vx + dh01 * p1.x + dh11 * v1.vx) *
+              NUM_SEGMENTS,
+            y:
+              (dh00 * p0.y + dh10 * v0.vy + dh01 * p1.y + dh11 * v1.vy) *
+              NUM_SEGMENTS,
+          };
+        }
+
+        // Calculate second derivative (acceleration) for curvature calculation
+        function calculateSplineSecondDerivative(globalT) {
+          // Map global t [0,1] to segment index and local t
+          const segmentIndex = Math.min(
+            NUM_SEGMENTS - 1,
+            Math.floor(globalT * NUM_SEGMENTS)
+          );
+          const localT = globalT * NUM_SEGMENTS - segmentIndex;
+
+          // Check if control points have been initialized properly
+          if (
+            !controlPoints ||
+            controlPoints.length < 2 ||
+            !controlPoints[segmentIndex] ||
+            !controlPoints[segmentIndex + 1]
+          ) {
+            return { x: 0, y: 0 }; // Return zero vector if points aren't ready
+          }
+
+          const p0 = controlPoints[segmentIndex];
+          const p1 = controlPoints[segmentIndex + 1];
+
+          // Get velocity vectors
+          let v0, v1;
+
+          if (segmentIndex === 0) {
+            v0 = getEndpointVelocity(true);
+          } else {
+            v0 = getCardinalVelocity(segmentIndex);
+          }
+
+          if (segmentIndex === NUM_SEGMENTS - 1) {
+            v1 = getEndpointVelocity(false);
+          } else {
+            v1 = getCardinalVelocity(segmentIndex + 1);
+          }
+
+          // Second derivatives of the basis functions
+          const ddh00 = 12 * localT - 6;
+          const ddh10 = 6 * localT - 4;
+          const ddh01 = -12 * localT + 6;
+          const ddh11 = 6 * localT - 2;
+
+          // Scale by NUM_SEGMENTS^2 for second derivative
+          const scale = NUM_SEGMENTS * NUM_SEGMENTS;
+          return {
+            x:
+              (ddh00 * p0.x + ddh10 * v0.vx + ddh01 * p1.x + ddh11 * v1.vx) *
+              scale,
+            y:
+              (ddh00 * p0.y + ddh10 * v0.vy + ddh01 * p1.y + ddh11 * v1.vy) *
+              scale,
+          };
+        }
+
+        // Calculate curvature at a point
+        function calculateCurvature(t) {
+          // 使用解析方法而非有限差分
+          const d1 = calculateSplineDerivative(t);
+          const d2 = calculateSplineSecondDerivative(t);
+
+          // Curvature formula: |x'y'' - y'x''| / (x'^2 + y'^2)^(3/2)
+          const numerator = Math.abs(d1.x * d2.y - d1.y * d2.x);
+          const denominator = Math.pow(d1.x * d1.x + d1.y * d1.y, 1.5);
+
+          // 防止除以零
+          if (denominator < 0.000001) {
+            return 0;
+          }
+
+          return numerator / denominator;
+        }
+
+        // Drawing functions
+        function drawAll() {
+          ctx.clearRect(0, 0, width, height);
+          derivativeCtx.clearRect(0, 0, derivativeWidth, derivativeHeight);
+
+          // Set background color
+          ctx.fillStyle = '#1e2329';
+          ctx.fillRect(0, 0, width, height);
+
+          drawSpline();
+
+          // Only draw control points with velocity vectors if not showing curvature
+          if (!showCurvatureToggle.checked) {
+            drawControlPoints();
+          } else {
+            drawControlPointsSimple(); // Draw just the points without vectors
+          }
+
+          drawVelocityFunction();
+          drawCurrentPosition();
+
+          // Add curvature comb if requested
+          if (showCurvatureToggle.checked) {
+            drawCurvatureCombAlongCurve();
+          }
+        }
+
+        function drawSpline() {
+          // Draw each segment with a different color
+          for (let segIdx = 0; segIdx < NUM_SEGMENTS; segIdx++) {
+            ctx.beginPath();
+
+            const steps = 50;
+
+            for (let i = 0; i <= steps; i++) {
+              // Calculate local t [0,1] for this segment
+              const localT = i / steps;
+              // Map to global t for the entire curve
+              const globalT = (segIdx + localT) / NUM_SEGMENTS;
+              const point = calculateSplinePoint(globalT);
+
+              if (i === 0) {
+                ctx.moveTo(point.x, point.y);
+              } else {
+                ctx.lineTo(point.x, point.y);
+              }
+            }
+
+            ctx.strokeStyle = getSegmentColor(segIdx);
+            ctx.lineWidth = 3;
+            ctx.stroke();
+          }
+        }
+
+        // Draw control points without velocity vectors
+        function drawControlPointsSimple() {
+          // Draw main control points without velocity vectors
+          for (let i = 0; i < controlPoints.length; i++) {
+            const point = controlPoints[i];
+
+            // Draw control point
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, POINT_RADIUS, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+            ctx.strokeStyle = '#333333';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Draw point index
+            ctx.fillStyle = '#000000';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(i.toString(), point.x, point.y);
+
+            // Add label above point
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '14px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(`P${i}`, point.x, point.y - 15);
+          }
+        }
+
+        function drawControlPoints() {
+          // Draw mirrored points for endpoints (for visualization)
+          const firstMirror = getMirroredPoint(true);
+          const lastMirror = getMirroredPoint(false);
+
+          // First draw the Cardinal spline principle - how velocities at each point are calculated
+          // For each interior point, draw lines to its surrounding points (which influence its velocity)
+          for (let i = 1; i < controlPoints.length - 1; i++) {
+            const point = controlPoints[i];
+            const prev = controlPoints[i - 1];
+            const next = controlPoints[i + 1];
+
+            // Get color for this point's vectors - use the point's index for consistent coloring
+            const velocityColor = getVelocityColor(i);
+
+            // Draw line from previous to next point to show how velocity is calculated
+            ctx.beginPath();
+            ctx.moveTo(prev.x, prev.y);
+            ctx.lineTo(next.x, next.y);
+            ctx.strokeStyle = velocityColor;
+            ctx.setLineDash([4, 4]); // Dashed line to differentiate from the spline
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Draw small arrows or marks at midpoint to indicate connection
+            const midX = (prev.x + next.x) / 2;
+            const midY = (prev.y + next.y) / 2;
+
+            // Add a small indicator circle
+            ctx.beginPath();
+            ctx.arc(midX, midY, 3, 0, Math.PI * 2);
+            ctx.fillStyle = velocityColor;
+            ctx.fill();
+
+            // Add tension label near the line
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '11px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(`tension = ${tension}`, midX, midY - 10);
+          }
+
+          // Special connection for first point and mirrored point
+          if (firstMirror) {
+            // Draw mirrored point with special style
+            ctx.beginPath();
+            ctx.arc(firstMirror.x, firstMirror.y, POINT_RADIUS, 0, Math.PI * 2);
+            ctx.setLineDash([3, 3]);
+            ctx.strokeStyle = '#ff5722'; // Distinct color for mirrored points
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Fill with translucent color
+            ctx.beginPath();
+            ctx.arc(firstMirror.x, firstMirror.y, POINT_RADIUS, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255, 87, 34, 0.3)';
+            ctx.fill();
+
+            // Label
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText('P⁻¹ (mirrored)', firstMirror.x, firstMirror.y - 10);
+
+            // Add dashed line from P-1 to P1
+            if (controlPoints.length >= 2) {
+              const p1 = controlPoints[1];
+              ctx.beginPath();
+              ctx.moveTo(firstMirror.x, firstMirror.y);
+              ctx.lineTo(p1.x, p1.y);
+              ctx.setLineDash([4, 4]); // Dashed line
+              ctx.strokeStyle = '#ff5722';
+              ctx.lineWidth = 1.5;
+              ctx.stroke();
+              ctx.setLineDash([]);
+            }
+          }
+
+          // Special connection for last point and mirrored point
+          if (lastMirror) {
+            // Draw mirrored point with special style
+            ctx.beginPath();
+            ctx.arc(lastMirror.x, lastMirror.y, POINT_RADIUS, 0, Math.PI * 2);
+            ctx.setLineDash([3, 3]);
+            ctx.strokeStyle = '#ff5722'; // Distinct color for mirrored points
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Fill with translucent color
+            ctx.beginPath();
+            ctx.arc(lastMirror.x, lastMirror.y, POINT_RADIUS, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255, 87, 34, 0.3)';
+            ctx.fill();
+
+            // Label
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText('Pₙ₊₁ (mirrored)', lastMirror.x, lastMirror.y - 10);
+
+            // Add dashed line from Pn-1 to Pn+1
+            if (controlPoints.length >= 2) {
+              const pn_1 = controlPoints[controlPoints.length - 2];
+              ctx.beginPath();
+              ctx.moveTo(pn_1.x, pn_1.y);
+              ctx.lineTo(lastMirror.x, lastMirror.y);
+              ctx.setLineDash([4, 4]); // Dashed line
+              ctx.strokeStyle = '#ff5722';
+              ctx.lineWidth = 1.5;
+              ctx.stroke();
+              ctx.setLineDash([]);
+            }
+          }
+
+          // Draw velocity vectors with segment colors
+          for (let i = 0; i < controlPoints.length; i++) {
+            const point = controlPoints[i];
+
+            let velocity;
+            if (i === 0) {
+              velocity = getEndpointVelocity(true);
+            } else if (i === controlPoints.length - 1) {
+              velocity = getEndpointVelocity(false);
+            } else {
+              velocity = getCardinalVelocity(i);
+            }
+
+            // Color by matching the color of the influence line for this point
+            // For interior points, use the point's own index
+            // For endpoints, match their special case color
+            let velocityColor;
+            if (i === 0) {
+              // P0's velocity is influenced by P1, use the same color as the P-1 to P1 dashed line
+              velocityColor = '#ff5722'; // Match the mirrored point color
+            } else if (i === controlPoints.length - 1) {
+              // Pn's velocity is influenced by Pn-1, use the same color as Pn-1 to Pn+1 dashed line
+              velocityColor = '#ff5722'; // Match the mirrored point color
+            } else {
+              // Interior points use their own color for consistency with dashed influence lines
+              velocityColor = getVelocityColor(i);
+            }
+
+            // Draw velocity vector
+            ctx.beginPath();
+            ctx.moveTo(point.x, point.y);
+            ctx.lineTo(point.x + velocity.vx, point.y + velocity.vy);
+            ctx.strokeStyle = velocityColor;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Draw arrowhead
+            const arrowSize = 8;
+            const angle = Math.atan2(velocity.vy, velocity.vx);
+
+            ctx.beginPath();
+            ctx.moveTo(point.x + velocity.vx, point.y + velocity.vy);
+            ctx.lineTo(
+              point.x + velocity.vx - arrowSize * Math.cos(angle - Math.PI / 6),
+              point.y + velocity.vy - arrowSize * Math.sin(angle - Math.PI / 6)
+            );
+            ctx.lineTo(
+              point.x + velocity.vx - arrowSize * Math.cos(angle + Math.PI / 6),
+              point.y + velocity.vy - arrowSize * Math.sin(angle + Math.PI / 6)
+            );
+            ctx.closePath();
+            ctx.fillStyle = velocityColor;
+            ctx.fill();
+
+            // Add velocity label
+            if (i === 0 || i === controlPoints.length - 1) {
+              // Special labels for endpoints
+              ctx.fillStyle = '#ffffff';
+              ctx.font = '12px Arial';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+
+              const labelX = point.x + velocity.vx;
+              const labelY = point.y + velocity.vy - 15;
+
+              ctx.fillText(i === 0 ? 'v₀' : 'vₙ', labelX, labelY);
+            } else {
+              // Normal velocity label with tension
+              ctx.fillStyle = '#ffffff';
+              ctx.font = '12px Arial';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+
+              const labelX = point.x + velocity.vx;
+              const labelY = point.y + velocity.vy - 15;
+
+              ctx.fillText(`v${i}`, labelX, labelY);
+            }
+          }
+
+          // Draw main control points on top of everything else
+          for (let i = 0; i < controlPoints.length; i++) {
+            const point = controlPoints[i];
+
+            // Draw control point
+            ctx.beginPath();
+            ctx.arc(point.x, point.y, POINT_RADIUS, 0, Math.PI * 2);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+            ctx.strokeStyle = '#333333';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Draw point index
+            ctx.fillStyle = '#000000';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(i.toString(), point.x, point.y);
+
+            // Add label above point
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '14px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'bottom';
+            ctx.fillText(`P${i}`, point.x, point.y - 15);
+          }
+        }
+
+        function drawVelocityFunction() {
+          // Setup axes
+          setupDerivativeAxes();
+
+          // Make sure we have enough points to draw the curve
+          if (!controlPoints || controlPoints.length < NUM_POINTS) {
+            return;
+          }
+
+          // Calculate maximum speed for scaling
+          let maxSpeed = 0;
+          const steps = 200; // Increase steps for smoother curve
+          const samples = [];
+
+          // First pass to collect all speeds and find maximum
+          for (let i = 0; i <= steps; i++) {
+            const globalT = i / steps;
+            const derivative = calculateSplineDerivative(globalT);
+            const speed = Math.sqrt(
+              derivative.x * derivative.x + derivative.y * derivative.y
+            );
+            samples.push({ t: globalT, speed: speed });
+            maxSpeed = Math.max(maxSpeed, speed);
+          }
+
+          // Add some margin to max speed
+          maxSpeed = maxSpeed * 1.1;
+
+          // Draw velocity function with different colors for each segment
+          for (let segIdx = 0; segIdx < NUM_SEGMENTS; segIdx++) {
+            derivativeCtx.beginPath();
+
+            // Calculate segment t range
+            const segmentStartT = segIdx / NUM_SEGMENTS;
+            const segmentEndT = (segIdx + 1) / NUM_SEGMENTS;
+
+            let firstPoint = true;
+
+            // Draw all samples in this segment range
+            for (let i = 0; i < samples.length; i++) {
+              const sample = samples[i];
+
+              // Check if sample is in current segment
+              if (sample.t >= segmentStartT && sample.t <= segmentEndT) {
+                const xPos = 40 + (derivativeWidth - 80) * sample.t;
+                const yPos =
+                  derivativeHeight -
+                  30 -
+                  (sample.speed / maxSpeed) * (derivativeHeight - 60);
+
+                if (firstPoint) {
+                  derivativeCtx.moveTo(xPos, yPos);
+                  firstPoint = false;
+                } else {
+                  derivativeCtx.lineTo(xPos, yPos);
+                }
+              }
+            }
+
+            derivativeCtx.strokeStyle = getSegmentColor(segIdx);
+            derivativeCtx.lineWidth = 2;
+            derivativeCtx.stroke();
+          }
+
+          // Draw segment boundaries
+          for (let i = 1; i < NUM_SEGMENTS; i++) {
+            const x = 40 + (derivativeWidth - 80) * (i / NUM_SEGMENTS);
+            derivativeCtx.beginPath();
+            derivativeCtx.moveTo(x, 20);
+            derivativeCtx.lineTo(x, derivativeHeight - 30);
+            derivativeCtx.strokeStyle = '#666666';
+            derivativeCtx.setLineDash([5, 3]);
+            derivativeCtx.lineWidth = 1;
+            derivativeCtx.stroke();
+            derivativeCtx.setLineDash([]);
+          }
+
+          // Mark current velocity
+          if (maxSpeed > 0) {
+            markCurrentVelocity(maxSpeed);
+          }
+        }
+
+        function setupDerivativeAxes() {
+          // Clear the canvas first
+          derivativeCtx.clearRect(0, 0, derivativeWidth, derivativeHeight);
+
+          // Fill with light background
+          derivativeCtx.fillStyle = '#f9f9f9';
+          derivativeCtx.fillRect(0, 0, derivativeWidth, derivativeHeight);
+
+          // Draw axes
+          derivativeCtx.beginPath();
+          // X-axis
+          derivativeCtx.moveTo(40, derivativeHeight - 30);
+          derivativeCtx.lineTo(derivativeWidth - 40, derivativeHeight - 30);
+          // Y-axis
+          derivativeCtx.moveTo(40, derivativeHeight - 30);
+          derivativeCtx.lineTo(40, 20);
+          derivativeCtx.strokeStyle = '#555';
+          derivativeCtx.lineWidth = 1;
+          derivativeCtx.stroke();
+
+          // X-axis labels
+          derivativeCtx.fillStyle = '#333';
+          derivativeCtx.font = '12px Arial';
+          derivativeCtx.textAlign = 'center';
+          derivativeCtx.textBaseline = 'top';
+          derivativeCtx.fillText(
+            't',
+            derivativeWidth / 2,
+            derivativeHeight - 15
+          );
+        }
+
+        function markCurrentVelocity(maxSpeed) {
+          const xPos = 40 + (derivativeWidth - 80) * t;
+
+          // Calculate current velocity
+          const derivative = calculateSplineDerivative(t);
+          const speed = Math.sqrt(
+            derivative.x * derivative.x + derivative.y * derivative.y
+          );
+
+          // Mark point on the curve
+          const yPos =
+            derivativeHeight -
+            30 -
+            (speed / maxSpeed) * (derivativeHeight - 60);
+
+          // Determine which segment we're in
+          const currentSegment = Math.min(
+            NUM_SEGMENTS - 1,
+            Math.floor(t * NUM_SEGMENTS)
+          );
+          const segmentColor = getSegmentColor(currentSegment);
+
+          // Vertical line at current t
+          derivativeCtx.beginPath();
+          derivativeCtx.moveTo(xPos, 20);
+          derivativeCtx.lineTo(xPos, derivativeHeight - 30);
+          derivativeCtx.strokeStyle = '#ff0000';
+          derivativeCtx.lineWidth = 2;
+          derivativeCtx.stroke();
+
+          // Point on curve
+          derivativeCtx.beginPath();
+          derivativeCtx.arc(xPos, yPos, 5, 0, Math.PI * 2);
+          derivativeCtx.fillStyle = segmentColor;
+          derivativeCtx.fill();
+          derivativeCtx.strokeStyle = '#ffffff';
+          derivativeCtx.lineWidth = 1;
+          derivativeCtx.stroke();
+
+          // Show current speed value and t value
+          derivativeCtx.fillStyle = '#ff0000';
+          derivativeCtx.textAlign = 'left';
+          derivativeCtx.font = '12px Arial';
+          derivativeCtx.fillText(`t = ${t.toFixed(2)}`, 50, 20);
+          derivativeCtx.fillText(`Speed: ${speed.toFixed(1)}`, 50, 40);
+          derivativeCtx.fillText(`Segment: ${currentSegment}`, 50, 60);
+        }
+
+        function drawCurrentPosition() {
+          // Calculate and draw current point on the spline
+          const point = calculateSplinePoint(t);
+
+          // Determine which segment we're in
+          const currentSegment = Math.min(
+            NUM_SEGMENTS - 1,
+            Math.floor(t * NUM_SEGMENTS)
+          );
+          const segmentColor = getSegmentColor(currentSegment);
+
+          // Draw the point
+          ctx.beginPath();
+          ctx.arc(point.x, point.y, 8, 0, Math.PI * 2);
+          ctx.fillStyle = segmentColor;
+          ctx.fill();
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          // Show current t
+          ctx.fillStyle = '#ff0000';
+          ctx.font = '14px Arial';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+          ctx.fillText(`t = ${t.toFixed(2)}`, point.x, point.y - 10);
+
+          // Calculate and draw current tangent/velocity regardless of curvature display
+          const derivative = calculateSplineDerivative(t);
+
+          // Scale factor to make velocity vector visible but not too large
+          const scaleFactor = 0.1;
+
+          // Use actual magnitude - no normalization
+          const magnitude = Math.sqrt(
+            derivative.x * derivative.x + derivative.y * derivative.y
+          );
+
+          if (magnitude > 0) {
+            // Scale the vector but preserve its actual magnitude
+            const velocityX = derivative.x * scaleFactor;
+            const velocityY = derivative.y * scaleFactor;
+
+            const velocityColorIdx = currentSegment;
+
+            ctx.beginPath();
+            ctx.moveTo(point.x, point.y);
+            ctx.lineTo(point.x + velocityX, point.y + velocityY);
+            ctx.strokeStyle = getVelocityColor(velocityColorIdx);
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Draw arrowhead
+            const arrowSize = 8;
+            const angle = Math.atan2(velocityY, velocityX);
+
+            ctx.beginPath();
+            ctx.moveTo(point.x + velocityX, point.y + velocityY);
+            ctx.lineTo(
+              point.x + velocityX - arrowSize * Math.cos(angle - Math.PI / 6),
+              point.y + velocityY - arrowSize * Math.sin(angle - Math.PI / 6)
+            );
+            ctx.lineTo(
+              point.x + velocityX - arrowSize * Math.cos(angle + Math.PI / 6),
+              point.y + velocityY - arrowSize * Math.sin(angle + Math.PI / 6)
+            );
+            ctx.closePath();
+            ctx.fillStyle = getVelocityColor(velocityColorIdx);
+            ctx.fill();
+
+            // Display actual speed value
+            ctx.fillStyle = '#ffffff';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(
+              `speed: ${magnitude.toFixed(1)}`,
+              point.x + velocityX / 2,
+              point.y + velocityY / 2 - 10
+            );
+          }
+        }
+
+        // Draw curvature comb along the entire curve
+        function drawCurvatureCombAlongCurve() {
+          // Number of points to sample along the curve
+          const numSamples = 100;
+          const combPoints = []; // Array to store end points of combs
+
+          // 计算所有点的曲率以找出最大值和平均值
+          let maxCurvature = 0;
+          let totalCurvature = 0;
+          const curvatures = [];
+
+          for (let i = 0; i <= numSamples; i++) {
+            const curveT = i / numSamples;
+            const curvature = calculateCurvature(curveT);
+            curvatures.push(curvature);
+            maxCurvature = Math.max(maxCurvature, curvature);
+            totalCurvature += curvature;
+          }
+
+          const avgCurvature = totalCurvature / (numSamples + 1);
+
+          // 自适应缩放因子 - 根据最大曲率和平均曲率调整
+          // 如果最大曲率非常小，则使用更大的缩放因子
+          let baseScale = 1000;
+          if (maxCurvature < 0.01) {
+            baseScale = 5000;
+          } else if (maxCurvature < 0.05) {
+            baseScale = 2000;
+          }
+
+          // Draw curvature combs at regular intervals
+          for (let i = 0; i <= numSamples; i++) {
+            const curveT = i / numSamples;
+            const point = calculateSplinePoint(curveT);
+            const curvature = curvatures[i];
+
+            // 为非常小的曲率设定最小显示值
+            const displayCurvature = Math.max(curvature, 0.001);
+
+            // Calculate the normal direction at this point
+            const tangent = calculateSplineDerivative(curveT);
+            const normalX = -tangent.y;
+            const normalY = tangent.x;
+
+            // Normalize the normal vector
+            const normalMag = Math.sqrt(normalX * normalX + normalY * normalY);
+            if (normalMag > 0) {
+              const unitNormalX = normalX / normalMag;
+              const unitNormalY = normalY / normalMag;
+
+              // Scale the normal by the curvature and a scaling factor to make it visible
+              const scale = baseScale;
+              const combX = point.x + unitNormalX * scale * displayCurvature;
+              const combY = point.y + unitNormalY * scale * displayCurvature;
+
+              // Determine which segment we're in for color
+              const currentSegment = Math.min(
+                NUM_SEGMENTS - 1,
+                Math.floor(curveT * NUM_SEGMENTS)
+              );
+
+              // Draw the curvature comb
+              ctx.beginPath();
+              ctx.moveTo(point.x, point.y);
+              ctx.lineTo(combX, combY);
+              ctx.strokeStyle = getSegmentColor(currentSegment); // Use segment color
+              ctx.lineWidth = 1;
+              ctx.stroke();
+
+              // Store the comb end point for connecting later
+              combPoints.push({
+                x: combX,
+                y: combY,
+                segment: currentSegment,
+              });
+            }
+          }
+
+          // 在曲率梳绘制完成后，显示曲率统计信息
+          ctx.fillStyle = '#ffffff';
+          ctx.font = '12px Arial';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'top';
+          ctx.fillText(`最大曲率: ${maxCurvature.toFixed(5)}`, 20, 20);
+          ctx.fillText(`平均曲率: ${avgCurvature.toFixed(5)}`, 20, 40);
+          ctx.fillText(`缩放比例: ${baseScale}`, 20, 60);
+
+          // Draw smooth curve connecting all comb endpoints
+          // Draw a separate curve for each segment to maintain coloring
+          for (let segIdx = 0; segIdx < NUM_SEGMENTS; segIdx++) {
+            // Filter comb points for this segment
+            const segmentCombPoints = combPoints.filter(
+              (point) => point.segment === segIdx
+            );
+
+            if (segmentCombPoints.length > 1) {
+              // Start the path
+              ctx.beginPath();
+              ctx.moveTo(segmentCombPoints[0].x, segmentCombPoints[0].y);
+
+              // Draw a smooth curve through the points
+              for (let i = 1; i < segmentCombPoints.length; i++) {
+                ctx.lineTo(segmentCombPoints[i].x, segmentCombPoints[i].y);
+              }
+
+              // Set appearance
+              ctx.strokeStyle = getSegmentColor(segIdx);
+              ctx.lineWidth = 1.5;
+              ctx.stroke();
+            }
+          }
+
+          // Draw a special comb for the current t parameter with different color
+          const point = calculateSplinePoint(t);
+          const curvature = calculateCurvature(t);
+          // 为当前位置也设定最小显示曲率
+          const displayCurvature = Math.max(curvature, 0.001);
+
+          // Calculate the normal direction at this point
+          const tangent = calculateSplineDerivative(t);
+          const normalX = -tangent.y;
+          const normalY = tangent.x;
+
+          // Normalize the normal vector
+          const normalMag = Math.sqrt(normalX * normalX + normalY * normalY);
+          if (normalMag > 0) {
+            const unitNormalX = normalX / normalMag;
+            const unitNormalY = normalY / normalMag;
+
+            // Scale the normal by the curvature and a scaling factor to make it visible
+            const scale = baseScale;
+            const combX = point.x + unitNormalX * scale * displayCurvature;
+            const combY = point.y + unitNormalY * scale * displayCurvature;
+
+            // Draw the current t curvature comb with a distinct color
+            ctx.beginPath();
+            ctx.moveTo(point.x, point.y);
+            ctx.lineTo(combX, combY);
+            ctx.strokeStyle = '#FF00FF'; // Magenta color for current t
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Add a label with curvature value
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = '12px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(
+              `κ = ${curvature.toFixed(5)}`,
+              (point.x + combX) / 2,
+              (point.y + combY) / 2 - 10
+            );
+          }
+        }
+
+        // Initialize the spline when the page loads
+        initializePoints();
+      });
+    </script>
+  </body>
+</html>

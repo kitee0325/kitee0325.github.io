@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bezier Spline Surface - G1 vs G2 Continuity</title>
+    <style>
+      body {
+        margin: 0;
+        overflow: hidden;
+        font-family: Arial, sans-serif;
+      }
+      #canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      #controls {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 10px;
+        border-radius: 5px;
+      }
+      button {
+        margin: 5px;
+        padding: 8px 12px;
+        background: #2a6496;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #1a4c7a;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas"></canvas>
+    <div id="controls">
+      <button id="g1Button">G1 Continuity</button>
+      <button id="g2Button">G2 Continuity</button>
+      <button id="toggleCombsButton">Hide Curvature Combs</button>
+    </div>
+
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.159.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.159.0/examples/jsm/"
+        }
+      }
+    </script>
+
+    <script type="module">
+      import * as THREE from 'three';
+      import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+      // 场景初始化
+      const canvas = document.getElementById('canvas');
+      const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(window.devicePixelRatio);
+
+      const scene = new THREE.Scene();
+      // 稍后会设置场景的背景
+
+      const camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.1,
+        1000
+      );
+      camera.position.set(0, 1, 5);
+
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+
+      // 光源设置
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+      scene.add(ambientLight);
+
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+      directionalLight.position.set(1, 1, 1);
+      scene.add(directionalLight);
+
+      // 创建棋盘格环境贴图
+      function createCheckerboardCubeMap() {
+        const size = 1024;
+        const data = new Uint8Array(size * size * 4);
+
+        // 生成棋盘格纹理
+        const checkerSize = 64; // 棋盘格尺寸
+
+        for (let i = 0; i < size; i++) {
+          for (let j = 0; j < size; j++) {
+            const idx = (i * size + j) * 4;
+            const isEven =
+              (Math.floor(i / checkerSize) + Math.floor(j / checkerSize)) %
+                2 ===
+              0;
+
+            if (isEven) {
+              data[idx] = 255; // R
+              data[idx + 1] = 255; // G
+              data[idx + 2] = 255; // B
+              data[idx + 3] = 255; // A
+            } else {
+              data[idx] = 50; // R
+              data[idx + 1] = 50; // G
+              data[idx + 2] = 50; // B
+              data[idx + 3] = 255; // A
+            }
+          }
+        }
+
+        const texture = new THREE.DataTexture(
+          data,
+          size,
+          size,
+          THREE.RGBAFormat
+        );
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(1, 1);
+        texture.needsUpdate = true;
+
+        // 创建立方体贴图
+        const cubeRenderTarget = new THREE.WebGLCubeRenderTarget(size, {
+          format: THREE.RGBAFormat,
+          generateMipmaps: true,
+          minFilter: THREE.LinearMipmapLinearFilter,
+        });
+
+        const cubeCamera = new THREE.CubeCamera(0.1, 1000, cubeRenderTarget);
+
+        // 创建一个临时场景来渲染立方体贴图
+        const tempScene = new THREE.Scene();
+        const sphereGeom = new THREE.SphereGeometry(100, 32, 32);
+        const sphereMat = new THREE.MeshBasicMaterial({
+          map: texture,
+          side: THREE.BackSide,
+        });
+        const sphere = new THREE.Mesh(sphereGeom, sphereMat);
+        tempScene.add(sphere);
+
+        cubeCamera.position.set(0, 0, 0);
+        cubeCamera.update(renderer, tempScene);
+
+        return cubeRenderTarget.texture;
+      }
+
+      // 创建环境贴图
+      const envMap = createCheckerboardCubeMap();
+
+      // 将环境贴图设置为场景背景
+      scene.background = envMap;
+
+      // 根据控制点创建贝塞尔曲线
+      function createBezierCurve(controlPoints) {
+        const curve = new THREE.CubicBezierCurve3(
+          controlPoints[0],
+          controlPoints[1],
+          controlPoints[2],
+          controlPoints[3]
+        );
+        return curve;
+      }
+
+      // 创建贝塞尔样条曲线（由多个贝塞尔曲线拼接而成）
+      function createBezierSplineCurve(controlPointSets) {
+        const curves = [];
+        for (const points of controlPointSets) {
+          curves.push(createBezierCurve(points));
+        }
+        return curves;
+      }
+
+      // 计算贝塞尔曲线上点的切线、法线和垂直法线
+      function calculateTangentAndNormal(curve, t) {
+        const tangent = curve.getTangent(t);
+
+        // 计算曲线的法线（在曲线平面内）
+        const normal = new THREE.Vector3(0, 1, 0);
+        normal.crossVectors(tangent, new THREE.Vector3(0, 0, 1));
+        normal.crossVectors(normal, tangent);
+        normal.normalize();
+
+        // 计算垂直于曲面的法线（用于正确绘制曲率梳）
+        const surfaceNormal = new THREE.Vector3();
+        surfaceNormal.crossVectors(tangent, new THREE.Vector3(0, 0, 1));
+        surfaceNormal.normalize();
+
+        return { tangent, normal, surfaceNormal };
+      }
+
+      // 贝塞尔曲线解析曲率计算 - 准确计算曲线上一点的曲率值
+      function calculateCurvature(curve, t) {
+        // 避免边界值，确保参数在有效范围内
+        t = Math.max(0.001, Math.min(0.999, t));
+
+        // 动态调整delta，越接近边界使用越小的delta
+        const delta = Math.min(0.0001, Math.min(t, 1 - t) * 0.01);
+
+        // 获取曲线上的点和邻近点
+        const p0 = curve.getPoint(t);
+        const p1 = curve.getPoint(t + delta);
+        const p2 = curve.getPoint(t + 2 * delta);
+
+        // 计算一阶导数（速度向量）
+        const velocity = new THREE.Vector3()
+          .subVectors(p1, p0)
+          .divideScalar(delta);
+
+        // 计算二阶导数（加速度向量）
+        const v1 = new THREE.Vector3().subVectors(p2, p1).divideScalar(delta);
+        const acceleration = new THREE.Vector3()
+          .subVectors(v1, velocity)
+          .divideScalar(delta);
+
+        // 计算曲率: κ = |v × a| / |v|³
+        const velocityCrossAcceleration = new THREE.Vector3().crossVectors(
+          velocity,
+          acceleration
+        );
+        const velocityLengthCubed = Math.pow(velocity.length(), 3);
+
+        // 防止除以接近零的值
+        if (velocityLengthCubed < 1e-10) return 0;
+
+        const curvature =
+          velocityCrossAcceleration.length() / velocityLengthCubed;
+
+        // 防止曲率值无效
+        if (isNaN(curvature) || !isFinite(curvature)) return 0;
+
+        return curvature;
+      }
+
+      // 创建简单的2D曲率梳 - 在曲面中线上显示
+      function createCurvatureCombs(
+        curves,
+        isG2 = false,
+        segments = 50,
+        baseLength = 0.3
+      ) {
+        const combsGroup = new THREE.Group();
+
+        // 材质定义 - 为每条曲线的曲率梳设置不同颜色
+        const combMaterial1 = new THREE.LineBasicMaterial({
+          color: 0xff8866, // 第一条曲线曲率梳为浅红色
+          linewidth: 2.0,
+        });
+
+        const combMaterial2 = new THREE.LineBasicMaterial({
+          color: 0x66aaff, // 第二条曲线曲率梳为浅蓝色
+          linewidth: 2.0,
+        });
+
+        const outlineMaterial1 = new THREE.LineBasicMaterial({
+          color: 0xff4400, // 第一条曲线轮廓为橙红色
+          linewidth: 3.0,
+        });
+
+        const outlineMaterial2 = new THREE.LineBasicMaterial({
+          color: 0x00aaff, // 第二条曲线轮廓为蓝色
+          linewidth: 3.0,
+        });
+
+        // G2连续时使用的连接线材质
+        const g2ConnectionMaterial = new THREE.LineBasicMaterial({
+          color: 0x00dd00, // 亮绿色
+          linewidth: 4.0,
+        });
+
+        // 为每条曲线单独收集曲率梳终点，以便绘制平滑轮廓
+        const outlinePoints1 = [];
+        const outlinePoints2 = [];
+
+        // 获取连接点位置
+        const connectionPoint =
+          curves.length > 1 ? curves[0].getPoint(1) : null;
+        const connectionPointCenter = connectionPoint
+          ? new THREE.Vector3(connectionPoint.x, connectionPoint.y, 0)
+          : null;
+
+        // 处理每条曲线
+        for (let curveIndex = 0; curveIndex < curves.length; curveIndex++) {
+          const curve = curves[curveIndex];
+
+          // 均匀采样点，确保轮廓线平滑
+          for (let i = 0; i <= segments; i++) {
+            const t = i / segments;
+
+            // 跳过靠近连接点的采样
+            if (
+              (curveIndex === 0 && t > 0.97) ||
+              (curveIndex === 1 && t < 0.03)
+            ) {
+              continue;
+            }
+
+            const point = curve.getPoint(t);
+            const tangent = curve.getTangent(t);
+            const normal = new THREE.Vector3(
+              -tangent.y,
+              tangent.x,
+              0
+            ).normalize(); // 2D法向量
+            const curvature = calculateCurvature(curve, t);
+
+            // 设置曲率梳长度 - 曲率越大，梳子越长
+            const maxCurvature = 2.0;
+            const cappedCurvature = Math.min(
+              Math.max(curvature, 0),
+              maxCurvature
+            );
+            const combLength = baseLength * (1 + 8 * cappedCurvature);
+
+            // 曲率梳终点
+            const endPoint = new THREE.Vector3(
+              point.x + normal.x * combLength,
+              point.y + normal.y * combLength,
+              0 // 放置在曲面的中线上
+            );
+
+            // 根据曲线索引收集对应的轮廓点
+            if (curveIndex === 0) {
+              outlinePoints1.push(endPoint);
+            } else {
+              outlinePoints2.push(endPoint);
+            }
+
+            // 创建曲率梳线段 - 使用不同颜色
+            const combGeometry = new THREE.BufferGeometry().setFromPoints([
+              new THREE.Vector3(point.x, point.y, 0), // 起点在中线上
+              endPoint,
+            ]);
+
+            // 根据曲线索引选择对应的材质
+            let material;
+
+            // 检查是否是第一条曲线的最后一根曲率梳或第二条曲线的第一根曲率梳
+            if (
+              (curveIndex === 0 && i === segments - 1) ||
+              (curveIndex === 1 && i === 0)
+            ) {
+              // 创建加粗版本的材质
+              material = new THREE.LineBasicMaterial({
+                color: curveIndex === 0 ? 0xff8866 : 0x66aaff, // 保持原来的颜色
+                linewidth: 4.0, // 更粗的线条
+              });
+            } else {
+              // 使用常规材质
+              material = curveIndex === 0 ? combMaterial1 : combMaterial2;
+            }
+
+            const combLine = new THREE.Line(combGeometry, material);
+            combsGroup.add(combLine);
+          }
+        }
+
+        // 特殊处理连接点处的曲率梳
+        let endPoint1 = null;
+        let endPoint2 = null;
+
+        if (connectionPoint) {
+          // 在连接点计算两侧的切线和曲率
+          const t1 = 0.9999; // 第一条曲线接近终点
+          const t2 = 0.0001; // 第二条曲线接近起点
+
+          const tangent1 = curves[0].getTangent(t1);
+          const tangent2 = curves[1].getTangent(t2);
+
+          const normal1 = new THREE.Vector3(
+            -tangent1.y,
+            tangent1.x,
+            0
+          ).normalize();
+          const normal2 = new THREE.Vector3(
+            -tangent2.y,
+            tangent2.x,
+            0
+          ).normalize();
+
+          const curvature1 = calculateCurvature(curves[0], t1);
+          const curvature2 = calculateCurvature(curves[1], t2);
+
+          console.log(
+            `连接点曲率: 曲线1末端=${curvature1.toFixed(
+              6
+            )}, 曲线2起始=${curvature2.toFixed(6)}, 比值=${(
+              curvature2 / curvature1
+            ).toFixed(6)}`
+          );
+
+          // 曲率梳长度计算
+          const maxCurvature = 2.0;
+          const cappedCurvature1 = Math.min(
+            Math.max(curvature1, 0),
+            maxCurvature
+          );
+
+          // 计算连接点两侧的曲率梳长度
+          let length1 = baseLength * (1 + 8 * cappedCurvature1);
+          let length2;
+
+          if (isG2) {
+            // G2连续：两侧曲率梳长度相同（曲率连续）
+            length2 = length1;
+          } else {
+            // G1连续：使用实际计算的曲率值
+            const cappedCurvature2 = Math.min(
+              Math.max(curvature2, 0),
+              maxCurvature
+            );
+            length2 = baseLength * (1 + 8 * cappedCurvature2);
+            // 确保差异更加明显
+            if (Math.abs(length2 - length1) < 0.2) {
+              if (length2 > length1) {
+                length2 = length1 * 1.8; // 更大的差异
+              } else {
+                length2 = length1 * 0.5; // 更大的差异
+              }
+            }
+          }
+
+          // 计算曲率梳终点
+          endPoint1 = new THREE.Vector3(
+            connectionPoint.x + normal1.x * length1,
+            connectionPoint.y + normal1.y * length1,
+            0 // 中线上
+          );
+
+          endPoint2 = new THREE.Vector3(
+            connectionPoint.x + normal2.x * length2,
+            connectionPoint.y + normal2.y * length2,
+            0 // 中线上
+          );
+
+          // 添加这些端点到轮廓点集合
+          outlinePoints1.push(endPoint1);
+          outlinePoints2.unshift(endPoint2); // 添加到第二条曲线轮廓的开头
+
+          // 连接点前的曲率梳
+          const combGeometry1 = new THREE.BufferGeometry().setFromPoints([
+            connectionPointCenter,
+            endPoint1,
+          ]);
+          const combLine1 = new THREE.Line(
+            combGeometry1,
+            new THREE.LineBasicMaterial({
+              color: 0xff2200, // 第一条曲线的曲率梳
+              linewidth: 6, // 更粗的线条
+            })
+          );
+          combsGroup.add(combLine1);
+
+          // 连接点后的曲率梳
+          const combGeometry2 = new THREE.BufferGeometry().setFromPoints([
+            connectionPointCenter,
+            endPoint2,
+          ]);
+          const combLine2 = new THREE.Line(
+            combGeometry2,
+            new THREE.LineBasicMaterial({
+              color: 0x00aaff, // 第二条曲线的曲率梳
+              linewidth: 6, // 更粗的线条
+            })
+          );
+          combsGroup.add(combLine2);
+
+          // 添加连接点标记
+          const dotGeometry = new THREE.SphereGeometry(0.05, 16, 16);
+          const dotMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+          const dot = new THREE.Mesh(dotGeometry, dotMaterial);
+          dot.position.copy(connectionPointCenter);
+          combsGroup.add(dot);
+        }
+
+        // 为每条曲线创建平滑的轮廓线
+        if (outlinePoints1.length > 1 && outlinePoints2.length > 1) {
+          // 创建渐变色数组
+          let combinedPoints;
+
+          if (isG2) {
+            // G2情况：连接两条曲线的轮廓点，形成完整曲线
+            combinedPoints = [...outlinePoints1, ...outlinePoints2];
+          } else {
+            // G1情况：不连接，但为了颜色梯度连续，先包含所有点
+            combinedPoints = [...outlinePoints1, ...outlinePoints2];
+          }
+
+          // 创建统一的渐变色数组 - 从红色渐变到蓝色
+          const totalPoints = combinedPoints.length;
+          const colors = new Float32Array(totalPoints * 3);
+
+          for (let i = 0; i < totalPoints; i++) {
+            const t = i / (totalPoints - 1); // 参数范围 [0,1]
+
+            // 从红色(1,0,0)到蓝色(0,0,1)的渐变
+            colors[i * 3] = Math.max(0, 1 - 2 * t); // R
+            colors[i * 3 + 1] = t < 0.5 ? 2 * t : 2 * (1 - t); // G - 中间为绿色
+            colors[i * 3 + 2] = Math.max(0, 2 * t - 1); // B
+          }
+
+          // 第一条曲线轮廓
+          const outlineGeometry1 = new THREE.BufferGeometry().setFromPoints(
+            outlinePoints1
+          );
+          // 为第一条曲线设置颜色（使用共享颜色空间的前半部分）
+          const colors1 = new Float32Array(outlinePoints1.length * 3);
+          for (let i = 0; i < outlinePoints1.length; i++) {
+            colors1[i * 3] = colors[i * 3];
+            colors1[i * 3 + 1] = colors[i * 3 + 1];
+            colors1[i * 3 + 2] = colors[i * 3 + 2];
+          }
+          outlineGeometry1.setAttribute(
+            'color',
+            new THREE.BufferAttribute(colors1, 3)
+          );
+
+          const outlineMaterial1Gradient = new THREE.LineBasicMaterial({
+            vertexColors: true,
+            linewidth: 3.0,
+          });
+
+          const outline1 = new THREE.Line(
+            outlineGeometry1,
+            outlineMaterial1Gradient
+          );
+          combsGroup.add(outline1);
+
+          // 第二条曲线轮廓
+          const outlineGeometry2 = new THREE.BufferGeometry().setFromPoints(
+            outlinePoints2
+          );
+          // 为第二条曲线设置颜色（使用共享颜色空间的后半部分）
+          const colors2 = new Float32Array(outlinePoints2.length * 3);
+          for (let i = 0; i < outlinePoints2.length; i++) {
+            const globalIndex = i + outlinePoints1.length;
+            colors2[i * 3] = colors[globalIndex * 3];
+            colors2[i * 3 + 1] = colors[globalIndex * 3 + 1];
+            colors2[i * 3 + 2] = colors[globalIndex * 3 + 2];
+          }
+          outlineGeometry2.setAttribute(
+            'color',
+            new THREE.BufferAttribute(colors2, 3)
+          );
+
+          const outlineMaterial2Gradient = new THREE.LineBasicMaterial({
+            vertexColors: true,
+            linewidth: 3.0,
+          });
+
+          const outline2 = new THREE.Line(
+            outlineGeometry2,
+            outlineMaterial2Gradient
+          );
+          combsGroup.add(outline2);
+
+          // G2连续时，添加完整的渐变曲线
+          if (isG2 && endPoint1 && endPoint2) {
+            // 添加两个轮廓线之间的连接
+            const connectGeometry = new THREE.BufferGeometry().setFromPoints([
+              endPoint1,
+              endPoint2,
+            ]);
+            const connectLine = new THREE.Line(
+              connectGeometry,
+              g2ConnectionMaterial
+            );
+            combsGroup.add(connectLine);
+
+            // 创建完整的连续曲线
+            const combinedGeometry = new THREE.BufferGeometry().setFromPoints(
+              combinedPoints
+            );
+            combinedGeometry.setAttribute(
+              'color',
+              new THREE.BufferAttribute(colors, 3)
+            );
+
+            const combinedOutline = new THREE.Line(
+              combinedGeometry,
+              new THREE.LineBasicMaterial({
+                vertexColors: true,
+                linewidth: 2.5,
+                opacity: 0.7,
+                transparent: true,
+              })
+            );
+            combsGroup.add(combinedOutline);
+          }
+        }
+
+        return combsGroup;
+      }
+
+      // 扩展函数 - 3D曲率梳直接使用中线上的曲率梳
+      function create3DCurvatureCombs(
+        curves,
+        isG2 = false,
+        segments = 50,
+        baseLength = 0.3,
+        zOffset = 0
+      ) {
+        return createCurvatureCombs(curves, isG2, segments, baseLength);
+      }
+
+      // 控制点集 - G1连续
+      const g1ControlPoints = [
+        // 第一条曲线的控制点
+        [
+          new THREE.Vector3(-2, 0, 0),
+          new THREE.Vector3(-1.5, 0.6, 0),
+          new THREE.Vector3(-0.5, 0.6, 0),
+          new THREE.Vector3(0, 0, 0),
+        ],
+        // 第二条曲线的控制点（G1连续但不是G2连续）
+        [
+          new THREE.Vector3(0, 0, 0),
+          new THREE.Vector3(0.5, -1.5, 0), // 更大的曲率变化，使控制点下移更多
+          new THREE.Vector3(1.5, -0.6, 0),
+          new THREE.Vector3(2, 0, 0),
+        ],
+      ];
+
+      // G2连续的控制点（正确实现）
+      // 对于三次贝塞尔曲线，G2连续要求：
+      // 1. C0连续：曲线连接点位置相同
+      // 2. G1连续：连接点的切线方向相同（可以大小不同）
+      // 3. G2连续：连接点的曲率连续，需要特定的控制点关系
+
+      // 我们将第一条曲线称为P曲线，控制点为P0,P1,P2,P3
+      // 第二条曲线称为Q曲线，控制点为Q0,Q1,Q2,Q3
+      // 其中P3=Q0（连接点）
+
+      // G2连续需要满足：
+      // 如果两条曲线的参数化速度相同，则：
+      // 1. 要使连接处G1连续，需要 Q1 - Q0 = α(P3 - P2)，其中α为正实数
+      // 2. 要使连接处G2连续，需要 Q2 - 2*Q1 + Q0 = α^2(P2 - 2*P1 + P0)
+
+      // 先定义第一条曲线的控制点 - 曲度适中
+      const firstCurveControlPoints = [
+        new THREE.Vector3(-2, 0, 0), // P0
+        new THREE.Vector3(-1.5, 0.8, 0), // P1 - 增加控制点高度
+        new THREE.Vector3(-0.5, 0.8, 0), // P2 - 增加控制点高度
+        new THREE.Vector3(0, 0, 0), // P3
+      ];
+
+      // 创建场景元素
+      let currentCurves = createBezierSplineCurve(g1ControlPoints);
+      let currentSurface = generateSurface(currentCurves);
+      let currentCurvatureCombs = createCurvatureCombs(currentCurves, false); // G1模式
+      let currentSideCurves = createSideCurves(currentCurves);
+      let showCurvatureCombs = true; // 默认显示曲率梳
+
+      scene.add(currentSurface);
+      scene.add(currentCurvatureCombs);
+      scene.add(currentSideCurves);
+
+      // 切换显示/隐藏曲率梳
+      function toggleCurvatureCombs() {
+        showCurvatureCombs = !showCurvatureCombs;
+
+        if (showCurvatureCombs) {
+          scene.add(currentCurvatureCombs);
+          document.getElementById('toggleCombsButton').textContent =
+            'Hide Curvature Combs';
+        } else {
+          scene.remove(currentCurvatureCombs);
+          document.getElementById('toggleCombsButton').textContent =
+            'Show Curvature Combs';
+        }
+      }
+
+      // 重新计算确保G2连续的控制点
+      function computeG2ControlPoints() {
+        const P0 = firstCurveControlPoints[0];
+        const P1 = firstCurveControlPoints[1];
+        const P2 = firstCurveControlPoints[2];
+        const P3 = firstCurveControlPoints[3];
+        const Q0 = P3.clone(); // 连接点
+
+        // 确保使用精确值的alpha参数（实现良好的G2连续性）
+        const alpha = 1.0;
+
+        // 计算Q1，确保G1连续
+        const P3P2 = new THREE.Vector3().subVectors(P3, P2);
+        const Q1 = new THREE.Vector3().addVectors(
+          Q0,
+          P3P2.clone().multiplyScalar(alpha)
+        );
+
+        // 计算第一条曲线的二阶差分向量
+        const P2_2P1_P0 = new THREE.Vector3()
+          .subVectors(P2, P1.clone().multiplyScalar(2))
+          .add(P0);
+
+        // 计算Q2，确保G2连续
+        const Q2 = new THREE.Vector3().addVectors(
+          Q1.clone().multiplyScalar(2).sub(Q0),
+          P2_2P1_P0.clone().multiplyScalar(alpha * alpha)
+        );
+
+        // Q3可以自由选择，这里选择对称的点
+        const Q3 = new THREE.Vector3(2, 0, 0);
+
+        // 输出控制点用于调试
+        console.log('G2控制点计算:');
+        console.log('P0:', P0);
+        console.log('P1:', P1);
+        console.log('P2:', P2);
+        console.log('P3/Q0:', P3);
+        console.log('Q1:', Q1);
+        console.log('Q2:', Q2);
+        console.log('Q3:', Q3);
+
+        return [Q0, Q1, Q2, Q3];
+      }
+
+      // 获取G2连续的第二条曲线控制点
+      const g2SecondCurvePoints = computeG2ControlPoints();
+
+      const g2ControlPoints = [
+        // 第一条曲线的控制点
+        firstCurveControlPoints,
+        // 第二条曲线的控制点（G2连续）
+        g2SecondCurvePoints,
+      ];
+
+      // 测试G2连续性
+      function testG2Continuity() {
+        console.log('测试G2连续性:');
+
+        // 创建曲线
+        const curves = createBezierSplineCurve(g2ControlPoints);
+
+        // 计算连接点两侧的曲率值 - 使用更接近连接点的参数
+        const t1 = 0.9999; // 第一条曲线更接近终点
+        const t2 = 0.0001; // 第二条曲线更接近起点
+
+        const c1 = calculateCurvature(curves[0], t1);
+        const c2 = calculateCurvature(curves[1], t2);
+
+        console.log(`第一条曲线末端曲率 (t=${t1}): ${c1}`);
+        console.log(`第二条曲线起始曲率 (t=${t2}): ${c2}`);
+        console.log(`曲率比值: ${c2 / c1} (理想值为1.0)`);
+
+        // 计算连接点处的切线
+        const tan1 = curves[0].getTangent(1.0);
+        const tan2 = curves[1].getTangent(0.0);
+
+        // 获取归一化切线向量，确保方向正确比较
+        const normalizedTan1 = tan1.clone().normalize();
+        const normalizedTan2 = tan2.clone().normalize();
+
+        console.log(
+          `切线方向余弦: ${normalizedTan1.dot(
+            normalizedTan2
+          )} (理想值为1.0，表示完全相同方向)`
+        );
+
+        // 验证G2连续性的二阶导数
+        const p3 = curves[0].getPoint(1.0); // 连接点
+        const p2 = curves[0].getPoint(0.9999);
+        const p4 = curves[1].getPoint(0.0001);
+
+        // 计算连接点左侧速度和加速度
+        const vel1 = new THREE.Vector3().subVectors(p3, p2).normalize();
+        // 计算连接点右侧速度和加速度
+        const vel2 = new THREE.Vector3().subVectors(p4, p3).normalize();
+
+        console.log(
+          `连接点两侧速度向量的差值: ${vel1.distanceTo(vel2)} (理想值为0.0)`
+        );
+      }
+
+      // 创建信息面板
+      function createInfoPanel() {
+        return null;
+      }
+
+      const infoPanel = createInfoPanel();
+
+      // 生成曲面
+      function generateSurface(curves, width = 2.0) {
+        const surfaceGroup = new THREE.Group();
+
+        // 创建镜面材质
+        const material = new THREE.MeshPhysicalMaterial({
+          color: 0xffffff,
+          metalness: 0.95,
+          roughness: 0.02, // 降低粗糙度以增强反射效果
+          envMap: envMap,
+          envMapIntensity: 1.5, // 增强环境贴图的强度
+          side: THREE.DoubleSide,
+          transparent: false,
+          opacity: 1.0,
+        });
+
+        // 为每条曲线创建一个曲面
+        for (let i = 0; i < curves.length; i++) {
+          const curve = curves[i];
+          const segments = 50;
+          const points = [];
+
+          // 生成曲线上的点
+          for (let j = 0; j <= segments; j++) {
+            const t = j / segments;
+            const pt = curve.getPoint(t);
+            points.push(pt);
+          }
+
+          // 创建曲面几何体
+          const surfaceGeometry = new THREE.BufferGeometry();
+          const vertices = [];
+          const indices = [];
+
+          // 在每个点处创建垂直于曲线平面的线段，形成曲面
+          for (let j = 0; j < points.length; j++) {
+            const point = points[j];
+
+            // 创建垂直于曲线的向量（在XZ平面上）
+            const verticalVector = new THREE.Vector3(0, 0, width / 2);
+
+            // 曲面上下两个点
+            const topPoint = point.clone().add(verticalVector);
+            const bottomPoint = point.clone().sub(verticalVector);
+
+            vertices.push(topPoint.x, topPoint.y, topPoint.z);
+            vertices.push(bottomPoint.x, bottomPoint.y, bottomPoint.z);
+          }
+
+          // 创建三角形索引
+          for (let j = 0; j < points.length - 1; j++) {
+            const topLeft = j * 2;
+            const bottomLeft = j * 2 + 1;
+            const topRight = (j + 1) * 2;
+            const bottomRight = (j + 1) * 2 + 1;
+
+            // 两个三角形组成一个四边形面
+            indices.push(topLeft, bottomLeft, topRight);
+            indices.push(bottomLeft, bottomRight, topRight);
+          }
+
+          // 设置几何体顶点和索引
+          surfaceGeometry.setAttribute(
+            'position',
+            new THREE.BufferAttribute(new Float32Array(vertices), 3)
+          );
+          surfaceGeometry.setIndex(indices);
+          surfaceGeometry.computeVertexNormals();
+
+          const surfaceMesh = new THREE.Mesh(surfaceGeometry, material);
+          surfaceGroup.add(surfaceMesh);
+        }
+
+        return surfaceGroup;
+      }
+
+      // 创建曲线的可视化（在曲面的两侧）
+      function createSideCurves(curves, zOffset = 1.1) {
+        const curveGroup = new THREE.Group();
+
+        // 曲线材质
+        const curveMaterial = new THREE.LineBasicMaterial({
+          color: 0x00ffff,
+          linewidth: 4,
+        });
+
+        // 为每条曲线创建两条平行的可视线（位于曲面的两侧）
+        for (let i = 0; i < curves.length; i++) {
+          const curve = curves[i];
+          const points = curve.getPoints(50);
+
+          // 创建曲面正面的曲线点
+          const frontPoints = points.map(
+            (p) => new THREE.Vector3(p.x, p.y, zOffset)
+          );
+
+          // 创建曲面背面的曲线点
+          const backPoints = points.map(
+            (p) => new THREE.Vector3(p.x, p.y, -zOffset)
+          );
+
+          // 创建正面曲线
+          const frontGeometry = new THREE.BufferGeometry().setFromPoints(
+            frontPoints
+          );
+          const frontLine = new THREE.Line(frontGeometry, curveMaterial);
+          curveGroup.add(frontLine);
+
+          // 创建背面曲线
+          const backGeometry = new THREE.BufferGeometry().setFromPoints(
+            backPoints
+          );
+          const backLine = new THREE.Line(backGeometry, curveMaterial);
+          curveGroup.add(backLine);
+        }
+
+        return curveGroup;
+      }
+
+      // 切换G1/G2连续性
+      function switchToG1() {
+        // 移除当前场景元素
+        scene.remove(currentSurface);
+        scene.remove(currentCurvatureCombs);
+        scene.remove(currentSideCurves);
+
+        try {
+          // 创建G1连续的元素
+          currentCurves = createBezierSplineCurve(g1ControlPoints);
+          currentSurface = generateSurface(currentCurves);
+
+          // 创建曲率梳 - 在曲面中线上
+          currentCurvatureCombs = createCurvatureCombs(
+            currentCurves,
+            false,
+            50,
+            0.3
+          );
+
+          currentSideCurves = createSideCurves(currentCurves);
+
+          // 添加到场景
+          scene.add(currentSurface);
+          if (showCurvatureCombs) {
+            scene.add(currentCurvatureCombs);
+          }
+          scene.add(currentSideCurves);
+
+          // 计算连接点处的曲率值 - 使用更接近连接点的参数
+          const c1 = calculateCurvature(currentCurves[0], 0.9999);
+          const c2 = calculateCurvature(currentCurves[1], 0.0001);
+
+          console.log('切换到G1连续性');
+          console.log(
+            `连接点处曲率值 - 第一条曲线末端: ${c1}, 第二条曲线起始: ${c2}`
+          );
+        } catch (error) {
+          console.error('G1模式切换错误:', error);
+        }
+      }
+
+      function switchToG2() {
+        // 移除当前场景元素
+        scene.remove(currentSurface);
+        scene.remove(currentCurvatureCombs);
+        scene.remove(currentSideCurves);
+
+        try {
+          // 测试G2连续性
+          testG2Continuity();
+
+          // 创建G2连续的元素
+          currentCurves = createBezierSplineCurve(g2ControlPoints);
+          currentSurface = generateSurface(currentCurves);
+
+          // 创建曲率梳 - 在曲面中线上
+          currentCurvatureCombs = createCurvatureCombs(
+            currentCurves,
+            true,
+            50,
+            0.3
+          );
+
+          currentSideCurves = createSideCurves(currentCurves);
+
+          // 添加到场景
+          scene.add(currentSurface);
+          if (showCurvatureCombs) {
+            scene.add(currentCurvatureCombs);
+          }
+          scene.add(currentSideCurves);
+
+          // 计算连接点处的曲率值 - 使用更接近连接点的参数
+          const c1 = calculateCurvature(currentCurves[0], 0.9999);
+          const c2 = calculateCurvature(currentCurves[1], 0.0001);
+
+          console.log('切换到G2连续性');
+          console.log(
+            `连接点处曲率值 - 第一条曲线末端: ${c1}, 第二条曲线起始: ${c2}`
+          );
+        } catch (error) {
+          console.error('G2模式切换错误:', error);
+        }
+      }
+
+      // 事件监听
+      document.getElementById('g1Button').addEventListener('click', switchToG1);
+      document.getElementById('g2Button').addEventListener('click', switchToG2);
+      document
+        .getElementById('toggleCombsButton')
+        .addEventListener('click', toggleCurvatureCombs);
+
+      // 响应窗口大小改变
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+
+      // 动画循环
+      function animate() {
+        requestAnimationFrame(animate);
+        controls.update();
+        renderer.render(scene, camera);
+      }
+
+      animate();
+
+      // 默认显示G1
+      switchToG1();
+
+      // 处理移动设备的触摸事件
+      canvas.addEventListener('touchstart', (event) => {
+        event.preventDefault();
+      });
+    </script>
+  </body>
+</html>

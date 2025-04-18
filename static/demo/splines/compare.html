@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title></title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+      body {
+        font-family: 'Helvetica Neue', Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: #f9f9f9;
+        color: #333;
+      }
+      .container {
+        max-width: 900px;
+        margin: 0 auto;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+      }
+      svg {
+        width: 100%;
+        height: 500px;
+        margin-bottom: 10px;
+        background-color: white;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      .controls {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        margin-bottom: 20px;
+      }
+      .button-row {
+        display: flex;
+        justify-content: flex-start;
+      }
+      .slider-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 20px;
+      }
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        margin-bottom: 20px;
+      }
+      .legend-item {
+        display: flex;
+        align-items: center;
+        background-color: rgba(255, 255, 255, 0.7);
+        padding: 5px 10px;
+        border-radius: 4px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      .legend-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+      .legend-item.active {
+        box-shadow: 0 0 0 2px #4285f4;
+      }
+      .color-box {
+        width: 20px;
+        height: 20px;
+        margin-right: 8px;
+        border-radius: 3px;
+      }
+      button {
+        background-color: #4285f4;
+        border: none;
+        color: white;
+        padding: 10px 15px;
+        font-size: 14px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+      }
+      button:hover {
+        background-color: #3367d6;
+      }
+      .slider-container {
+        display: flex;
+        align-items: center;
+        flex: 1;
+        min-width: 300px;
+        gap: 10px;
+      }
+
+      input[type='range'] {
+        flex: 1;
+        margin: 0 10px;
+      }
+
+      label {
+        font-weight: normal;
+        color: #555;
+        min-width: 150px;
+      }
+
+      .value-display {
+        font-weight: bold;
+        min-width: 30px;
+        display: inline-block;
+      }
+
+      .curve-path {
+        fill: none;
+        stroke-width: 2;
+      }
+
+      .area-path {
+        opacity: 0.5;
+      }
+
+      .dimmed {
+        opacity: 0.2;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="controls">
+        <div class="button-row">
+          <button id="randomizeBtn">Generate Random Data Points</button>
+        </div>
+        <div class="slider-row">
+          <div class="slider-container">
+            <label for="offsetSlider"
+              >Curve Bandwidth:
+              <span id="offsetValue" class="value-display">30</span>px</label
+            >
+            <input
+              type="range"
+              id="offsetSlider"
+              min="10"
+              max="100"
+              step="1"
+              value="30"
+            />
+          </div>
+        </div>
+        <div class="slider-row">
+          <div class="slider-container">
+            <label for="tensionSlider"
+              >Cardinal Tension:
+              <span id="tensionValue" class="value-display">0.75</span></label
+            >
+            <input
+              type="range"
+              id="tensionSlider"
+              min="0"
+              max="1"
+              step="0.05"
+              value="0.75"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="legend">
+        <div class="legend-item" data-curve="straight">
+          <div
+            class="color-box"
+            style="background-color: rgba(255, 0, 0, 0.7)"
+          ></div>
+          <span>Straight</span>
+        </div>
+        <div class="legend-item" data-curve="bezier">
+          <div
+            class="color-box"
+            style="background-color: rgba(0, 128, 0, 0.7)"
+          ></div>
+          <span>Bezier</span>
+        </div>
+        <div class="legend-item" data-curve="catmull">
+          <div
+            class="color-box"
+            style="background-color: rgba(0, 0, 255, 0.7)"
+          ></div>
+          <span>Catmull</span>
+        </div>
+        <div class="legend-item" data-curve="cardinal">
+          <div
+            class="color-box"
+            style="background-color: rgba(128, 0, 128, 0.7)"
+          ></div>
+          <span id="cardinalLabel">Cardinal (0.75)</span>
+        </div>
+        <div class="legend-item" data-curve="hermite">
+          <div
+            class="color-box"
+            style="background-color: rgba(255, 165, 0, 0.7)"
+          ></div>
+          <span>Hermite</span>
+        </div>
+      </div>
+
+      <svg id="curveSvg"></svg>
+    </div>
+
+    <script>
+      // 颜色定义
+      const colors = {
+        straight: 'rgba(255, 0, 0, 0.7)',
+        bezier: 'rgba(0, 128, 0, 0.7)',
+        catmull: 'rgba(0, 0, 255, 0.7)',
+        cardinal: 'rgba(128, 0, 128, 0.7)',
+        hermite: 'rgba(255, 165, 0, 0.7)',
+      };
+
+      // 初始配置
+      let offsetDistance = 30;
+      let cardinalTension = 0.75;
+
+      // 定义点集合
+      let normalizedPoints = [
+        { x: 0.0625, y: 0.6 },
+        { x: 0.1875, y: 0.2 },
+        { x: 0.3125, y: 0.8 },
+        { x: 0.4375, y: 0.4 },
+        { x: 0.5625, y: 0.7 },
+        { x: 0.6875, y: 0.3 },
+        { x: 0.8125, y: 0.5 },
+        { x: 0.9375, y: 0.6 },
+      ];
+
+      // 获取SVG元素
+      const svg = d3.select('#curveSvg');
+
+      // 创建分组元素
+      const mainGroup = svg.append('g');
+
+      // 定义视觉边距
+      const margin = { top: 30, right: 30, bottom: 30, left: 30 };
+
+      // 创建比例尺
+      function createScales() {
+        const width = parseInt(svg.style('width'));
+        const height = parseInt(svg.style('height'));
+
+        // X轴比例尺
+        const xScale = d3
+          .scaleLinear()
+          .domain([0, 1])
+          .range([margin.left, width - margin.right]);
+
+        // Y轴比例尺
+        const yScale = d3
+          .scaleLinear()
+          .domain([0, 1])
+          .range([height - margin.bottom, margin.top]);
+
+        return { xScale, yScale, width, height };
+      }
+
+      // 创建曲线生成器
+      function createCurveGenerators(xScale, yScale) {
+        // 直线生成器
+        const straightLine = d3
+          .line()
+          .x((d) => xScale(d.x))
+          .y((d) => yScale(d.y))
+          .curve(d3.curveLinear);
+
+        // Bezier曲线生成器 - C1连续样条曲线实现
+        const bezierCurve = d3
+          .line()
+          .x((d) => xScale(d.x))
+          .y((d) => yScale(d.y))
+          .curve(function (context) {
+            return {
+              lineStart: function () {
+                this._points = [];
+              },
+              lineEnd: function () {
+                if (this._points.length < 2) return;
+
+                // 如果只有两个点，直接绘制直线
+                if (this._points.length === 2) {
+                  context.lineTo(this._points[1][0], this._points[1][1]);
+                  return;
+                }
+
+                // 计算所有控制点
+                const controlPoints = computeControlPoints(this._points);
+
+                // 绘制所有贝塞尔曲线段
+                for (let i = 0; i < this._points.length - 1; i++) {
+                  const p0 = this._points[i]; // 当前点
+                  const p1 = this._points[i + 1]; // 下一个点
+
+                  if (i === 0) {
+                    context.moveTo(p0[0], p0[1]);
+                  }
+
+                  // 获取该段的两个控制点
+                  const cp1 = controlPoints.cp1[i];
+                  const cp2 = controlPoints.cp2[i];
+
+                  // 绘制贝塞尔曲线段
+                  context.bezierCurveTo(
+                    cp1[0],
+                    cp1[1],
+                    cp2[0],
+                    cp2[1],
+                    p1[0],
+                    p1[1]
+                  );
+                }
+
+                this._points = [];
+              },
+              point: function (x, y) {
+                this._points.push([x, y]);
+              },
+            };
+
+            // 计算所有控制点，确保C1连续性
+            function computeControlPoints(points) {
+              const n = points.length - 1;
+
+              // 如果点数太少，无法构成样条曲线
+              if (n < 1) return { cp1: [], cp2: [] };
+
+              // 创建控制点数组
+              const cp1 = new Array(n);
+              const cp2 = new Array(n);
+
+              // 特殊情况：只有两个点
+              if (n === 1) {
+                // 简单情况：在两点之间的三分之一和三分之二处设置控制点
+                cp1[0] = [
+                  points[0][0] + (points[1][0] - points[0][0]) / 3,
+                  points[0][1] + (points[1][1] - points[0][1]) / 3,
+                ];
+                cp2[0] = [
+                  points[0][0] + (2 * (points[1][0] - points[0][0])) / 3,
+                  points[0][1] + (2 * (points[1][1] - points[0][1])) / 3,
+                ];
+                return { cp1, cp2 };
+              }
+
+              // 对于多个点的情况，计算控制点使得保持C1连续性
+
+              // 计算每个段的切线方向
+              const tangents = calculateTangents(points);
+
+              // 基于切线设置控制点
+              for (let i = 0; i < n; i++) {
+                // 计算当前段的长度
+                const segmentLength = distance(points[i], points[i + 1]);
+                const tensionFactor = 0.25; // 控制曲线的紧张度
+
+                // 设置控制点，使其与切线方向一致
+                cp1[i] = [
+                  points[i][0] + tangents[i][0] * segmentLength * tensionFactor,
+                  points[i][1] + tangents[i][1] * segmentLength * tensionFactor,
+                ];
+
+                cp2[i] = [
+                  points[i + 1][0] -
+                    tangents[i + 1][0] * segmentLength * tensionFactor,
+                  points[i + 1][1] -
+                    tangents[i + 1][1] * segmentLength * tensionFactor,
+                ];
+              }
+
+              return { cp1, cp2 };
+            }
+
+            // 计算每个点的切线方向，确保C1连续性
+            function calculateTangents(points) {
+              const n = points.length;
+              const tangents = new Array(n);
+
+              // 对于内部点，使用前后点的方向作为切线
+              for (let i = 1; i < n - 1; i++) {
+                const dx = points[i + 1][0] - points[i - 1][0];
+                const dy = points[i + 1][1] - points[i - 1][1];
+
+                // 正规化切线向量
+                const len = Math.sqrt(dx * dx + dy * dy);
+                tangents[i] = len ? [dx / len, dy / len] : [0, 0];
+              }
+
+              // 边界点的处理（端点）
+              // 起点：使用起点和第二个点的方向
+              const dx0 = points[1][0] - points[0][0];
+              const dy0 = points[1][1] - points[0][1];
+              const len0 = Math.sqrt(dx0 * dx0 + dy0 * dy0);
+              tangents[0] = len0 ? [dx0 / len0, dy0 / len0] : [0, 0];
+
+              // 终点：使用最后一个点和倒数第二个点的方向
+              const dxn = points[n - 1][0] - points[n - 2][0];
+              const dyn = points[n - 1][1] - points[n - 2][1];
+              const lenn = Math.sqrt(dxn * dxn + dyn * dyn);
+              tangents[n - 1] = lenn ? [dxn / lenn, dyn / lenn] : [0, 0];
+
+              return tangents;
+            }
+
+            // 计算两点间距离的辅助函数
+            function distance(p1, p2) {
+              const dx = p2[0] - p1[0];
+              const dy = p2[1] - p1[1];
+              return Math.sqrt(dx * dx + dy * dy);
+            }
+          });
+
+        // Catmull-Rom曲线生成器 - alpha=0.5的变体，通过每个点
+        const catmullCurve = d3
+          .line()
+          .x((d) => xScale(d.x))
+          .y((d) => yScale(d.y))
+          .curve(d3.curveCatmullRom.alpha(0.5)); // 标准Catmull-Rom，alpha=0.5
+
+        // Cardinal曲线生成器 - 带张力参数的三次样条
+        const cardinalCurve = d3
+          .line()
+          .x((d) => xScale(d.x))
+          .y((d) => yScale(d.y))
+          .curve(d3.curveCardinal.tension(1 - cardinalTension)); // 张力参数为1-tension
+
+        // Hermite曲线 - 使用单调样条实现，保持局部单调性
+        const hermiteCurve = d3
+          .line()
+          .x((d) => xScale(d.x))
+          .y((d) => yScale(d.y))
+          .curve(d3.curveMonotoneX); // 保持X方向单调性的曲线
+
+        return {
+          straight: straightLine,
+          bezier: bezierCurve,
+          catmull: catmullCurve,
+          cardinal: cardinalCurve,
+          hermite: hermiteCurve,
+        };
+      }
+
+      // 绘制所有曲线
+      function drawCurves() {
+        // 清空SVG
+        mainGroup.selectAll('*').remove();
+
+        // 创建比例尺
+        const { xScale, yScale, width, height } = createScales();
+
+        // 创建曲线生成器
+        const curveGenerators = createCurveGenerators(xScale, yScale);
+
+        // 简化的区域填充方法 - 使用每种曲线类型的clone和偏移值
+        Object.entries(curveGenerators).forEach(([key, lineGenerator]) => {
+          // 创建原始数据点的数组
+          const points = normalizedPoints.map((d) => ({
+            x: xScale(d.x),
+            y: yScale(d.y),
+          }));
+
+          // 创建偏移后的数据点数组
+          const offsetPoints = normalizedPoints.map((d) => ({
+            x: xScale(d.x),
+            y: yScale(d.y) + offsetDistance,
+          }));
+
+          // 绘制上曲线
+          mainGroup
+            .append('path')
+            .datum(normalizedPoints)
+            .attr('class', `curve-path ${key}-curve`)
+            .attr('data-curve', key)
+            .attr('d', lineGenerator)
+            .attr('stroke', colors[key]);
+
+          // 绘制下曲线
+          const offsetLineGenerator = d3
+            .line()
+            .x((d) => xScale(d.x))
+            .y((d) => yScale(d.y) + offsetDistance)
+            .curve(lineGenerator.curve());
+
+          mainGroup
+            .append('path')
+            .datum(normalizedPoints)
+            .attr('class', `curve-path ${key}-curve-offset`)
+            .attr('data-curve', key)
+            .attr('d', offsetLineGenerator)
+            .attr('stroke', colors[key]);
+
+          // 创建区域填充
+          if (key === 'bezier') {
+            // 为贝塞尔曲线手动创建区域路径
+            // 转换点为绘图坐标
+            const bezierPoints = normalizedPoints.map((p) => [
+              xScale(p.x),
+              yScale(p.y),
+            ]);
+            const offsetBezierPoints = normalizedPoints.map((p) => [
+              xScale(p.x),
+              yScale(p.y) + offsetDistance,
+            ]);
+
+            // 如果点太少，直接使用线性区域
+            if (bezierPoints.length < 3) {
+              const simpleArea = d3
+                .area()
+                .x((d) => xScale(d.x))
+                .y0((d) => yScale(d.y))
+                .y1((d) => yScale(d.y) + offsetDistance)
+                .curve(d3.curveLinear);
+
+              mainGroup
+                .append('path')
+                .datum(normalizedPoints)
+                .attr('class', `area-path ${key}-area`)
+                .attr('data-curve', key)
+                .attr('d', simpleArea)
+                .attr('fill', colors[key]);
+            } else {
+              // 计算控制点
+              function computeControlPoints(points) {
+                const n = points.length - 1;
+                if (n < 1) return { cp1: [], cp2: [] };
+
+                const cp1 = new Array(n);
+                const cp2 = new Array(n);
+
+                // 特殊情况：只有两个点
+                if (n === 1) {
+                  cp1[0] = [
+                    points[0][0] + (points[1][0] - points[0][0]) / 3,
+                    points[0][1] + (points[1][1] - points[0][1]) / 3,
+                  ];
+                  cp2[0] = [
+                    points[0][0] + (2 * (points[1][0] - points[0][0])) / 3,
+                    points[0][1] + (2 * (points[1][1] - points[0][1])) / 3,
+                  ];
+                  return { cp1, cp2 };
+                }
+
+                // 计算切线
+                const tangents = calculateTangents(points);
+
+                // 基于切线设置控制点
+                for (let i = 0; i < n; i++) {
+                  const segmentLength = distance(points[i], points[i + 1]);
+                  const tensionFactor = 0.25; // 控制曲线的紧张度
+
+                  cp1[i] = [
+                    points[i][0] +
+                      tangents[i][0] * segmentLength * tensionFactor,
+                    points[i][1] +
+                      tangents[i][1] * segmentLength * tensionFactor,
+                  ];
+
+                  cp2[i] = [
+                    points[i + 1][0] -
+                      tangents[i + 1][0] * segmentLength * tensionFactor,
+                    points[i + 1][1] -
+                      tangents[i + 1][1] * segmentLength * tensionFactor,
+                  ];
+                }
+
+                return { cp1, cp2 };
+              }
+
+              // 计算切线方向
+              function calculateTangents(points) {
+                const n = points.length;
+                const tangents = new Array(n);
+
+                // 内部点
+                for (let i = 1; i < n - 1; i++) {
+                  const dx = points[i + 1][0] - points[i - 1][0];
+                  const dy = points[i + 1][1] - points[i - 1][1];
+                  const len = Math.sqrt(dx * dx + dy * dy);
+                  tangents[i] = len ? [dx / len, dy / len] : [0, 0];
+                }
+
+                // 端点
+                const dx0 = points[1][0] - points[0][0];
+                const dy0 = points[1][1] - points[0][1];
+                const len0 = Math.sqrt(dx0 * dx0 + dy0 * dy0);
+                tangents[0] = len0 ? [dx0 / len0, dy0 / len0] : [0, 0];
+
+                const dxn = points[n - 1][0] - points[n - 2][0];
+                const dyn = points[n - 1][1] - points[n - 2][1];
+                const lenn = Math.sqrt(dxn * dxn + dyn * dyn);
+                tangents[n - 1] = lenn ? [dxn / lenn, dyn / lenn] : [0, 0];
+
+                return tangents;
+              }
+
+              // 计算距离
+              function distance(p1, p2) {
+                const dx = p2[0] - p1[0];
+                const dy = p2[1] - p1[1];
+                return Math.sqrt(dx * dx + dy * dy);
+              }
+
+              // 计算上下曲线的控制点
+              const topCP = computeControlPoints(bezierPoints);
+              const bottomCP = computeControlPoints(offsetBezierPoints);
+
+              // 构建完整路径
+              let d = `M${bezierPoints[0][0]},${bezierPoints[0][1]}`;
+
+              // 添加上曲线
+              for (let i = 0; i < bezierPoints.length - 1; i++) {
+                d += ` C${topCP.cp1[i][0]},${topCP.cp1[i][1]} ${
+                  topCP.cp2[i][0]
+                },${topCP.cp2[i][1]} ${bezierPoints[i + 1][0]},${
+                  bezierPoints[i + 1][1]
+                }`;
+              }
+
+              // 连接到下曲线
+              d += ` L${offsetBezierPoints[offsetBezierPoints.length - 1][0]},${
+                offsetBezierPoints[offsetBezierPoints.length - 1][1]
+              }`;
+
+              // 添加下曲线（反向）
+              for (let i = offsetBezierPoints.length - 2; i >= 0; i--) {
+                d += ` C${bottomCP.cp2[i][0]},${bottomCP.cp2[i][1]} ${bottomCP.cp1[i][0]},${bottomCP.cp1[i][1]} ${offsetBezierPoints[i][0]},${offsetBezierPoints[i][1]}`;
+              }
+
+              // 闭合路径
+              d += ' Z';
+
+              // 添加到SVG
+              mainGroup
+                .append('path')
+                .attr('class', `area-path ${key}-area`)
+                .attr('data-curve', key)
+                .attr('d', d)
+                .attr('fill', colors[key]);
+            }
+          } else {
+            // 其他曲线类型用d3.area
+            const areaGenerator = d3
+              .area()
+              .x((d) => xScale(d.x))
+              .y0((d) => yScale(d.y))
+              .y1((d) => yScale(d.y) + offsetDistance)
+              .curve(lineGenerator.curve());
+
+            mainGroup
+              .append('path')
+              .datum(normalizedPoints)
+              .attr('class', `area-path ${key}-area`)
+              .attr('data-curve', key)
+              .attr('d', areaGenerator)
+              .attr('fill', colors[key]);
+          }
+        });
+      }
+
+      // 随机生成新数据点
+      function randomizePoints() {
+        normalizedPoints = [];
+        const numPoints = 8;
+        for (let i = 0; i < numPoints; i++) {
+          const x = (i + 0.5) / numPoints; // 均匀分布x坐标
+          const y = 0.1 + Math.random() * 0.8; // 随机y坐标，留出边距
+          normalizedPoints.push({ x, y });
+        }
+        drawCurves();
+      }
+
+      // 图例悬浮效果
+      function setupLegendInteraction() {
+        d3.selectAll('.legend-item')
+          .on('mouseenter', function () {
+            const curveType = this.getAttribute('data-curve');
+
+            // 降低非选中曲线的透明度
+            mainGroup
+              .selectAll("path:not([data-curve='" + curveType + "'])")
+              .classed('dimmed', true);
+
+            // 增加当前图例高亮
+            d3.select(this).classed('active', true);
+          })
+          .on('mouseleave', function () {
+            // 恢复所有曲线的透明度
+            mainGroup.selectAll('path').classed('dimmed', false);
+
+            // 移除图例高亮
+            d3.select(this).classed('active', false);
+          });
+      }
+
+      // 窗口大小变化处理
+      function handleResize() {
+        drawCurves();
+      }
+
+      // 初始化
+      function initialize() {
+        // 首次绘制曲线
+        drawCurves();
+
+        // 设置交互事件
+        setupLegendInteraction();
+
+        // 添加随机按钮事件
+        d3.select('#randomizeBtn').on('click', randomizePoints);
+
+        // 添加偏移滑动条事件
+        d3.select('#offsetSlider').on('input', function () {
+          offsetDistance = +this.value;
+          d3.select('#offsetValue').text(offsetDistance);
+          drawCurves();
+        });
+
+        // 添加张力滑动条事件
+        d3.select('#tensionSlider').on('input', function () {
+          cardinalTension = +this.value;
+          d3.select('#tensionValue').text(cardinalTension.toFixed(2));
+          d3.select('#cardinalLabel').text(
+            `Cardinal (${cardinalTension.toFixed(2)})`
+          );
+          drawCurves();
+        });
+
+        // 窗口大小变化事件
+        window.addEventListener('resize', handleResize);
+      }
+
+      // 启动应用
+      initialize();
+    </script>
+  </body>
+</html>
