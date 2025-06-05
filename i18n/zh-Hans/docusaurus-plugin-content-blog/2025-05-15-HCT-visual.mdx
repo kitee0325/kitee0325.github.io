@@ -1,0 +1,493 @@
+---
+slug: hct-visual
+title: HCT色彩空间可视化
+tags: [HCT色彩空间，可视化]
+---
+
+import useBaseUrl from '@docusaurus/useBaseUrl';
+import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
+import Link from '@docusaurus/Link';
+
+**TLDR**
+HCT 色彩空间是 Google 推出的新一代色彩模型，兼顾了人眼感知与设计需求，广泛应用于动态主题配色。其工具库支持多语言，能自动生成前端友好的主题色板，并允许自定义分布函数以适配本地化和图表等多场景。HCT 的等步长色彩梯度和主题生成机制，为设计师和开发者带来更自然、舒适的配色体验，但在本地化和特殊应用中仍有优化空间。
+![https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202505271518994.png?imageSlim](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202505271518994.png?imageSlim)
+{/* truncate */}
+
+## 简介
+
+在在之前的<Link to="/blog/color-space">色彩空间</Link>中，有简单提到谷歌发布的 HCT 色彩空间，谷歌官方已经提供了对应的[工具库函数](https://github.com/material-foundation/material-color-utilities)，通过工具函数，可以更加便捷的满足日常设计流程中的颜色需求。
+
+目前已经支持了以下语言：
+
+| Language   | Availability | Location    |
+| ---------- | ------------ | ----------- |
+| C++        | ✅           |             |
+| Dart       | ✅           | pub v0.12.0 |
+| Java       | ✅           | MDC-Android |
+| Swift      | ✅           |             |
+| TypeScript | ✅           | npm v0.3.0  |
+
+该工具库可以满足以下需求：
+
+| 组件         | 用途                                                                                                                                    |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| blend        | 在 HCT 中插值、协调、动画和渐变颜色                                                                                                     |
+| contrast     | 测量对比度，获取对比色                                                                                                                  |
+| dislike      | 检查和修复普遍不受欢迎的颜色                                                                                                            |
+| dynamiccolor | 根据 UI 状态（深色主题、样式、偏好设置、对比度要求等）调整颜色                                                                          |
+| hct          | 基于 CAM16 和 L\* 的新色彩空间（色相、色度、色调），考虑了观看条件                                                                      |
+| palettes     | 色调调色板 — 仅在色调上变化的颜色范围<br/>核心调色板 — 创建 Material 配色方案所需的色调调色板集                                         |
+| quantize     | 将图像转换为 N 种颜色；由 Celebi 组成，运行 Wu 算法，然后是 WSMeans                                                                     |
+| scheme       | 从单一颜色或核心调色板创建静态和动态配色方案                                                                                            |
+| score        | 对颜色进行主题适用性排名                                                                                                                |
+| temperature  | 获取类似色和互补色                                                                                                                      |
+| utilities    | Color — 在实现 HCT/CAM16 所需的色彩空间之间转换<br/>Math — 用于确保色相在 0 到 360 之间、钳位等功能<br/>String — 在字符串和整数之间转换 |
+
+其中的动态主题配色方案非常吸引我，所以我简单做了一个可视化页面来展示动态主题配色方案。
+
+## demo
+
+<video width="100%" height="auto" controls>
+  <source src={useBaseUrl('/video/HCT Visual.mp4')} type="video/mp4" />
+  Your browser does not support the video tag.
+</video>
+
+HCT 类似 HSL，本质也是由 Hue、Chroma、Tone 三个维度组成，在三维空间中，是一个圆柱体，不过由于目前硬件方面的限制，屏幕的色域有限，当排除掉所有色域外的颜色后，得到的是一个不规则形状。
+
+在项目中使用`Three.js`对应的模型，通过等步长采样后即可得到对应的点云模型。
+
+然后则是工具库提供的俩项主题生成功能，分别是从单一颜色生成主题和从图片中生成主题，大致的效果参考视频中所示。非常值得一提的是，当用户向主题中添加自定义颜色时，不仅仅会调整颜色使其更加适配现有主题，且会生成内容和背景的相关色。
+
+在目前的 Demo 中，可以导出下面这样的色板，以便设计师使用：
+
+<img
+  src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202505271455796.png?imageSlim"
+  alt="HCT color palette"
+  style={{ maxHeight: '1000px' }}
+/>
+
+## 问题
+
+不过在实际应用中，还是存在一些小问题：
+
+### 与国内的设计规范存在较小的差异
+
+由于文化环境、用户心智等因素影响，可以看到和国内 AntD 等设计规范还是存在一些较小的差异。
+比如通过![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202505271518901.jpg?imageSlim)图片生成的色板：
+
+<img
+  src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202505271518994.png?imageSlim"
+  alt="HCT color palette"
+  style={{ maxHeight: '1000px' }}
+/>
+
+在渲染组件时，会出现以下情况：
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202505271519191.png?imageSlim)
+
+用于设计规范对于用户心智的影响，实际上部分颜色已经严格与场景绑定：`成功`绑定绿色系、`警告`绑定橙色系、`失败`绑定红色系。
+
+但目前的现成的主题色板，仅会给出`Error`相关的颜色，所以这里的主题色分布函数实际上是存在本地化改进的空间的。
+
+### 主题色面向前端 UI 设计
+
+生成的主题色板默认应用到前端 UI 中，如果要应用在图表中，或者绘画中，需要做额外调整。
+比如使用<span style={{ backgroundColor: '#1E90FF' }}>#1E90FF</span>作为主题色，从工具库中获取的数据结构如下：
+
+```json
+{
+  "source": -14774017,
+  "schemes": {
+    "light": {
+      "primary": 4278214575,
+      "onPrimary": 4294967295,
+      "primaryContainer": 4292142079,
+      "onPrimaryContainer": 4278197306,
+      "secondary": 4283719537,
+      "onSecondary": 4294967295,
+      "secondaryContainer": 4292404216,
+      "onSecondaryContainer": 4279311403,
+      "tertiary": 4285421174,
+      "onTertiary": 4294967295,
+      "tertiaryContainer": 4294433023,
+      "onTertiaryContainer": 4280751152,
+      "error": 4290386458,
+      "onError": 4294967295,
+      "errorContainer": 4294957782,
+      "onErrorContainer": 4282449922,
+      "background": 4294835455,
+      "onBackground": 4279901214,
+      "surface": 4294835455,
+      "onSurface": 4279901214,
+      "surfaceVariant": 4292928236,
+      "onSurfaceVariant": 4282599246,
+      "outline": 4285822847,
+      "outlineVariant": 4291020495,
+      "shadow": 4278190080,
+      "scrim": 4278190080,
+      "inverseSurface": 4281282611,
+      "inverseOnSurface": 4294045940,
+      "inversePrimary": 4289054975
+    },
+    "dark": {
+      "primary": 4289054975,
+      "onPrimary": 4278202719,
+      "primaryContainer": 4278208390,
+      "onPrimaryContainer": 4292142079,
+      "secondary": 4290562012,
+      "onSecondary": 4280758593,
+      "secondaryContainer": 4282206040,
+      "onSecondaryContainer": 4292404216,
+      "tertiary": 4292525538,
+      "onTertiary": 4282198342,
+      "tertiaryContainer": 4283776861,
+      "onTertiaryContainer": 4294433023,
+      "error": 4294948011,
+      "onError": 4285071365,
+      "errorContainer": 4287823882,
+      "onErrorContainer": 4294948011,
+      "background": 4279901214,
+      "onBackground": 4293124838,
+      "surface": 4279901214,
+      "onSurface": 4293124838,
+      "surfaceVariant": 4282599246,
+      "onSurfaceVariant": 4291020495,
+      "outline": 4287467929,
+      "outlineVariant": 4282599246,
+      "shadow": 4278190080,
+      "scrim": 4278190080,
+      "inverseSurface": 4293124838,
+      "inverseOnSurface": 4281282611,
+      "inversePrimary": 4278214575
+    }
+  },
+  "palettes": {
+    "primary": {
+      "hue": 259.32476474506586,
+      "chroma": 64.9530133992074,
+      "keyColor": {
+        "argb": 4278815480,
+        "internalHue": 259.115165941107,
+        "internalChroma": 64.78789385183921,
+        "internalTone": 57.087447712355555
+      },
+      "cache": {}
+    },
+    "secondary": {
+      "hue": 259.32476474506586,
+      "chroma": 16,
+      "keyColor": {
+        "argb": 4285364362,
+        "internalHue": 257.4342584392636,
+        "internalChroma": 15.812070368371808,
+        "internalTone": 50.11979738015614
+      },
+      "cache": {}
+    },
+    "tertiary": {
+      "hue": 319.32476474506586,
+      "chroma": 24,
+      "keyColor": {
+        "argb": 4287065744,
+        "internalHue": 318.84070766582244,
+        "internalChroma": 24.19211982260792,
+        "internalTone": 49.87760819292774
+      },
+      "cache": {}
+    },
+    "neutral": {
+      "hue": 259.32476474506586,
+      "chroma": 4,
+      "keyColor": {
+        "argb": 4285953914,
+        "internalHue": 249.28531956620805,
+        "internalChroma": 3.896367535971721,
+        "internalTone": 50.037832932313265
+      },
+      "cache": {}
+    },
+    "neutralVariant": {
+      "hue": 259.32476474506586,
+      "chroma": 8,
+      "keyColor": {
+        "argb": 4285822847,
+        "internalHue": 260.49580828372115,
+        "internalChroma": 7.743046226507394,
+        "internalTone": 50.02424974644671
+      },
+      "cache": {}
+    },
+    "error": {
+      "hue": 25,
+      "chroma": 84,
+      "keyColor": {
+        "argb": 4292753200,
+        "internalHue": 25.01013502609243,
+        "internalChroma": 84.04509263062815,
+        "internalTone": 50.06767986742766
+      },
+      "cache": {}
+    }
+  },
+  "customColors": []
+}
+```
+
+其中`source`即代表主题色，也就是<span style={{ backgroundColor: '#1E90FF' }}>#1E90FF</span>，不过在工具库中，使用 HCT 计算生态，需要转写为 ARGB 格式，即`0xFF1E90FF`，由于 JS 默认使用有符号 32 位整数存储，所以超过最大值会转为负数，即`0xFF1E90FF`存储为 4280223999，超过最大值存储为有符号 32 位整数-14774017。
+
+整个工具库函数给出的色值也全部遵循 ARGB 格式，所以这里还需要额外的转换步骤才能正常使用。
+
+从主题中给出的主题色中，可以看到`primary`等关键字，这意味着，这些色板本身就是符合前端常用颜色规范的，即工具库本身已经一段不等长的分布函数进行取色了。这意味着：
+
+1. 从浅程度的自定义来说，我们可以设定一个阈值，避免特别相近的色值，这样就可以将颜色应用到图表这类需要颜色分明的场景中，这也是目前 Demo 中的方案
+2. 从深程度的自定义来说，我们完全可以自定义符合自身工作场景的分布函数，从而获得自定义的颜色获取工具
+
+上面俩个方案的可行性都大大依赖了 HCT 实现的符合人眼认知的等步长的颜色梯度模型。
+
+## 原理
+
+尽管上面提出了一些在应用方向上的小问题，但这都不是 HCT 的缺点，而是主题生成工具的函数并不一定适用于所有的场景。
+
+上面我们已经提到可以通过自定义函数，创建自己的取色逻辑，即使是常用的临近取色、对称取色手段，基于 HCT 也会获得更加均匀的颜色梯度，从而获取更加舒适的色彩表达。后续的一些场景中，我可能会尝试定制自己的取色函数，但目前，还是先简单了解下 HCT 以及当前主题工具 的运行机制。
+
+### HCT
+
+前文中已经提到 HCT 是基于 CAM16 和 L\*的新色彩空间，`Hue`和`Chroma`维度取自 CAM16，`Tone`维度取自 L\*(CIE Lab)。
+从代码中可以看到其复杂的构建模型和计算转换：
+
+```javascript
+class Hct {
+  constructor(argb) {
+    this.argb = argb;
+    const cam = Cam16.fromInt(argb);
+    this.internalHue = cam.hue;
+    this.internalChroma = cam.chroma;
+    this.internalTone = utils.lstarFromArgb(argb);
+    this.argb = argb;
+  }
+}
+
+class Cam16 {
+  /**
+   * @param argb ARGB representation of a color.
+   * @return CAM16 color, assuming the color was viewed in default viewing
+   *     conditions.
+   */
+  static fromInt(argb) {
+    return Cam16.fromIntInViewingConditions(argb, ViewingConditions.DEFAULT);
+  }
+  /**
+   * @param argb ARGB representation of a color.
+   * @param viewingConditions Information about the environment where the color
+   *     was observed.
+   * @return CAM16 color.
+   */
+  static fromIntInViewingConditions(argb, viewingConditions) {
+    const red = (argb & 0x00ff0000) >> 16;
+    const green = (argb & 0x0000ff00) >> 8;
+    const blue = argb & 0x000000ff;
+    const redL = utils.linearized(red);
+    const greenL = utils.linearized(green);
+    const blueL = utils.linearized(blue);
+    const x = 0.41233895 * redL + 0.35762064 * greenL + 0.18051042 * blueL;
+    const y = 0.2126 * redL + 0.7152 * greenL + 0.0722 * blueL;
+    const z = 0.01932141 * redL + 0.11916382 * greenL + 0.95034478 * blueL;
+    const rC = 0.401288 * x + 0.650173 * y - 0.051461 * z;
+    const gC = -0.250268 * x + 1.204414 * y + 0.045854 * z;
+    const bC = -0.002079 * x + 0.048952 * y + 0.953127 * z;
+    const rD = viewingConditions.rgbD[0] * rC;
+    const gD = viewingConditions.rgbD[1] * gC;
+    const bD = viewingConditions.rgbD[2] * bC;
+    const rAF = Math.pow((viewingConditions.fl * Math.abs(rD)) / 100.0, 0.42);
+    const gAF = Math.pow((viewingConditions.fl * Math.abs(gD)) / 100.0, 0.42);
+    const bAF = Math.pow((viewingConditions.fl * Math.abs(bD)) / 100.0, 0.42);
+    const rA = (math.signum(rD) * 400.0 * rAF) / (rAF + 27.13);
+    const gA = (math.signum(gD) * 400.0 * gAF) / (gAF + 27.13);
+    const bA = (math.signum(bD) * 400.0 * bAF) / (bAF + 27.13);
+    const a = (11.0 * rA + -12.0 * gA + bA) / 11.0;
+    const b = (rA + gA - 2.0 * bA) / 9.0;
+    const u = (20.0 * rA + 20.0 * gA + 21.0 * bA) / 20.0;
+    const p2 = (40.0 * rA + 20.0 * gA + bA) / 20.0;
+    const atan2 = Math.atan2(b, a);
+    const atanDegrees = (atan2 * 180.0) / Math.PI;
+    const hue =
+      atanDegrees < 0
+        ? atanDegrees + 360.0
+        : atanDegrees >= 360
+        ? atanDegrees - 360.0
+        : atanDegrees;
+    const hueRadians = (hue * Math.PI) / 180.0;
+    const ac = p2 * viewingConditions.nbb;
+    const j =
+      100.0 *
+      Math.pow(
+        ac / viewingConditions.aw,
+        viewingConditions.c * viewingConditions.z
+      );
+    const q =
+      (4.0 / viewingConditions.c) *
+      Math.sqrt(j / 100.0) *
+      (viewingConditions.aw + 4.0) *
+      viewingConditions.fLRoot;
+    const huePrime = hue < 20.14 ? hue + 360 : hue;
+    const eHue = 0.25 * (Math.cos((huePrime * Math.PI) / 180.0 + 2.0) + 3.8);
+    const p1 =
+      (50000.0 / 13.0) * eHue * viewingConditions.nc * viewingConditions.ncb;
+    const t = (p1 * Math.sqrt(a * a + b * b)) / (u + 0.305);
+    const alpha =
+      Math.pow(t, 0.9) *
+      Math.pow(1.64 - Math.pow(0.29, viewingConditions.n), 0.73);
+    const c = alpha * Math.sqrt(j / 100.0);
+    const m = c * viewingConditions.fLRoot;
+    const s =
+      50.0 *
+      Math.sqrt((alpha * viewingConditions.c) / (viewingConditions.aw + 4.0));
+    const jstar = ((1.0 + 100.0 * 0.007) * j) / (1.0 + 0.007 * j);
+    const mstar = (1.0 / 0.0228) * Math.log(1.0 + 0.0228 * m);
+    const astar = mstar * Math.cos(hueRadians);
+    const bstar = mstar * Math.sin(hueRadians);
+    return new Cam16(hue, c, j, q, m, s, jstar, astar, bstar);
+  }
+}
+```
+
+其中的计算转换过于专业复杂，暂且不需要对其有深入的了解和认知，我们关注其构建流程：
+
+1. 边界处理：如果 chroma 或 lstar 太小或超界，直接返回灰阶色（argbFromLstar）。
+2. 参数转换：
+   - 色相角度转弧度
+   - L\* 转换为 Y（XYZ 空间的相对亮度）
+3. 主算法：
+   - 调用 findResultByJ，尝试通过牛顿迭代法在 CAM16 空间内找到满足 hue、chroma、Y 的颜色
+   - 如果失败，调用 bisectToLimit，在 RGB 立方体边界上二分查找最接近的颜色
+   - 最终通过 argbFromLinrgb 转换为 ARGB
+
+**关键算法细节**
+findResultByJ（核心迭代）：
+
+- 以 J（CAM16 明度）为自变量，牛顿法迭代，目标是使色度和亮度都接近目标值
+- 计算过程涉及 CAM16 的一系列参数（如 viewing conditions、色度、色相三角函数等）
+- 迭代 5 次或收敛后返回结果
+  bisectToLimit：
+- 如果主算法找不到可行解，则在 RGB 立方体边界上二分查找，保证色相和亮度最接近，色度最大化
+  色彩空间转换：
+- CAM16 与 XYZ、sRGB、Lab 之间的转换涉及多步矩阵运算和非线性变换
+- 相关常量和矩阵如 SCALED_DISCOUNT_FROM_LINRGB、LINRGB_FROM_SCALED_DISCOUNT、Y_FROM_LINRGB
+
+### 主题生成工具
+
+主题生成了工具的核心思想是"输入一个主色（ARGB），自动生成一套完整的主题色板"。
+从上面的 Demo 演示中也可以看到，工具库会根据用户上传的图片或者选中的主色，生成对应的主色。
+然后基于主色生成主题色板。
+从源码中可以获取到色板的详细生成逻辑，主要包括：
+
+- a1（主色组）、a2（次色组）、a3（强调色组）
+- n1（中性色组）、n2（中性变体组）
+- error（错误色组）
+
+```javascript
+class CorePalette {
+  constructor(argb, isContent) {
+    const hct = Hct.fromInt(argb);
+    const hue = hct.hue;
+    const chroma = hct.chroma;
+    if (isContent) {
+      this.a1 = TonalPalette.fromHueAndChroma(hue, chroma);
+      this.a2 = TonalPalette.fromHueAndChroma(hue, chroma / 3);
+      this.a3 = TonalPalette.fromHueAndChroma(hue + 60, chroma / 2);
+      this.n1 = TonalPalette.fromHueAndChroma(hue, Math.min(chroma / 12, 4));
+      this.n2 = TonalPalette.fromHueAndChroma(hue, Math.min(chroma / 6, 8));
+    } else {
+      this.a1 = TonalPalette.fromHueAndChroma(hue, Math.max(48, chroma));
+      this.a2 = TonalPalette.fromHueAndChroma(hue, 16);
+      this.a3 = TonalPalette.fromHueAndChroma(hue + 60, 24);
+      this.n1 = TonalPalette.fromHueAndChroma(hue, 4);
+      this.n2 = TonalPalette.fromHueAndChroma(hue, 8);
+    }
+    this.error = TonalPalette.fromHueAndChroma(25, 84);
+  }
+}
+```
+
+基于这些色板，赋予不同的明度(Tone)，即可获得 light/dark 主题下的详细色板，具体的 Tone 取值如下：
+
+```javascript
+class Scheme {
+  // ...
+  /**
+   * Light scheme from core palette
+   */
+  static lightFromCorePalette(core) {
+    return new Scheme({
+      primary: core.a1.tone(40),
+      onPrimary: core.a1.tone(100),
+      primaryContainer: core.a1.tone(90),
+      onPrimaryContainer: core.a1.tone(10),
+      secondary: core.a2.tone(40),
+      onSecondary: core.a2.tone(100),
+      secondaryContainer: core.a2.tone(90),
+      onSecondaryContainer: core.a2.tone(10),
+      tertiary: core.a3.tone(40),
+      onTertiary: core.a3.tone(100),
+      tertiaryContainer: core.a3.tone(90),
+      onTertiaryContainer: core.a3.tone(10),
+      error: core.error.tone(40),
+      onError: core.error.tone(100),
+      errorContainer: core.error.tone(90),
+      onErrorContainer: core.error.tone(10),
+      background: core.n1.tone(99),
+      onBackground: core.n1.tone(10),
+      surface: core.n1.tone(99),
+      onSurface: core.n1.tone(10),
+      surfaceVariant: core.n2.tone(90),
+      onSurfaceVariant: core.n2.tone(30),
+      outline: core.n2.tone(50),
+      outlineVariant: core.n2.tone(80),
+      shadow: core.n1.tone(0),
+      scrim: core.n1.tone(0),
+      inverseSurface: core.n1.tone(20),
+      inverseOnSurface: core.n1.tone(95),
+      inversePrimary: core.a1.tone(80),
+    });
+  }
+  /**
+   * Dark scheme from core palette
+   */
+  static darkFromCorePalette(core) {
+    return new Scheme({
+      primary: core.a1.tone(80),
+      onPrimary: core.a1.tone(20),
+      primaryContainer: core.a1.tone(30),
+      onPrimaryContainer: core.a1.tone(90),
+      secondary: core.a2.tone(80),
+      onSecondary: core.a2.tone(20),
+      secondaryContainer: core.a2.tone(30),
+      onSecondaryContainer: core.a2.tone(90),
+      tertiary: core.a3.tone(80),
+      onTertiary: core.a3.tone(20),
+      tertiaryContainer: core.a3.tone(30),
+      onTertiaryContainer: core.a3.tone(90),
+      error: core.error.tone(80),
+      onError: core.error.tone(20),
+      errorContainer: core.error.tone(30),
+      onErrorContainer: core.error.tone(80),
+      background: core.n1.tone(10),
+      onBackground: core.n1.tone(90),
+      surface: core.n1.tone(10),
+      onSurface: core.n1.tone(90),
+      surfaceVariant: core.n2.tone(30),
+      onSurfaceVariant: core.n2.tone(80),
+      outline: core.n2.tone(60),
+      outlineVariant: core.n2.tone(30),
+      shadow: core.n1.tone(0),
+      scrim: core.n1.tone(0),
+      inverseSurface: core.n1.tone(90),
+      inverseOnSurface: core.n1.tone(20),
+      inversePrimary: core.a1.tone(40),
+    });
+  }
+}
+```
+
+通过以上的逻辑以及工具函数，实际上我们可以快速定制出自己的色板规则，light/dark 中的 tone 取值可以成为我们新色板的参考值，在其基础上仅做小幅度的改动就可以获得不错的效果。主要修改的地方实际上是 material 中定制的<InlineMath math="a_n"/>、<InlineMath math="n_n"/>的取色规则，我们完全可以依据自身实际的业务场景，给出更加契合自身的取色规则。

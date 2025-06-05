@@ -1,0 +1,488 @@
+---
+slug: hct-visual
+title: HCT Visual
+tags: [hct, visual]
+---
+
+import useBaseUrl from '@docusaurus/useBaseUrl';
+import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
+import Link from '@docusaurus/Link';
+
+**TLDR**
+The HCT color space is a next-generation color model developed by Google, balancing human visual perception and design needs, and is widely used for dynamic theme color generation. Its utility library supports multiple languages, can automatically generate frontend-friendly theme palettes, and allows custom distribution functions for localization and charting scenarios. HCT's perceptually uniform color gradients and theme generation mechanism provide designers and developers with more natural and comfortable color experiences, though there is still room for optimization in localization and special applications.
+![https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202505271518994.png?imageSlim](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202505271518994.png?imageSlim)
+{/* truncate */}
+
+## Introduction
+
+In my previous post on <Link to="/blog/color-space">color spaces</Link>, I briefly mentioned Google's HCT color space. Google has officially provided a [utility library](https://github.com/material-foundation/material-color-utilities) that makes it much easier to meet color needs in daily design workflows.
+
+Currently, the library supports the following languages:
+
+| Language   | Availability | Location    |
+| ---------- | ------------ | ----------- |
+| C++        | ✅           |             |
+| Dart       | ✅           | pub v0.12.0 |
+| Java       | ✅           | MDC-Android |
+| Swift      | ✅           |             |
+| TypeScript | ✅           | npm v0.3.0  |
+
+The utility library covers the following needs:
+
+| Component    | Purpose                                                                                                                     |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| blend        | Interpolation, harmonization, animation, and gradients in HCT                                                               |
+| contrast     | Measure contrast, get contrasting colors                                                                                    |
+| dislike      | Detect and fix generally disliked colors                                                                                    |
+| dynamiccolor | Adjust colors based on UI state (dark mode, style, preferences, contrast requirements, etc.)                                |
+| hct          | New color space based on CAM16 and L\* (hue, chroma, tone), considering viewing conditions                                  |
+| palettes     | Tonal palettes—ranges of colors varying only in tone<br/>Core palettes—sets of tonal palettes for Material theme generation |
+| quantize     | Reduce an image to N colors; uses Celebi, Wu's algorithm, then WSMeans                                                      |
+| scheme       | Create static and dynamic color schemes from a single color or core palette                                                 |
+| score        | Rank colors for theme suitability                                                                                           |
+| temperature  | Get analogous and complementary colors                                                                                      |
+| utilities    | Color—convert between color spaces needed for HCT/CAM16<br/>Math—hue clamping, etc.<br/>String—convert between string/int   |
+
+I was particularly interested in the dynamic theme generation, so I built a simple visualization page to showcase it.
+
+## Demo
+
+<video width="100%" height="auto" controls>
+  <source src={useBaseUrl('/video/HCT Visual.mp4')} type="video/mp4" />
+  Your browser does not support the video tag.
+</video>
+
+HCT is similar to HSL in that it is defined by three dimensions: Hue, Chroma, and Tone. In 3D space, it forms a cylinder, but due to hardware limitations (display gamut), the actual usable color space is an irregular shape after excluding out-of-gamut colors.
+
+In the project, I used a Three.js model to sample the space at equal intervals, resulting in a point cloud model.
+
+The utility library provides two main theme generation features: generating a theme from a single color and from an image. The video above demonstrates both. Notably, when users add custom colors to the theme, the tool not only adjusts the color to better fit the theme but also generates related content and background colors.
+
+In the current demo, you can export palettes like the one below for designers to use:
+
+<img
+  src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202505271455796.png?imageSlim"
+  alt="HCT color palette"
+  style={{ maxHeight: '1000px' }}
+/>
+
+## Issues
+
+However, there are still some minor issues in practical use:
+
+### Minor Differences from Domestic Design Guidelines
+
+Due to cultural context and user expectations, there are some subtle differences compared to domestic (e.g., AntD) design guidelines. For example, the palette generated from this image:
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202505271518901.jpg?imageSlim)
+
+<img
+  src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202505271518994.png?imageSlim"
+  alt="HCT color palette"
+  style={{ maxHeight: '1000px' }}
+/>
+
+When rendering components, you may encounter the following situation:
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202505271519191.png?imageSlim)
+
+Because design guidelines influence user expectations, certain colors are strongly associated with specific scenarios: green for "success," orange for "warning," and red for "error." However, the current theme palettes only provide an "error" color, so there is room for localization improvements in the theme color distribution function.
+
+### Theme Colors Are Oriented Toward Frontend UI Design
+
+The generated theme palettes are intended for frontend UI by default. If you want to use them in charts or illustrations, further adjustments are needed. For example, using <span style={{ backgroundColor: '#1E90FF' }}>#1E90FF</span> as the theme color, the data structure from the utility library looks like this:
+
+```json
+{
+  "source": -14774017,
+  "schemes": {
+    "light": {
+      "primary": 4278214575,
+      "onPrimary": 4294967295,
+      "primaryContainer": 4292142079,
+      "onPrimaryContainer": 4278197306,
+      "secondary": 4283719537,
+      "onSecondary": 4294967295,
+      "secondaryContainer": 4292404216,
+      "onSecondaryContainer": 4279311403,
+      "tertiary": 4285421174,
+      "onTertiary": 4294967295,
+      "tertiaryContainer": 4294433023,
+      "onTertiaryContainer": 4280751152,
+      "error": 4290386458,
+      "onError": 4294967295,
+      "errorContainer": 4294957782,
+      "onErrorContainer": 4282449922,
+      "background": 4294835455,
+      "onBackground": 4279901214,
+      "surface": 4294835455,
+      "onSurface": 4279901214,
+      "surfaceVariant": 4292928236,
+      "onSurfaceVariant": 4282599246,
+      "outline": 4285822847,
+      "outlineVariant": 4291020495,
+      "shadow": 4278190080,
+      "scrim": 4278190080,
+      "inverseSurface": 4281282611,
+      "inverseOnSurface": 4294045940,
+      "inversePrimary": 4289054975
+    },
+    "dark": {
+      "primary": 4289054975,
+      "onPrimary": 4278202719,
+      "primaryContainer": 4278208390,
+      "onPrimaryContainer": 4292142079,
+      "secondary": 4290562012,
+      "onSecondary": 4280758593,
+      "secondaryContainer": 4282206040,
+      "onSecondaryContainer": 4292404216,
+      "tertiary": 4292525538,
+      "onTertiary": 4282198342,
+      "tertiaryContainer": 4283776861,
+      "onTertiaryContainer": 4294433023,
+      "error": 4294948011,
+      "onError": 4285071365,
+      "errorContainer": 4287823882,
+      "onErrorContainer": 4294948011,
+      "background": 4279901214,
+      "onBackground": 4293124838,
+      "surface": 4279901214,
+      "onSurface": 4293124838,
+      "surfaceVariant": 4282599246,
+      "onSurfaceVariant": 4291020495,
+      "outline": 4287467929,
+      "outlineVariant": 4282599246,
+      "shadow": 4278190080,
+      "scrim": 4278190080,
+      "inverseSurface": 4293124838,
+      "inverseOnSurface": 4281282611,
+      "inversePrimary": 4278214575
+    }
+  },
+  "palettes": {
+    "primary": {
+      "hue": 259.32476474506586,
+      "chroma": 64.9530133992074,
+      "keyColor": {
+        "argb": 4278815480,
+        "internalHue": 259.115165941107,
+        "internalChroma": 64.78789385183921,
+        "internalTone": 57.087447712355555
+      },
+      "cache": {}
+    },
+    "secondary": {
+      "hue": 259.32476474506586,
+      "chroma": 16,
+      "keyColor": {
+        "argb": 4285364362,
+        "internalHue": 257.4342584392636,
+        "internalChroma": 15.812070368371808,
+        "internalTone": 50.11979738015614
+      },
+      "cache": {}
+    },
+    "tertiary": {
+      "hue": 319.32476474506586,
+      "chroma": 24,
+      "keyColor": {
+        "argb": 4287065744,
+        "internalHue": 318.84070766582244,
+        "internalChroma": 24.19211982260792,
+        "internalTone": 49.87760819292774
+      },
+      "cache": {}
+    },
+    "neutral": {
+      "hue": 259.32476474506586,
+      "chroma": 4,
+      "keyColor": {
+        "argb": 4285953914,
+        "internalHue": 249.28531956620805,
+        "internalChroma": 3.896367535971721,
+        "internalTone": 50.037832932313265
+      },
+      "cache": {}
+    },
+    "neutralVariant": {
+      "hue": 259.32476474506586,
+      "chroma": 8,
+      "keyColor": {
+        "argb": 4285822847,
+        "internalHue": 260.49580828372115,
+        "internalChroma": 7.743046226507394,
+        "internalTone": 50.02424974644671
+      },
+      "cache": {}
+    },
+    "error": {
+      "hue": 25,
+      "chroma": 84,
+      "keyColor": {
+        "argb": 4292753200,
+        "internalHue": 25.01013502609243,
+        "internalChroma": 84.04509263062815,
+        "internalTone": 50.06767986742766
+      },
+      "cache": {}
+    }
+  },
+  "customColors": []
+}
+```
+
+Here, `source` represents the theme color, which is <span style={{ backgroundColor: '#1E90FF' }}>#1E90FF</span>. In the utility library, HCT calculations use the ARGB format, i.e., `0xFF1E90FF`. Since JavaScript stores numbers as signed 32-bit integers, values exceeding the max positive integer are stored as negatives, so `0xFF1E90FF` becomes 4280223999, and as a signed integer, -14774017.
+
+All color values returned by the utility functions are in ARGB format, so you need to convert them for normal use.
+
+Looking at the theme colors like `primary`, you can see that these palettes already follow frontend color conventions—the utility library uses a non-uniform distribution function to select colors. This means:
+
+1. For simple customization, you can set a threshold to avoid overly similar colors, making the palette suitable for charts where color distinction is important (as in the current demo).
+2. For deeper customization, you can define your own distribution function to get a color picking tool tailored to your workflow.
+
+Both approaches benefit greatly from HCT's perceptually uniform color gradient model.
+
+## Principles
+
+Although there are some application-specific issues above, these are not shortcomings of HCT itself, but rather limitations of the theme generation functions for certain scenarios.
+
+As mentioned, you can create your own color picking logic—even common approaches like analogous or complementary color selection will yield more uniform gradients with HCT, resulting in more comfortable color expression. In future scenarios, I may try customizing my own color picking functions, but for now, let's briefly understand how HCT and the current theme tools work.
+
+### HCT
+
+As mentioned earlier, HCT is a new color space based on CAM16 and L*. The `Hue` and `Chroma` dimensions come from CAM16, while `Tone` comes from L* (CIE Lab).
+The code below shows its complex construction and conversion logic:
+
+```javascript
+class Hct {
+  constructor(argb) {
+    this.argb = argb;
+    const cam = Cam16.fromInt(argb);
+    this.internalHue = cam.hue;
+    this.internalChroma = cam.chroma;
+    this.internalTone = utils.lstarFromArgb(argb);
+    this.argb = argb;
+  }
+}
+
+class Cam16 {
+  /**
+   * @param argb ARGB representation of a color.
+   * @return CAM16 color, assuming the color was viewed in default viewing
+   *     conditions.
+   */
+  static fromInt(argb) {
+    return Cam16.fromIntInViewingConditions(argb, ViewingConditions.DEFAULT);
+  }
+  /**
+   * @param argb ARGB representation of a color.
+   * @param viewingConditions Information about the environment where the color
+   *     was observed.
+   * @return CAM16 color.
+   */
+  static fromIntInViewingConditions(argb, viewingConditions) {
+    const red = (argb & 0x00ff0000) >> 16;
+    const green = (argb & 0x0000ff00) >> 8;
+    const blue = argb & 0x000000ff;
+    const redL = utils.linearized(red);
+    const greenL = utils.linearized(green);
+    const blueL = utils.linearized(blue);
+    const x = 0.41233895 * redL + 0.35762064 * greenL + 0.18051042 * blueL;
+    const y = 0.2126 * redL + 0.7152 * greenL + 0.0722 * blueL;
+    const z = 0.01932141 * redL + 0.11916382 * greenL + 0.95034478 * blueL;
+    const rC = 0.401288 * x + 0.650173 * y - 0.051461 * z;
+    const gC = -0.250268 * x + 1.204414 * y + 0.045854 * z;
+    const bC = -0.002079 * x + 0.048952 * y + 0.953127 * z;
+    const rD = viewingConditions.rgbD[0] * rC;
+    const gD = viewingConditions.rgbD[1] * gC;
+    const bD = viewingConditions.rgbD[2] * bC;
+    const rAF = Math.pow((viewingConditions.fl * Math.abs(rD)) / 100.0, 0.42);
+    const gAF = Math.pow((viewingConditions.fl * Math.abs(gD)) / 100.0, 0.42);
+    const bAF = Math.pow((viewingConditions.fl * Math.abs(bD)) / 100.0, 0.42);
+    const rA = (math.signum(rD) * 400.0 * rAF) / (rAF + 27.13);
+    const gA = (math.signum(gD) * 400.0 * gAF) / (gAF + 27.13);
+    const bA = (math.signum(bD) * 400.0 * bAF) / (bAF + 27.13);
+    const a = (11.0 * rA + -12.0 * gA + bA) / 11.0;
+    const b = (rA + gA - 2.0 * bA) / 9.0;
+    const u = (20.0 * rA + 20.0 * gA + 21.0 * bA) / 20.0;
+    const p2 = (40.0 * rA + 20.0 * gA + bA) / 20.0;
+    const atan2 = Math.atan2(b, a);
+    const atanDegrees = (atan2 * 180.0) / Math.PI;
+    const hue =
+      atanDegrees < 0
+        ? atanDegrees + 360.0
+        : atanDegrees >= 360
+        ? atanDegrees - 360.0
+        : atanDegrees;
+    const hueRadians = (hue * Math.PI) / 180.0;
+    const ac = p2 * viewingConditions.nbb;
+    const j =
+      100.0 *
+      Math.pow(
+        ac / viewingConditions.aw,
+        viewingConditions.c * viewingConditions.z
+      );
+    const q =
+      (4.0 / viewingConditions.c) *
+      Math.sqrt(j / 100.0) *
+      (viewingConditions.aw + 4.0) *
+      viewingConditions.fLRoot;
+    const huePrime = hue < 20.14 ? hue + 360 : hue;
+    const eHue = 0.25 * (Math.cos((huePrime * Math.PI) / 180.0 + 2.0) + 3.8);
+    const p1 =
+      (50000.0 / 13.0) * eHue * viewingConditions.nc * viewingConditions.ncb;
+    const t = (p1 * Math.sqrt(a * a + b * b)) / (u + 0.305);
+    const alpha =
+      Math.pow(t, 0.9) *
+      Math.pow(1.64 - Math.pow(0.29, viewingConditions.n), 0.73);
+    const c = alpha * Math.sqrt(j / 100.0);
+    const m = c * viewingConditions.fLRoot;
+    const s =
+      50.0 *
+      Math.sqrt((alpha * viewingConditions.c) / (viewingConditions.aw + 4.0));
+    const jstar = ((1.0 + 100.0 * 0.007) * j) / (1.0 + 0.007 * j);
+    const mstar = (1.0 / 0.0228) * Math.log(1.0 + 0.0228 * m);
+    const astar = mstar * Math.cos(hueRadians);
+    const bstar = mstar * Math.sin(hueRadians);
+    return new Cam16(hue, c, j, q, m, s, jstar, astar, bstar);
+  }
+}
+```
+
+The calculations are highly specialized, so we don't need to dive into the details. Let's focus on the construction process:
+
+1. Boundary handling: If chroma or lstar is too small or out of bounds, return a grayscale color (argbFromLstar).
+2. Parameter conversion:
+   - Convert hue angle to radians
+   - Convert L\* to Y (relative luminance in XYZ space)
+3. Main algorithm:
+   - Call findResultByJ to use Newton's method in CAM16 space to find a color matching hue, chroma, and Y
+   - If that fails, call bisectToLimit to binary search the RGB cube boundary for the closest color
+   - Finally, convert to ARGB via argbFromLinrgb
+
+**Key Algorithm Details**
+findResultByJ (core iteration):
+
+- Uses J (CAM16 lightness) as the variable, iterates with Newton's method to match chroma and luminance
+- Involves a series of CAM16 parameters (viewing conditions, chroma, hue trig functions, etc.)
+- Returns after 5 iterations or convergence
+- If the main algorithm fails, binary search the RGB cube boundary to maximize chroma while matching hue and luminance
+- CAM16 &lt;-&gt; XYZ, sRGB, Lab involve multiple matrix and nonlinear transforms
+- Constants/matrices: SCALED_DISCOUNT_FROM_LINRGB, LINRGB_FROM_SCALED_DISCOUNT, Y_FROM_LINRGB
+
+### Theme Generation Tools
+
+The core idea of the theme generation tool is: "Input a main color (ARGB), and automatically generate a complete theme palette."
+As shown in the demo, the utility library generates a main color from a user-uploaded image or selected color, then builds a theme palette from it.
+The source code reveals the palette generation logic, mainly including:
+
+- a1 (primary group), a2 (secondary group), a3 (accent group)
+- n1 (neutral group), n2 (neutral variant group)
+- error (error group)
+
+```javascript
+class CorePalette {
+  constructor(argb, isContent) {
+    const hct = Hct.fromInt(argb);
+    const hue = hct.hue;
+    const chroma = hct.chroma;
+    if (isContent) {
+      this.a1 = TonalPalette.fromHueAndChroma(hue, chroma);
+      this.a2 = TonalPalette.fromHueAndChroma(hue, chroma / 3);
+      this.a3 = TonalPalette.fromHueAndChroma(hue + 60, chroma / 2);
+      this.n1 = TonalPalette.fromHueAndChroma(hue, Math.min(chroma / 12, 4));
+      this.n2 = TonalPalette.fromHueAndChroma(hue, Math.min(chroma / 6, 8));
+    } else {
+      this.a1 = TonalPalette.fromHueAndChroma(hue, Math.max(48, chroma));
+      this.a2 = TonalPalette.fromHueAndChroma(hue, 16);
+      this.a3 = TonalPalette.fromHueAndChroma(hue + 60, 24);
+      this.n1 = TonalPalette.fromHueAndChroma(hue, 4);
+      this.n2 = TonalPalette.fromHueAndChroma(hue, 8);
+    }
+    this.error = TonalPalette.fromHueAndChroma(25, 84);
+  }
+}
+```
+
+Based on these palettes, assigning different tones yields detailed palettes for light/dark themes. The specific tone values are as follows:
+
+```javascript
+class Scheme {
+  // ...
+  /**
+   * Light scheme from core palette
+   */
+  static lightFromCorePalette(core) {
+    return new Scheme({
+      primary: core.a1.tone(40),
+      onPrimary: core.a1.tone(100),
+      primaryContainer: core.a1.tone(90),
+      onPrimaryContainer: core.a1.tone(10),
+      secondary: core.a2.tone(40),
+      onSecondary: core.a2.tone(100),
+      secondaryContainer: core.a2.tone(90),
+      onSecondaryContainer: core.a2.tone(10),
+      tertiary: core.a3.tone(40),
+      onTertiary: core.a3.tone(100),
+      tertiaryContainer: core.a3.tone(90),
+      onTertiaryContainer: core.a3.tone(10),
+      error: core.error.tone(40),
+      onError: core.error.tone(100),
+      errorContainer: core.error.tone(90),
+      onErrorContainer: core.error.tone(10),
+      background: core.n1.tone(99),
+      onBackground: core.n1.tone(10),
+      surface: core.n1.tone(99),
+      onSurface: core.n1.tone(10),
+      surfaceVariant: core.n2.tone(90),
+      onSurfaceVariant: core.n2.tone(30),
+      outline: core.n2.tone(50),
+      outlineVariant: core.n2.tone(80),
+      shadow: core.n1.tone(0),
+      scrim: core.n1.tone(0),
+      inverseSurface: core.n1.tone(20),
+      inverseOnSurface: core.n1.tone(95),
+      inversePrimary: core.a1.tone(80),
+    });
+  }
+  /**
+   * Dark scheme from core palette
+   */
+  static darkFromCorePalette(core) {
+    return new Scheme({
+      primary: core.a1.tone(80),
+      onPrimary: core.a1.tone(20),
+      primaryContainer: core.a1.tone(30),
+      onPrimaryContainer: core.a1.tone(90),
+      secondary: core.a2.tone(80),
+      onSecondary: core.a2.tone(20),
+      secondaryContainer: core.a2.tone(30),
+      onSecondaryContainer: core.a2.tone(90),
+      tertiary: core.a3.tone(80),
+      onTertiary: core.a3.tone(20),
+      tertiaryContainer: core.a3.tone(30),
+      onTertiaryContainer: core.a3.tone(90),
+      error: core.error.tone(80),
+      onError: core.error.tone(20),
+      errorContainer: core.error.tone(30),
+      onErrorContainer: core.error.tone(80),
+      background: core.n1.tone(10),
+      onBackground: core.n1.tone(90),
+      surface: core.n1.tone(10),
+      onSurface: core.n1.tone(90),
+      surfaceVariant: core.n2.tone(30),
+      onSurfaceVariant: core.n2.tone(80),
+      outline: core.n2.tone(60),
+      outlineVariant: core.n2.tone(30),
+      shadow: core.n1.tone(0),
+      scrim: core.n1.tone(0),
+      inverseSurface: core.n1.tone(90),
+      inverseOnSurface: core.n1.tone(20),
+      inversePrimary: core.a1.tone(40),
+    });
+  }
+}
+```
+
+With this logic and the utility functions, you can quickly customize your own palette rules. The tone values for light/dark themes can serve as a reference for new palettes—small tweaks can yield great results. The main area for modification is the color picking rules for <InlineMath math="a_n"/> and <InlineMath math="n_n"/> in Material; you can fully tailor these to your business needs.
