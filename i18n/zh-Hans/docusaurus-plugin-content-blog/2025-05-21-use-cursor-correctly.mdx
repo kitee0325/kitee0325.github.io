@@ -1,0 +1,463 @@
+---
+slug: use-cursor-correctly
+title: 正确使用 Cursor
+tags: [cursor, ai]
+---
+
+import useBaseUrl from '@docusaurus/useBaseUrl';
+import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
+import Link from '@docusaurus/Link';
+
+**TLDR**
+本文系统梳理了如何高效、正确地使用 Cursor 这类 AI 编码助手。核心观点包括：多轮对话会显著降低 LLM 的准确率，应优先采用一次性完整描述需求的方式；通过“AI 友好架构”优化项目结构和代码语义（如自文档化、契约式设计、结构化 README、DSL 术语映射等），能极大提升 AI 理解和协作效率；合理利用 Cursor 的多种问询模式（Agent、Ask、Manual、Custom、Background）和上下文管理功能，结合项目实际灵活切换；并建议根据任务类型和模型特性选择合适的 AI 模型。整体强调：以工程化视角优化代码和文档结构，主动为 AI 提供高质量上下文，是发挥 AI 编码助手最大价值的关键。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506061310373.png?imageSlim)
+{/* truncate */}
+
+## 前言
+
+从最开始的 Copilot，到现在的 cursor，甚至最近的 Devin，AI 编码正在逐渐发力。最开始使用 Copilot 时，他仅仅可以智能补全一些常用的工具函数，还无法直接从 0 到 1 的实现具体的需求；而如今的 Cursor 已经可以完成的实现中小规模的需求，且完成自检，代码质量也变得越来越好。
+
+5 月中旬，微软发布了关于 LLM 在多轮对话中逐渐丢失精度报告，这也反向促使我开始思考：
+
+- 我究竟有没有正确使用好 Cursor？
+- 它的最佳实践是什么？
+- 能力边界又在哪里？
+- 是否存在一些方法论可以帮我解决更加复杂的问题？
+
+## 最佳实践
+
+### 避免多轮对话
+
+<object
+  data={useBaseUrl('/paper/LLMS GET LOST IN MULTI-TURN CONVERSATION.pdf')}
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href={useBaseUrl('/paper/LLMS GET LOST IN MULTI-TURN CONVERSATION.pdf')}>
+    Download PDF
+  </a>
+  .
+</object>
+
+前面我们已经提到微软研究室做了关于多轮对话影响 LLM 精度的研究，在这里我们大概了解一下其中的一些结论。
+
+微软尝试应用了五种对话策略，并选取了其中的三种进行主要测试：
+
+> - FULL: 在一开始就给出完整的需求描述
+> - SHARDED: 将需求分片，每轮给出一部分
+> - CONCAT: 将需求分片，在一轮对话中全部给出，对话前面会给出提示词要求大模型考虑所有的需求分片条件
+> - RECAP: 结合 SHARDED 和 CONCAT 的改进，需求分片，每轮给出一部分，并在最后一轮做 CONCAT 描述
+> - SNOWBALL: 基于 RECAP 的改进，需求分片，每轮先总结前面轮次中给出的所有需求分片，并强调本轮的需求分片
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506061330737.png?imageSlim)
+
+针对目前主流的 LLM 模型，以及常见的六种问答场景进行了详细测试：
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506061310373.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506061310567.png?imageSlim)
+
+从图表中可以看到，多轮对话几乎让 LLM 损失了一半左右的性能。而造成这种结果的原因也非常易于理解，在前面轮次的对话中，由于 LLM 无法确认用户的需求方向，会大量检索不相关的内容，并携带这些内容作为下一轮对话的上下文，多轮次累积后，这些上下文的量级已经达到了非常庞大的程度，当 LLM 基于上下文和用户给出的需求尝试进行回答时，这些不相关的上下文会让 LLM 感到困惑并做出产生严重的幻觉。
+
+在微软的研究报告中还指出，即使在前置的对话轮次中调整`temperature`参数，尝试降低这些额外上下文的影响，带来的效果也微乎其微。
+
+### AI 友好架构
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506061433407.png?imageSlim)
+本月初期，Vue 的创始人尤雨溪(Evan You)在 Twitter 上表示 Vue、Vite、Rolldown 等官方文档项目内已经引入 llms.txt 文件，同时发布了 VuePress 的 llms 插件[vitepress-plugin-llms](https://github.com/okineadev/vitepress-plugin-llms)。llms.txt 文件是基于[llmstxt](https://llmstxt.org/)规范的文件，该文件的本质是提供项目信息以协助 LLM 可以更快更好的理解项目，从而获得更好的回答。
+
+以 Vue 官方文档项目中的 llms.txt 为例：
+
+```txt
+# Vue.js
+
+Vue.js - The Progressive JavaScript Framework
+
+## Table of Contents
+
+- [\<script setup> {#script-setup}](/api/sfc-script-setup.md)
+- [Accessibility {#accessibility}](/guide/best-practices/accessibility.md)
+- [Animation Techniques {#animation-techniques}](/guide/extras/animation.md)
+- [API Reference](/api/index.md)
+- [Application API {#application-api}](/api/application.md)
+- [Async Components {#async-components}](/guide/components/async.md)
+- [Built-in Components {#built-in-components}](/api/built-in-components.md)
+- [Built-in Directives {#built-in-directives}](/api/built-in-directives.md)
+- [Built-in Special Attributes {#built-in-special-attributes}](/api/built-in-special-attributes.md)
+- [Built-in Special Elements {#built-in-special-elements}](/api/built-in-special-elements.md)
+- [Class and Style Bindings {#class-and-style-bindings}](/guide/essentials/class-and-style.md)
+- [Community Guide {#community-guide}](/about/community-guide.md)
+- [Community Newsletters {#community-newsletters}](/ecosystem/newsletters.md)
+- [Compile-Time Flags {#compile-time-flags}](/api/compile-time-flags.md)
+- [Component Events {#component-events}](/guide/components/events.md)
+- [Component Instance {#component-instance}](/api/component-instance.md)
+- [Component Registration {#component-registration}](/guide/components/registration.md)
+- [Component v-model {#component-v-model}](/guide/components/v-model.md)
+- [Components Basics {#components-basics}](/guide/essentials/component-basics.md)
+- [Composables {#composables}](/guide/reusability/composables.md)
+- [Composition API FAQ {#composition-api-faq}](/guide/extras/composition-api-faq.md)
+- [Composition API: <br>Dependency Injection {#composition-api-dependency-injection}](/api/composition-api-dependency-injection.md)
+- [Composition API: Helpers {#composition-api-helpers}](/api/composition-api-helpers.md)
+- [Composition API: Lifecycle Hooks {#composition-api-lifecycle-hooks}](/api/composition-api-lifecycle.md)
+- [Composition API: setup() {#composition-api-setup}](/api/composition-api-setup.md)
+- [Computed Properties {#computed-properties}](/guide/essentials/computed.md)
+- [Conditional Rendering {#conditional-rendering}](/guide/essentials/conditional.md)
+- [Creating a Vue Application {#creating-a-vue-application}](/guide/essentials/application.md)
+- [Custom Directives {#custom-directives}](/guide/reusability/custom-directives.md)
+- [Custom Elements API {#custom-elements-api}](/api/custom-elements.md)
+- [Custom Renderer API {#custom-renderer-api}](/api/custom-renderer.md)
+- [Event Handling {#event-handling}](/guide/essentials/event-handling.md)
+- [Fallthrough Attributes {#fallthrough-attributes}](/guide/components/attrs.md)
+- [Form Input Bindings {#form-input-bindings}](/guide/essentials/forms.md)
+- [Frequently Asked Questions {#frequently-asked-questions}](/about/faq.md)
+- [Global API: General {#global-api-general}](/api/general.md)
+- [Glossary {#glossary}](/glossary/index.md)
+- [Introduction {#introduction}](/guide/introduction.md)
+- [KeepAlive {#keepalive}](/guide/built-ins/keep-alive.md)
+- [Lifecycle Hooks {#lifecycle-hooks}](/guide/essentials/lifecycle.md)
+- [List Rendering {#list-rendering}](/guide/essentials/list.md)
+- [Options: Composition {#options-composition}](/api/options-composition.md)
+- [Options: Lifecycle {#options-lifecycle}](/api/options-lifecycle.md)
+- [Options: Misc {#options-misc}](/api/options-misc.md)
+- [Options: Rendering {#options-rendering}](/api/options-rendering.md)
+- [Options: State {#options-state}](/api/options-state.md)
+- [Performance {#performance}](/guide/best-practices/performance.md)
+- [Priority A Rules: Essential {#priority-a-rules-essential}](/style-guide/rules-essential.md)
+- [Priority B Rules: Strongly Recommended {#priority-b-rules-strongly-recommended}](/style-guide/rules-strongly-recommended.md)
+- [Priority C Rules: Recommended {#priority-c-rules-recommended}](/style-guide/rules-recommended.md)
+- [Priority D Rules: Use with Caution {#priority-d-rules-use-with-caution}](/style-guide/rules-use-with-caution.md)
+- [Production Deployment {#production-deployment}](/guide/best-practices/production-deployment.md)
+- [Production Error Code Reference {#error-reference}](/error-reference/index.md)
+- [Props {#props}](/guide/components/props.md)
+- [Provide / Inject {#provide-inject}](/guide/components/provide-inject.md)
+- [Quick Start {#quick-start}](/guide/quick-start.md)
+- [Reactivity API: Advanced {#reactivity-api-advanced}](/api/reactivity-advanced.md)
+- [Reactivity API: Core {#reactivity-api-core}](/api/reactivity-core.md)
+- [Reactivity API: Utilities {#reactivity-api-utilities}](/api/reactivity-utilities.md)
+- [Reactivity Fundamentals {#reactivity-fundamentals}](/guide/essentials/reactivity-fundamentals.md)
+- [Reactivity in Depth {#reactivity-in-depth}](/guide/extras/reactivity-in-depth.md)
+- [Reactivity Transform {#reactivity-transform}](/guide/extras/reactivity-transform.md)
+- [Releases {#releases}](/about/releases.md)
+- [Render Function APIs {#render-function-apis}](/api/render-function.md)
+- [Render Functions & JSX {#render-functions-jsx}](/guide/extras/render-function.md)
+- [Rendering Mechanism {#rendering-mechanism}](/guide/extras/rendering-mechanism.md)
+- [Routing {#routing}](/guide/scaling-up/routing.md)
+- [Security {#security}](/guide/best-practices/security.md)
+- [Server-Side Rendering (SSR) {#server-side-rendering-ssr}](/guide/scaling-up/ssr.md)
+- [Server-Side Rendering API {#server-side-rendering-api}](/api/ssr.md)
+- [SFC CSS Features {#sfc-css-features}](/api/sfc-css-features.md)
+- [SFC Syntax Specification {#sfc-syntax-specification}](/api/sfc-spec.md)
+- [Single-File Components {#single-file-components}](/guide/scaling-up/sfc.md)
+- [Slots {#slots}](/guide/components/slots.md)
+- [State Management {#state-management}](/guide/scaling-up/state-management.md)
+- [Style Guide {#style-guide}](/style-guide/index.md)
+- [Suspense {#suspense}](/guide/built-ins/suspense.md)
+- [Teleport {#teleport}](/guide/built-ins/teleport.md)
+- [Template Refs {#template-refs}](/guide/essentials/template-refs.md)
+- [Template Syntax {#template-syntax}](/guide/essentials/template-syntax.md)
+- [Testing {#testing}](/guide/scaling-up/testing.md)
+- [Tooling {#tooling}](/guide/scaling-up/tooling.md)
+- [Transition {#transition}](/guide/built-ins/transition.md)
+- [TransitionGroup {#transitiongroup}](/guide/built-ins/transition-group.md)
+- [Translations {#translations}](/translations/index.md)
+- [Tutorial](/tutorial/index.md)
+- [TypeScript with Composition API {#typescript-with-composition-api}](/guide/typescript/composition-api.md)
+- [TypeScript with Options API {#typescript-with-options-api}](/guide/typescript/options-api.md)
+- [Untitled](/guide/reusability/plugins.md)
+- [Using Vue with TypeScript {#using-vue-with-typescript}](/guide/typescript/overview.md)
+- [Utility Types {#utility-types}](/api/utility-types.md)
+- [Vue and Web Components {#vue-and-web-components}](/guide/extras/web-components.md)
+- [Watchers {#watchers}](/guide/essentials/watchers.md)
+- [Ways of Using Vue {#ways-of-using-vue}](/guide/extras/ways-of-using-vue.md)
+```
+
+该 llms.txt 文件将 Vue 官方文档中的所有的关键模块列出，并附带对应的链接地址，这使得 LLM 可以快速理解 Vue 官方文档的结构和内容模块。
+
+事实上，不止 VuePress 创建的文档类静态网站，任何项目中都可以采取类似的方案来加速 LLM 对项目的理解，一般我们称之为 AI 友好架构。
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506061446446.png?imageSlim)
+
+AI 友好架构的核心思想是：**提供足够语义化的编码环境，代码是面向自然语言而非计算机，这样不仅仅是 LLM 方便理解，任何开发者都可以快速熟悉项目。**
+
+为了实现 AI 友好架构，以下是常见的一些方法：
+
+#### 自文档化代码增强语义化表达
+
+```js
+// before:
+@RestController
+@RequestMapping("/api")
+public class Ctrl {
+    @Autowired
+    private Svc svc;
+
+    @GetMapping("/u/{id}")
+    public Resp getU(@PathVariable Long id) {
+        return svc.getById(id);
+    }
+
+    @PostMapping("/u")
+    public Resp addU(@RequestBody Req req) {
+        return svc.add(req);
+    }
+}
+
+// after:
+@RestController
+@RequestMapping("/api/users")
+public class UserController {
+    private final UserService userService;
+
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
+
+    /**
+     * 获取用户信息
+     * @requires id != null && id > 0
+     * @ensures 返回的UserResponse不为null，且包含id对应用户的完整信息
+     * @invariant 所有用户ID在系统中唯一
+     *
+     * @param id 用户ID
+     * @return 用户信息
+     */
+    @GetMapping("/{id}")
+    public UserResponse getUserById(@PathVariable Long id) {
+        return userService.getUserById(id);
+    }
+}
+```
+
+- 利用类型系统
+  在静态强类型语言（Java, C#, TypeScript）中，明确的类型注解提供了关于数据结构、函数签名和预期数据流的强形式化信息，AI 可利用这些信息生成类型安全且符合接口的代码
+
+- 契约式设计 (DbC)
+  通过嵌入形式化的前置条件 (requires)、后置条件 (ensures) 和不变量 (invariant)，精确描述组件的责任和期望行为
+
+- 函数式编程原则
+  采用纯函数（无副作用，输入相同则输出相同），不可变性（避免状态修改），以及高阶函数与组合（模块化和声明式风格），使代码更易于 AI 理解结构和意图
+
+#### 面向 AI 理解的重构
+
+```js
+// before:
+public void prc(List<T> l, int f) {
+  for (int i = 0; i < l.size(); i++) {
+    if (l.get(i).getF() > f) {
+      l.get(i).setS(true);
+      db.sv(l.get(i));
+    } else {
+      l.get(i).setS(false);
+      l.get(i).setR(0);
+      db.sv(l.get(i));
+    }
+  }
+}
+
+// after:
+public void processItems(List<Item> items, int threshold) {
+  for (Item item : items) {
+    if (item.getFlag() > threshold) {
+      markItemAsSelected(item);
+    } else {
+      markItemAsNotSelected(item);
+    }
+  }
+}
+
+private void markItemAsSelected(Item item) {
+  item.setSelected(true);
+  database.saveItem(item);
+}
+
+private void markItemAsNotSelected(Item item) {
+  item.setSelected(false);
+  item.setRank(0);
+  database.saveItem(item);
+}
+```
+
+#### 结构性 README
+
+项目根目录下新增 llms.txt 文件，并在每个功能模块下新增 README.md 文件，用于描述功能职责，以及业务需求中的潜规则，方便 LLM 深入理解项目，以及代码的设计背景和实现目的。在开发任务中，从文件层面提供足够的上下文背景，避免手动多次补充条件。
+
+同样推荐使用 Mermaid 来描述项目架构，或者组件依赖树，Mermaid 是目前比较好的 LLM 友好的图形表达方法。
+
+比如在某功能文件夹下提供以下内容便于代码维护和 LLM 理解：
+
+```markdown
+---
+description: Add a new VSCode frontend service
+---
+
+1. **Interface Definition:**
+
+   - Define a new service interface using `createDecorator` and ensure `_serviceBrand` is included to avoid errors.
+
+2. **Service Implementation:**
+
+   - Implement the service in a new TypeScript file, extending `Disposable`, and register it as a singleton with `registerSingleton`.
+
+3. **Service Contribution:**
+
+   - Create a contribution file to import and load the service, and register it in the main entrypoint.
+
+4. **Context Integration:**
+   - Update the context to include the new service, allowing access throughout the application.
+```
+
+#### 验证优先开发(VFD)
+
+- 小步提交
+  将大型任务拆分为小的、可独立验证的改动，频繁提交，便于追踪和回滚
+  每次提交专注于单一功能或修复
+- 小步校验
+  每个小步骤后立即进行自动化验证，及早发现并修复问题
+  IDE 实时检查 + CI/CD 流水线自动验证
+- 快速反馈
+  构建快速反馈循环，验证结果立即可见，指导下一步开发
+  缩短从编码到验证的时间间隔
+- 便捷回滚
+  小步迭代使回滚更加精确和简单，降低修复成本
+  问题隔离在小范围内，易于定位和修复
+
+#### 构建 DSL 映射
+
+为项目中的专业术语提供映射说明文档，统一项目中的术语命名，避免在联合/复杂任务下时，由于不同开发者对同一术语命名的不同，影响 LLM 的语义环境。
+
+在大型项目中，可以额外提供编码规范，从而让 Cursor 不再从有限的上下文中摸索代码规范，而是直接从规则文件中获取编码规范，从而给出符合预期的代码：
+
+```markdown
+---
+globs: *.ts
+---
+
+- Use bun as package manager. See [package.json](mdc:backend/reddit-eval-tool/package.json) for scripts
+- Use kebab-case for file names
+- Use camelCase for function and variable names
+- Use UPPERCASE_SNAKE_CASE for hardcoded constants
+- Prefer `function foo()` over `const foo = () =>`
+- Use `Array<T>` instead of `T[]`
+- Use named exports over default exports, e.g (`export const variable ...`, `export function `)
+```
+
+> AI 友好架构的本质，实际上是从工程角度上进行的 RAG 范式实践。
+
+### Cursor 使用技巧
+
+事实上，Cursor 在官方文档中阐述了很多最佳实践、特色功能说明及适用条件，不过很少有开发者主动去了解这些内容。
+
+#### 了解这些功能并考虑是否开启
+
+- Chat -> Include Full-Folder Context
+  该功能默认关闭。  
+  当你在聊天窗口中输入`@folder`，默认情况下，Chat 会获取到文件路径，以及 AI 总结的文件夹内容概览；开启该选项后，则会将指定文件夹中的所有内容当做上下 提供给 Chat(一般会自动过滤.gitignore 和.cursorignore 中提到的文件)，此行为提供了更完整详细的上下文，对于较大的文件夹，采取下面的策略：
+
+  - 在上下文菜单中显示大纲视图
+  - 显示工具提示，指示包含多少文件
+  - 智能管理可用的上下文空间
+
+- Chat -> Include Project Structure(BETA)
+  该功能默认关闭。
+  开启后，会在上下文中提供简化版的项目文件结构，方便 Cursor 理解项目。
+
+- Chat -> Custom Modes(BETA)
+  该功能默认关闭。
+  开启后，可以自定义问答中的参数，从而更好的处理特定的问题环境，详细的内容查看下一部分。
+
+- Chat -> Auto Run Mode
+  该功能默认关闭。
+  开启后，Chat 对于所有工具的调用将不再额外请求你的同意，包括命令行执行、MCP 调用、文件修改、文件读取、网络搜索。这是一个风险选择项，仅在执行长流程挂机任务时推荐开启。
+
+- Tab -> Auto Import for Python(BETA)
+  该功能默认关闭。
+  开启后，会自动根据代码上下文引入对应的依赖包，仅适用于 Tab 补全模式。
+
+- Rules -> Generate Memories(BETA)
+  该功能默认关闭。
+  开启后，Cursor 会通过 Chat 的聊天记录不断总结你的询问喜好，目前个人感知下来并没有对回答质量起到决定性的作用。
+
+- Rules -> User Rules & Project Rules
+  该功能需要手动编辑。
+  由于 Chat 聊天并不会存储上下文，当你新开一个对话时，之前的上下文不会作为本次聊天的依赖。所以 Cursor 通过 Rules 允许用户针对特定的问题场景或者项目提供持久性的上下文，适用规则后，该规则的上下文会自动填充到每次聊天的开头。
+  你可以通过[提示词工程](https://www.promptingguide.ai/zh)中的一些方法论(Few-Shot、CoT)来提升特定场景下的问答质量；也可以创建符合个人习惯的角色设定(是的，你可以让 Cursor 扮演猫娘)。
+
+- Indexing & DOCS -> Docs
+  该功能需要手动编辑。
+  但你在 Cursor 中开启项目时，Cursor 会自动创建文件索引，该索引可以使得你在使用`@file`或者`@folder`时，Cursor 可以快速找到对应的文件，并提供上下文。在常见的开发流程中，需求文档、技术调研、技术方案等文档不一定是放置在项目内的，他们可能被管理在`Confluence`或者`Jira`等项目(文档)管理平台上，Cursor 允许你通过粘贴文档连接到 Docs 中，从而在 Chat 中使用该链接中的内容当做上下文。
+  不过该功能可能并不如预期好用，Cursor 对于第三方网页的内容识别并没不精准。
+
+- MCP
+  该功能需要手动配置。
+  MCP 已经出来一段时间了，Cursor 官方提供了一些常用的 MCP 项目，当然你可以从[MCP 资源网站](https://smithery.ai/)上寻找符合个人需求的资源。
+
+#### 使用正确的问询模式
+
+Curosr 提供了 5 种问答模式：Agent、Ask、Manual、Custom、Background
+
+- Agent
+  Agent 是 Cursor 中默认且最自主的模式，旨在以最少的指导处理复杂的编码任务。它启用了所有工具 ，可以自主探索代码库、阅读文档、浏览网页、编辑文件以及运行终端命令，从而高效地完成任务。
+  他的工作流程如下：
+
+  - 理解请求
+    分析您的请求和代码库的上下文，以充分理解任务要求和目标。
+  - 探索代码库
+    Agent 可能会搜索您的代码库、文档和网络以识别相关文件并了解当前的实施情况。
+  - 计划变更
+    根据分析，将任务分解为更小的步骤并规划变化，并在执行过程中从可用的上下文中学习。
+  - 执行更改
+    根据计划对整个代码库进行必要的代码修改，还可能建议新的库、要运行的终端命令或您应该在 Cursor 之外执行的步骤。
+  - 验证结果
+    在应用更改后确认更改是否正确。如果它发现任何问题或 linter 错误（当语言支持时），它将尝试修复它们。
+  - 任务完成
+    在完成任务后返回并总结所做的更改。
+
+- Ask
+  Ask 模式可让您通过 AI 搜索和查询探索和了解代码库，而无需进行任何更改。  
+  Ask 是 Chat 的“只读”模式，用于提问、探索和了解代码库。它是 Cursor 的内置模式，默认启用搜索工具 。
+
+- Manual
+  通过明确的文件定位进行精确的代码更改 - 一种带有用户控制工具的集中编辑模式
+  该模式用于在您确切知道需要进行哪些更改以及在哪里进行更改时进行有针对性的代码修改。
+  与 Agent 模式不同，它不会探索代码库或运行终端命令；它完全依赖于您的具体指令和您提供的上下文（例如，通过 `@` 提及文件）
+
+- Custom
+  使用定制的工具和提示创建自定义 Cursor 模式，以针对特定工作流程个性化 AI 辅助  
+  自定义模式允许您使用适合您工作流程的工具和提示来创建新模式。这些模式是对内置的 “Agent” 、 “Ask” 和 “Manual” 模式的补充。
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506061619265.png?imageSlim)
+
+- Background(BETA)
+  使用后台代理，您可以创建可在远程环境中编辑和运行代码的异步代理。您可以随时查看它们的状态、发送后续消息或接管它们。
+
+:::tip
+对于不同的任务和问题，应该采用不同的问询模式，或者尝试结合多种问询模式来满足需求。
+比如用户想从 0 到 1 实现一个 3D 赛车吃金币的游戏。最佳实践应该考虑以下步骤：
+
+- 1.使用 ASK 模式制定完整的开发方案，并在此过程中完成初步的技术选型、需求填充、模块拆分。
+- 2.将 ASK 模式的产出存储在本地，并作为项目指导文档。
+- 3.使用 Agent 模式，逐模块的进行实现，单个功能实现后，使用`git stash`或者`git commit`进行存储。
+- 4.(可能)使用 Manual 模式，进行关键代码的修正和优化。
+- 5.所有需求完成后，使用 Custom 模式创建针对代码重构、优化、测试的问询模式。并逐个运行这些模式，确保整体代码符合最佳实践。
+
+:::
+
+#### 选用合适的模型
+
+模型的训练方式各不相同，响应风格也各有不同。有些模型“先思考后编码”，而有些则直接开始编写。有些模型主动快速行动，而有些则需要花时间理解你的指令后再采取行动。
+
+以下是需要考虑的一些维度：
+
+- 自信 ：一些模型（如 `gemini-2.5-pro` 或 `claude-4-sonnet` ）非常自信，只需很少的提示就能做出决定。
+- 好奇心 ：其他模型（如 `o3` 或 `claude-4-opus` ）需要花时间计划或提出问题以更深入地了解背景。
+- 上下文窗口 ：某些模型可以一次处理更多的代码库，这对于大规模任务很有用。
+
+思维(thinking)模型会推断您的意图、提前计划，并且通常无需逐步指导即可做出决策。
+
+非思维模型(non-thinking)模型会等待明确的指令。它们不会进行推断或猜测，因此在你想要直接控制输出时是理想的选择。
+
+#### 更好的上下文管理
+
+根据上面的内容，我们可以使用 .cursorignore 过滤掉项目中不期望出现在上下文中的文件，也可以手动提供更好的 AI 友好架构，通过优化代码的可读性、添加项目描述文档、需求描述文档等方法，来提升上下文质量。
+
+对于 monorepo 这种复杂项目，需要更加精细的上下文管理。

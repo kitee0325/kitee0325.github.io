@@ -1,0 +1,445 @@
+---
+slug: use-cursor-correctly
+title: Using Cursor Effectively
+tags: [cursor, ai]
+---
+
+import useBaseUrl from '@docusaurus/useBaseUrl';
+import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
+import Link from '@docusaurus/Link';
+
+**TLDR**
+This article systematically reviews how to use AI coding assistants like Cursor efficiently and correctly. Key takeaways include: multi-turn conversations significantly reduce LLM accuracy—always prefer providing a complete, one-shot description of your requirements; optimizing your project structure and code semantics with an "AI-friendly architecture" (such as self-documenting code, contract-based design, structured READMEs, DSL term mapping, etc.) can greatly enhance AI understanding and collaboration; make full use of Cursor's various inquiry modes (Agent, Ask, Manual, Custom, Background) and context management features, flexibly switching according to your project's needs; and select the right AI model based on task type and model characteristics. The overarching message: treat code and documentation structure from an engineering perspective, proactively provide high-quality context for the AI, and you'll unlock the full value of AI coding assistants.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506061310373.png?imageSlim)
+{/* truncate */}
+
+## Introduction
+
+From the early days of Copilot to today's Cursor and even the recent Devin, AI coding is making rapid progress. When I first used Copilot, it could only smartly autocomplete some common utility functions and couldn't implement requirements from scratch. Now, Cursor can handle small to medium-sized tasks end-to-end, even performing self-checks, and the code quality is getting better and better.
+
+In mid-May, Microsoft released a report on how LLMs lose accuracy in multi-turn conversations, which prompted me to reflect:
+
+- Am I really using Cursor correctly?
+- What are its best practices?
+- Where are its boundaries?
+- Are there methodologies that can help me solve more complex problems?
+
+## Best Practices
+
+### Avoid Multi-Turn Conversations
+
+<object
+  data={useBaseUrl('/paper/LLMS GET LOST IN MULTI-TURN CONVERSATION.pdf')}
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href={useBaseUrl('/paper/LLMS GET LOST IN MULTI-TURN CONVERSATION.pdf')}>
+    Download PDF
+  </a>
+  .
+</object>
+
+As mentioned earlier, Microsoft Research conducted a study on how multi-turn conversations affect LLM accuracy. Here are some of their key findings.
+
+Microsoft experimented with five conversation strategies, focusing on three for their main tests:
+
+> - **FULL**: Provide a complete requirement description at the start
+> - **SHARDED**: Split the requirements, giving one part per turn
+> - **CONCAT**: Split the requirements, but provide all parts in a single turn, with a prompt asking the model to consider all conditions
+> - **RECAP**: An improvement on SHARDED and CONCAT—split requirements, give one part per turn, and do a CONCAT summary in the final turn
+> - **SNOWBALL**: Based on RECAP—each turn summarizes all previous requirement fragments and emphasizes the current one
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506061330737.png?imageSlim)
+
+They tested mainstream LLMs across six common Q&A scenarios:
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506061310373.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506061310567.png?imageSlim)
+
+As the charts show, multi-turn conversations can cut LLM performance by about half. The reason is clear: in early turns, the LLM can't confirm the user's direction, so it retrieves a lot of irrelevant content, which accumulates as context for subsequent turns. Over multiple turns, this context grows massive, and when the LLM tries to answer based on both the context and the user's new requirements, the irrelevant context causes confusion and severe hallucinations.
+
+Microsoft's report also notes that even adjusting the `temperature` parameter in early turns to reduce the impact of extra context has minimal effect.
+
+### AI-Friendly Architecture
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506061433407.png?imageSlim)
+
+Earlier this month, Evan You (creator of Vue) announced on Twitter that Vue, Vite, Rolldown, and other official documentation projects have introduced an `llms.txt` file, and released a VuePress plugin: [vitepress-plugin-llms](https://github.com/okineadev/vitepress-plugin-llms). The `llms.txt` file, based on the [llmstxt](https://llmstxt.org/) spec, essentially provides project information to help LLMs understand the project faster and better, leading to improved answers.
+
+For example, the `llms.txt` file in the Vue docs project:
+
+```txt
+# Vue.js
+
+Vue.js - The Progressive JavaScript Framework
+
+## Table of Contents
+
+- [<script setup> {#script-setup}](/api/sfc-script-setup.md)
+- [Accessibility {#accessibility}](/guide/best-practices/accessibility.md)
+- [Animation Techniques {#animation-techniques}](/guide/extras/animation.md)
+- [API Reference](/api/index.md)
+- [Application API {#application-api}](/api/application.md)
+- [Async Components {#async-components}](/guide/components/async.md)
+- [Built-in Components {#built-in-components}](/api/built-in-components.md)
+- [Built-in Directives {#built-in-directives}](/api/built-in-directives.md)
+- [Built-in Special Attributes {#built-in-special-attributes}](/api/built-in-special-attributes.md)
+- [Built-in Special Elements {#built-in-special-elements}](/api/built-in-special-elements.md)
+- [Class and Style Bindings {#class-and-style-bindings}](/guide/essentials/class-and-style.md)
+- [Community Guide {#community-guide}](/about/community-guide.md)
+- [Community Newsletters {#community-newsletters}](/ecosystem/newsletters.md)
+- [Compile-Time Flags {#compile-time-flags}](/api/compile-time-flags.md)
+- [Component Events {#component-events}](/guide/components/events.md)
+- [Component Instance {#component-instance}](/api/component-instance.md)
+- [Component Registration {#component-registration}](/guide/components/registration.md)
+- [Component v-model {#component-v-model}](/guide/components/v-model.md)
+- [Components Basics {#components-basics}](/guide/essentials/component-basics.md)
+- [Composables {#composables}](/guide/reusability/composables.md)
+- [Composition API FAQ {#composition-api-faq}](/guide/extras/composition-api-faq.md)
+- [Composition API: <br>Dependency Injection {#composition-api-dependency-injection}](/api/composition-api-dependency-injection.md)
+- [Composition API: Helpers {#composition-api-helpers}](/api/composition-api-helpers.md)
+- [Composition API: Lifecycle Hooks {#composition-api-lifecycle-hooks}](/api/composition-api-lifecycle.md)
+- [Composition API: setup() {#composition-api-setup}](/api/composition-api-setup.md)
+- [Computed Properties {#computed-properties}](/guide/essentials/computed.md)
+- [Conditional Rendering {#conditional-rendering}](/guide/essentials/conditional.md)
+- [Creating a Vue Application {#creating-a-vue-application}](/guide/essentials/application.md)
+- [Custom Directives {#custom-directives}](/guide/reusability/custom-directives.md)
+- [Custom Elements API {#custom-elements-api}](/api/custom-elements.md)
+- [Custom Renderer API {#custom-renderer-api}](/api/custom-renderer.md)
+- [Event Handling {#event-handling}](/guide/essentials/event-handling.md)
+- [Fallthrough Attributes {#fallthrough-attributes}](/guide/components/attrs.md)
+- [Form Input Bindings {#form-input-bindings}](/guide/essentials/forms.md)
+- [Frequently Asked Questions {#frequently-asked-questions}](/about/faq.md)
+- [Global API: General {#global-api-general}](/api/general.md)
+- [Glossary {#glossary}](/glossary/index.md)
+- [Introduction {#introduction}](/guide/introduction.md)
+- [KeepAlive {#keepalive}](/guide/built-ins/keep-alive.md)
+- [Lifecycle Hooks {#lifecycle-hooks}](/guide/essentials/lifecycle.md)
+- [List Rendering {#list-rendering}](/guide/essentials/list.md)
+- [Options: Composition {#options-composition}](/api/options-composition.md)
+- [Options: Lifecycle {#options-lifecycle}](/api/options-lifecycle.md)
+- [Options: Misc {#options-misc}](/api/options-misc.md)
+- [Options: Rendering {#options-rendering}](/api/options-rendering.md)
+- [Options: State {#options-state}](/api/options-state.md)
+- [Performance {#performance}](/guide/best-practices/performance.md)
+- [Priority A Rules: Essential {#priority-a-rules-essential}](/style-guide/rules-essential.md)
+- [Priority B Rules: Strongly Recommended {#priority-b-rules-strongly-recommended}](/style-guide/rules-strongly-recommended.md)
+- [Priority C Rules: Recommended {#priority-c-rules-recommended}](/style-guide/rules-recommended.md)
+- [Priority D Rules: Use with Caution {#priority-d-rules-use-with-caution}](/style-guide/rules-use-with-caution.md)
+- [Production Deployment {#production-deployment}](/guide/best-practices/production-deployment.md)
+- [Production Error Code Reference {#error-reference}](/error-reference/index.md)
+- [Props {#props}](/guide/components/props.md)
+- [Provide / Inject {#provide-inject}](/guide/components/provide-inject.md)
+- [Quick Start {#quick-start}](/guide/quick-start.md)
+- [Reactivity API: Advanced {#reactivity-api-advanced}](/api/reactivity-advanced.md)
+- [Reactivity API: Core {#reactivity-api-core}](/api/reactivity-core.md)
+- [Reactivity API: Utilities {#reactivity-api-utilities}](/api/reactivity-utilities.md)
+- [Reactivity Fundamentals {#reactivity-fundamentals}](/guide/essentials/reactivity-fundamentals.md)
+- [Reactivity in Depth {#reactivity-in-depth}](/guide/extras/reactivity-in-depth.md)
+- [Reactivity Transform {#reactivity-transform}](/guide/extras/reactivity-transform.md)
+- [Releases {#releases}](/about/releases.md)
+- [Render Function APIs {#render-function-apis}](/api/render-function.md)
+- [Render Functions & JSX {#render-functions-jsx}](/guide/extras/render-function.md)
+- [Rendering Mechanism {#rendering-mechanism}](/guide/extras/rendering-mechanism.md)
+- [Routing {#routing}](/guide/scaling-up/routing.md)
+- [Security {#security}](/guide/best-practices/security.md)
+- [Server-Side Rendering (SSR) {#server-side-rendering-ssr}](/guide/scaling-up/ssr.md)
+- [Server-Side Rendering API {#server-side-rendering-api}](/api/ssr.md)
+- [SFC CSS Features {#sfc-css-features}](/api/sfc-css-features.md)
+- [SFC Syntax Specification {#sfc-syntax-specification}](/api/sfc-spec.md)
+- [Single-File Components {#single-file-components}](/guide/scaling-up/sfc.md)
+- [Slots {#slots}](/guide/components/slots.md)
+- [State Management {#state-management}](/guide/scaling-up/state-management.md)
+- [Style Guide {#style-guide}](/style-guide/index.md)
+- [Suspense {#suspense}](/guide/built-ins/suspense.md)
+- [Teleport {#teleport}](/guide/built-ins/teleport.md)
+- [Template Refs {#template-refs}](/guide/essentials/template-refs.md)
+- [Template Syntax {#template-syntax}](/guide/essentials/template-syntax.md)
+- [Testing {#testing}](/guide/scaling-up/testing.md)
+- [Tooling {#tooling}](/guide/scaling-up/tooling.md)
+- [Transition {#transition}](/guide/built-ins/transition.md)
+- [TransitionGroup {#transitiongroup}](/guide/built-ins/transition-group.md)
+- [Translations {#translations}](/translations/index.md)
+- [Tutorial](/tutorial/index.md)
+- [TypeScript with Composition API {#typescript-with-composition-api}](/guide/typescript/composition-api.md)
+- [TypeScript with Options API {#typescript-with-options-api}](/guide/typescript/options-api.md)
+- [Untitled](/guide/reusability/plugins.md)
+- [Using Vue with TypeScript {#using-vue-with-typescript}](/guide/typescript/overview.md)
+- [Utility Types {#utility-types}](/api/utility-types.md)
+- [Vue and Web Components {#vue-and-web-components}](/guide/extras/web-components.md)
+- [Watchers {#watchers}](/guide/essentials/watchers.md)
+- [Ways of Using Vue {#ways-of-using-vue}](/guide/extras/ways-of-using-vue.md)
+```
+
+This file lists all the key modules in the Vue docs, with links, allowing LLMs to quickly understand the structure and content of the Vue documentation.
+
+In fact, this approach isn't limited to static documentation sites like VuePress—any project can use a similar strategy to accelerate LLM understanding. This is generally called an **AI-friendly architecture**.
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506061446446.png?imageSlim)
+
+The core idea of an AI-friendly architecture is: **provide a sufficiently semantic coding environment—code should be written for natural language, not just for computers. This not only helps LLMs, but also makes it easier for any developer to get up to speed.**
+
+To achieve this, here are some common methods:
+
+#### Self-Documenting Code for Enhanced Semantics
+
+```js
+// before:
+@RestController
+@RequestMapping("/api")
+public class Ctrl {
+    @Autowired
+    private Svc svc;
+
+    @GetMapping("/u/{id}")
+    public Resp getU(@PathVariable Long id) {
+        return svc.getById(id);
+    }
+
+    @PostMapping("/u")
+    public Resp addU(@RequestBody Req req) {
+        return svc.add(req);
+    }
+}
+
+// after:
+@RestController
+@RequestMapping("/api/users")
+public class UserController {
+    private final UserService userService;
+
+    public UserController(UserService userService) {
+        this.userService = userService;
+    }
+
+    /**
+     * Get user information
+     * @requires id != null && id > 0
+     * @ensures Returned UserResponse is not null and contains complete info for the given id
+     * @invariant All user IDs are unique in the system
+     *
+     * @param id User ID
+     * @return User information
+     */
+    @GetMapping("/{id}")
+    public UserResponse getUserById(@PathVariable Long id) {
+        return userService.getUserById(id);
+    }
+}
+```
+
+- **Leverage Type Systems**  
+  In statically-typed languages (Java, C#, TypeScript), explicit type annotations provide strong formal information about data structures, function signatures, and expected data flow. AI can use this to generate type-safe, interface-compliant code.
+
+- **Design by Contract (DbC)**  
+  Embed formal preconditions (`requires`), postconditions (`ensures`), and invariants to precisely describe component responsibilities and expected behavior.
+
+- **Functional Programming Principles**  
+  Use pure functions (no side effects, same input yields same output), immutability (avoid state changes), and higher-order functions/composition (modular, declarative style) to make code structure and intent clearer for AI.
+
+#### Refactoring for AI Understanding
+
+```js
+// before:
+public void prc(List<T> l, int f) {
+  for (int i = 0; i < l.size(); i++) {
+    if (l.get(i).getF() > f) {
+      l.get(i).setS(true);
+      db.sv(l.get(i));
+    } else {
+      l.get(i).setS(false);
+      l.get(i).setR(0);
+      db.sv(l.get(i));
+    }
+  }
+}
+
+// after:
+public void processItems(List<Item> items, int threshold) {
+  for (Item item : items) {
+    if (item.getFlag() > threshold) {
+      markItemAsSelected(item);
+    } else {
+      markItemAsNotSelected(item);
+    }
+  }
+}
+
+private void markItemAsSelected(Item item) {
+  item.setSelected(true);
+  database.saveItem(item);
+}
+
+private void markItemAsNotSelected(Item item) {
+  item.setSelected(false);
+  item.setRank(0);
+  database.saveItem(item);
+}
+```
+
+#### Structured READMEs
+
+Add an `llms.txt` file to your project root, and a `README.md` to each feature module, describing its responsibilities and any business logic "gotchas." This helps LLMs deeply understand your project, its design background, and implementation intent. Providing enough context at the file level avoids having to manually supplement conditions repeatedly during development.
+
+It's also recommended to use Mermaid diagrams to describe project architecture or component dependency trees—Mermaid is currently one of the most LLM-friendly graphical formats.
+
+For example, a feature folder might include the following to aid code maintenance and LLM understanding:
+
+```markdown
+---
+description: Add a new VSCode frontend service
+---
+
+1. **Interface Definition:**
+
+   - Define a new service interface using `createDecorator` and ensure `_serviceBrand` is included to avoid errors.
+
+2. **Service Implementation:**
+
+   - Implement the service in a new TypeScript file, extending `Disposable`, and register it as a singleton with `registerSingleton`.
+
+3. **Service Contribution:**
+
+   - Create a contribution file to import and load the service, and register it in the main entrypoint.
+
+4. **Context Integration:**
+   - Update the context to include the new service, allowing access throughout the application.
+```
+
+#### Verification-First Development (VFD)
+
+- **Small Commits**  
+  Break large tasks into small, independently verifiable changes and commit frequently for easy tracking and rollback. Each commit should focus on a single feature or fix.
+- **Small-Step Validation**  
+  After each small step, run automated checks to catch and fix issues early (IDE real-time checks + CI/CD pipeline).
+- **Fast Feedback**  
+  Build a rapid feedback loop so validation results are immediately visible, guiding the next development step. Shorten the time from coding to validation.
+- **Easy Rollback**  
+  Small iterations make rollbacks more precise and simple, reducing fix costs. Problems are isolated to a small scope, making them easier to locate and fix.
+
+#### Building DSL Mappings
+
+Provide a mapping document for project-specific terminology, unifying naming conventions to avoid semantic confusion for LLMs during collaborative or complex tasks.
+
+In large projects, you can also provide coding standards, so Cursor doesn't have to infer conventions from limited context, but can directly reference a rules file for expected code style:
+
+```markdown
+---
+globs: *.ts
+---
+
+- Use bun as package manager. See [package.json](mdc:backend/reddit-eval-tool/package.json) for scripts
+- Use kebab-case for file names
+- Use camelCase for function and variable names
+- Use UPPERCASE_SNAKE_CASE for hardcoded constants
+- Prefer `function foo()` over `const foo = () =>`
+- Use `Array<T>` instead of `T[]`
+- Use named exports over default exports, e.g. (`export const variable ...`, `export function ...`)
+```
+
+> The essence of an AI-friendly architecture is actually an engineering-oriented RAG (Retrieval-Augmented Generation) practice.
+
+### Cursor Usage Tips
+
+Cursor's official docs actually outline many best practices, features, and usage scenarios, but few developers take the time to learn them.
+
+#### Know These Features and Consider Enabling Them
+
+- **Chat -> Include Full-Folder Context**  
+  _Default: Off._  
+  When you type `@folder` in the chat window, by default, Chat gets the file path and an AI-generated folder summary. If enabled, it provides the full content of the specified folder as context (usually filtering out files in `.gitignore` and `.cursorignore`). For large folders, it:
+
+  - Shows an outline view in the context menu
+  - Displays tooltips indicating the number of files included
+  - Intelligently manages available context space
+
+- **Chat -> Include Project Structure (BETA)**  
+  _Default: Off._  
+  When enabled, provides a simplified project file structure as context, helping Cursor understand the project.
+
+- **Chat -> Custom Modes (BETA)**  
+  _Default: Off._  
+  When enabled, lets you customize Q&A parameters for better handling of specific scenarios. See the next section for details.
+
+- **Chat -> Auto Run Mode**  
+  _Default: Off._  
+  When enabled, Chat will no longer ask for your approval before invoking any tool, including terminal commands, MCP calls, file edits, file reads, or web searches. This is risky and only recommended for long-running, unattended tasks.
+
+- **Tab -> Auto Import for Python (BETA)**  
+  _Default: Off._  
+  When enabled, automatically imports dependencies based on code context (Tab completion mode only).
+
+- **Rules -> Generate Memories (BETA)**  
+  _Default: Off._  
+  When enabled, Cursor summarizes your chat preferences over time. In my experience, this hasn't had a decisive impact on answer quality.
+
+- **Rules -> User Rules & Project Rules**  
+  _Manual edit required._  
+  Since Chat doesn't persist context between conversations, previous context isn't available in new chats. Cursor's Rules let you provide persistent context for specific scenarios or projects. When a rule is applied, its context is automatically prepended to every chat. You can use [prompt engineering](https://www.promptingguide.ai/zh) techniques (Few-Shot, CoT, etc.) to improve Q&A quality for specific scenarios, or create custom personas (yes, you can make Cursor act like a catgirl).
+
+- **Indexing & DOCS -> Docs**  
+  _Manual edit required._  
+  When you open a project in Cursor, it automatically creates a file index, so when you use `@file` or `@folder`, Cursor can quickly find the relevant file and provide context. In real-world workflows, requirements docs, technical research, and solution docs may not be in the project—they might be managed in Confluence, Jira, etc. Cursor lets you paste doc links into Docs, so you can use their content as context in Chat. However, this feature may not work as well as expected—Cursor's recognition of third-party web content isn't always accurate.
+
+- **MCP**  
+  _Manual configuration required._  
+  MCP has been around for a while. Cursor provides some common MCP projects, and you can find more at [the MCP resource site](https://smithery.ai/).
+
+#### Use the Right Inquiry Mode
+
+Cursor offers five Q&A modes: **Agent, Ask, Manual, Custom, Background**
+
+- **Agent**  
+  The default and most autonomous mode in Cursor, designed to handle complex coding tasks with minimal guidance. It enables all tools and can autonomously explore the codebase, read docs, browse the web, edit files, and run terminal commands to efficiently complete tasks. Its workflow:
+
+  - _Understand the request_: Analyze your request and codebase context to fully grasp the task and goals.
+  - _Explore the codebase_: May search your codebase, docs, and the web to identify relevant files and understand the current implementation.
+  - _Plan changes_: Break the task into smaller steps and plan changes, learning from available context during execution.
+  - _Execute changes_: Make necessary code modifications across the codebase, possibly suggesting new libraries, terminal commands, or steps to perform outside Cursor.
+  - _Validate results_: After applying changes, confirm correctness. If it finds issues or linter errors (when supported), it will try to fix them.
+  - _Task completion_: Once done, it summarizes the changes made.
+
+- **Ask**  
+  Lets you explore and understand the codebase via AI search and queries, without making any changes. Ask is Chat's "read-only" mode, used for questions, exploration, and understanding. It's Cursor's built-in mode, with search tools enabled by default.
+
+- **Manual**  
+  For precise code changes via explicit file targeting—a focused edit mode with user-controlled tools. Use this when you know exactly what changes to make and where. Unlike Agent, it doesn't explore the codebase or run terminal commands; it relies entirely on your specific instructions and provided context (e.g., via `@` mentions).
+
+- **Custom**  
+  Create custom Cursor modes with tailored tools and prompts for specific workflows. These supplement the built-in Agent, Ask, and Manual modes.
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506061619265.png?imageSlim)
+
+- **Background (BETA)**  
+  With background agents, you can create asynchronous agents that edit and run code in remote environments. You can check their status, send follow-ups, or take over at any time.
+
+:::tip
+For different tasks and problems, you should use different inquiry modes, or combine several to meet your needs. For example, if you want to build a 3D racing game where the car collects coins from scratch, best practice might be:
+
+- 1. Use **ASK** mode to develop a complete plan, including tech stack selection, requirements, and module breakdown.
+- 2. Save the output from ASK mode locally as a project guide doc.
+- 3. Use **Agent** mode to implement each module step by step, saving each feature with `git stash` or `git commit`.
+- 4. (Optionally) Use **Manual** mode for critical code fixes and optimizations.
+- 5. Once all requirements are done, use **Custom** mode to create inquiry modes for refactoring, optimization, and testing. Run these modes one by one to ensure the codebase meets best practices overall.
+     :::
+
+#### Choose the Right Model
+
+Different models are trained and respond differently. Some "think before coding," while others start coding right away. Some act quickly, while others take time to understand your instructions before acting.
+
+Consider these dimensions:
+
+- **Confidence**: Some models (like `gemini-2.5-pro` or `claude-4-sonnet`) are very confident and make decisions with little prompting.
+- **Curiosity**: Others (like `o3` or `claude-4-opus`) take time to plan or ask questions to better understand the context.
+- **Context window**: Some models can process more code at once, which is useful for large-scale tasks.
+
+_Thinking_ models infer your intent, plan ahead, and usually make decisions without step-by-step guidance.
+
+_Non-thinking_ models wait for explicit instructions. They don't infer or guess, so they're ideal when you want direct control over the output.
+
+#### Better Context Management
+
+As discussed above, you can use `.cursorignore` to filter out files you don't want in the context, or manually provide a better AI-friendly architecture by improving code readability, adding project and requirements docs, etc., to enhance context quality.
+
+For complex monorepos, even more granular context management is needed.
