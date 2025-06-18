@@ -1,0 +1,234 @@
+---
+slug: bill-visual
+title: Bill Visualization
+tags: [Data Visualization]
+---
+
+import useBaseUrl from '@docusaurus/useBaseUrl';
+import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
+import Link from '@docusaurus/Link';
+
+**TLDR**
+This article explores the fundamental definition and practical application of data visualization. Through examining the value of tabular visualization, it establishes that visualization's core purpose is "optimizing information transmission through visual encoding." Using bill visualization as a case study, the article details the complete process from design concept to implementation, covering technical aspects such as bar chart ordering, animation design, and layout composition. The final solution presents a multi-layered visualization based on a polar coordinate system, effectively displaying multi-dimensional bill data through inner, middle, and outer rings, with continuous optimization through practical implementation.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506181739446.png?imageSlim)
+
+{/* truncate */}
+
+## Introduction
+
+During my first year of employment, a colleague asked me an intriguing question: **"Do you consider tables a form of visualization?"** Intuitively, my initial answer was negative. Without deep understanding, I could only respond based on stereotypes: when discussing visualization, shouldn't it at least include basic charts like bar, line, and pie charts? When thinking about tables and visualization, I could only imagine scenarios like this:
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506181513259.png?imageSlim)
+
+This question actually stayed with me for quite a while because it touches on a fundamental concept: **"What is visualization?"** From a Chinese educational background, finding its answer seems straightforward, as we often discuss "background," "significance," and "concepts." We can easily find this overview from [Wikipedia](https://zh.wikipedia.org/wiki/%E6%95%B0%E6%8D%AE%E5%8F%AF%E8%A7%86%E5%8C%96#%E6%A6%82%E8%BF%B0):
+
+:::info
+Data visualization uses statistical graphics, charts, information graphics, and other tools to clearly and effectively communicate information. Numerical data can be encoded using points, lines, or bars to visually convey quantitative information. Effective visualization can help users analyze and reason about data and evidence. It makes complex data more accessible and usable. Users may have specific analytical tasks (such as making comparisons or understanding causal relationships) and graphic design principles to follow for that task. Tables are typically used for users to look up specific metrics, while various types of charts are used to show patterns or relationships in data across one or more variables.
+:::
+
+Or, we can ask an AI model:
+:::info
+Data visualization is the encoding of abstract data through visual elements (such as charts, graphics, colors, shapes, etc.), leveraging the advantages of the human visual system to quickly identify patterns, trends, and outliers.
+:::
+
+These readily available concepts didn't actually answer the question posed earlier. As I systematically studied Stanford's visualization courses, read and reproduced cutting-edge papers, and reflected on visualization scenarios from my professional experience, my understanding of visualization deepened. Eventually, I arrived at my own definition of visualization:
+:::info
+Visualization is the process of **optimizing information transmission** through **visual encoding** methods.
+:::
+
+**So, are tables a form of visualization?** The answer is definitely yes.
+
+The most basic form of information encoding in computers is binary, while in human natural language expression, it's text. Without tables, we could only convey similar information through **sequential sentences**, such as: "red apple; yellow banana; green watermelon." When dealing with larger amounts of data, sequential sentences are not conducive to reading, especially when adjectives and nouns may not be of equal length. In languages like English and Arabic, this **sense of disorder** is further amplified.
+
+Tables break down text by separating nouns and adjectives, encoding textual information using a two-dimensional row-column method, reducing people's reading costs. This process is visualization because it uses **visual encoding** methods to achieve the goal of **optimizing information transmission**.
+
+:::tip example
+
+- Chinese
+
+  > 红色的苹果；黄色的香蕉；紫色的葡萄；绿色的猕猴桃；橙色的橘子；粉色的火龙果；棕色的椰子；深红色的樱桃；青色的青柠；白色的火龙果。
+
+- English
+
+  > Red apple; yellow banana; purple grape; green kiwi; orange orange; pink dragon fruit; brown coconut; dark red cherry; cyan lime; white dragon fruit.
+
+<div style={{ display: 'flex', gap: '20px' }}>
+<div style={{ flex: 1 }}>
+
+- Chinese Table
+
+| 颜色   | 水果   |
+| ------ | ------ |
+| 红色   | 苹果   |
+| 黄色   | 香蕉   |
+| 紫色   | 葡萄   |
+| 绿色   | 猕猴桃 |
+| 橙色   | 橘子   |
+| 粉色   | 火龙果 |
+| 棕色   | 椰子   |
+| 深红色 | 樱桃   |
+| 青色   | 青柠   |
+| 白色   | 火龙果 |
+
+</div>
+<div style={{ flex: 1 }}>
+
+- English Table
+
+| Color    | Fruit        |
+| -------- | ------------ |
+| Red      | Apple        |
+| Yellow   | Banana       |
+| Purple   | Grape        |
+| Green    | Kiwi         |
+| Orange   | Orange       |
+| Pink     | Dragon Fruit |
+| Brown    | Coconut      |
+| Dark Red | Cherry       |
+| Cyan     | Lime         |
+| White    | Dragon Fruit |
+
+</div>
+</div>
+
+:::
+
+Even **initial letter enlargement** is actually a form of visualization in a broader sense.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506181550876.png?imageSlim)
+
+## The Challenge
+
+Due to the encoding nature of visualization, it helps us quickly understand complex problems or non-intuitive scenarios. Particularly in statistics, where data, formulas, and other elements are non-intuitive means of communication and widely exist in various industry scenarios, **data visualization** has become a more widely recognized term.
+
+Data visualization has inherent design challenges. Looking at the implementation chain of data visualization:
+
+- Data Cleaning
+
+  > Data cleaning requires designers to have basic knowledge of data statistics and processing; understand common statistical descriptive indicators, and master the basics of regression analysis.
+
+- Visual Encoding
+
+  > Visual encoding requires designers to have basic aesthetic abilities, select appropriate visual channels based on data characteristics, and implement reasonable visual encoding.
+
+- Visualization Design
+
+  > Visualization design requires designers to find appropriate chart types based on specific data characteristics and task scenarios, design intuitive interaction methods, and ensure the visualization design meets expected information transmission standards.
+
+- Visualization Implementation
+  > Whether creating information graphics or interactive charts, designers should understand layout algorithms, geometric properties, and other knowledge to ensure visual channels are correctly mapped on relevant scales.
+
+From the simple description above, it's easy to see that this is a cross-disciplinary composite scenario requiring both logical processing and creative expression. Due to brain lateralization, where the left brain uses language to think logically and the right brain develops creativity and processes emotions, most people find it difficult to excel at both.
+
+In modern enterprise collaboration chains, multiple roles typically implement the entire visualization process, potentially including: data analysts, visualization product managers, visualization designers, and developers. Through these roles' professional functions, the entire visualization process is continuously ensured.
+
+However, excellent visualization talent is actually very rare in China, with quantitative output only in a few excellent laboratories. This means that in most scenarios, non-professionals implement data visualization design and implementation using existing visualization tools like Tableau, Power BI, ECharts, Vega, etc. In simple scenarios, existing best practice guidance and visualization tools can meet most visualization needs, but in some high-difficulty and complex scenarios, non-professionals find it difficult to ensure visualization design meets expected information transmission standards.
+
+## Case Study Analysis
+
+### Bar Chart Ordering
+
+For example, how should we arrange bars when creating a bar chart with this data set: [['A',1],['B',3],['C',2],['D',4],['E',5]]?
+
+If elements like A, B are ordered, they should be arranged according to their actual sequence, such as when A and B might represent weekdays or months.
+If elements A, B are unordered, there's a **blank encoding** that combines with actual scenarios:
+
+1. The default might be arranged by data in ascending or descending order
+2. If an element's text length is too long, it can be moved to the leftmost or rightmost position
+3. Arrangement can also be based on human reading habits (varying by region), deciding element order based on weight
+4. To highlight extremes, consider placing them in the center to make them more prominent in the display
+
+These detailed visualization design concepts become increasingly important and challenging as visualization scenarios become more complex. For instance, in multi-chart scenarios where each chart designs multiple dimensions, some dimensions might be reused across different charts, creating an overall interleaved Venn diagram mapping. If the order is blank encoded and inconsistent across different charts, it creates additional understanding costs, adding extra burden to information transmission.
+
+### Bar Chart Animation
+
+Similarly, entrance animation is generally a **blank encoding** in most scenarios, as visual channel design typically doesn't involve dynamic effects.
+
+Consider these three animation designs:
+
+<div style={{ display: 'flex', gap: '20px' }}>
+  <img
+    style={{ width: '33%' }}
+    src={useBaseUrl('/img/bar-animation-default.gif')}
+  />
+  <img
+    style={{ width: '33%' }}
+    src={useBaseUrl('/img/bar-animation-delay.gif')}
+  />
+  <img
+    style={{ width: '33%' }}
+    src={useBaseUrl('/img/bar-animation-grow.gif')}
+  />
+</div>
+
+They each apply different parameters like animationDuration, animationEasing, and animationDelay to achieve different animation effects.
+From an aesthetic perspective alone, these animations all meet public taste as they use common animation parameters without any jarring effects. But in specific business scenarios, which one should be used?
+
+### Layout Issues
+
+Edward Tufte once proposed the Data-Ink Ratio concept, pointing out the ratio between ink used to represent data information and total ink in charts. This principle guides us to minimize non-data-related visual elements in chart design.
+
+Similarly, there's the information density principle, suggesting we should choose appropriate dimensions to display data. But this is actually a common mistake. Consider this scenario:
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506181710956.png?imageSlim)
+This is your phone screen, and you've surely seen similar scenarios in banking or financial apps where bar charts occupy 1/3 or 1/4 of the screen but only convey less than 10 data points, resulting in extremely sparse information density and serious space waste.
+
+In most scenarios, there isn't such a strict visual analysis requirement, making Micro Charts actually more appropriate. Theoretically, best practice should be progressive: use Micro Charts to display data before user focus, gradually expand chart size when users interact, and then provide access to visual analysis columns.
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506181731585.png?imageSlim)
+
+In special problem scenarios, we might even need to combine irregular charts, 3D, animation, and other means to achieve better storytelling effects.
+
+## Bill Visualization
+
+Let's explain these visualization design concepts through a practical case study.
+
+Applications like Alipay and WeChat provide their own bill analysis features, addressing some basic visualization needs. However, when doing income and expenditure analysis, from my personal needs, I'm more concerned about whether my periodic consumption habits show any anomalies.
+
+Currently employed internet professionals' consumption patterns follow very regular cycles: fixed monthly salary income, fixed monthly expenses might include mortgage and car payments, weekend dining, shopping and leisure, etc.
+So when doing income and expenditure analysis, I might be more concerned about whether there are any large abnormal expenses or income within a period, allowing me to correctly identify which are the major spending areas.
+
+Here's a concept of money flow: the value of a single cup of coffee, single pack of cigarettes, or single game usually isn't too high, but people often fail to recognize their consumption frequency, making it impossible to correctly understand what percentage of spending these items actually account for, potentially leading to overconsumption.
+
+### Initial Design Thinking
+
+- From the periodicity mentioned above, the overall chart design should use a polar coordinate system
+- Combined with Alipay's built-in consumption categories, we can also do a rough category statistics, providing basic insight into consumption structure
+- Statistics should preferably show month-over-month comparisons, allowing examination of specific category consumption habit changes
+- Each transaction should be intuitive, so if any category shows abnormal consumption, we can quickly locate which specific transaction it was
+
+### Design Sketch
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506181804846.png?imageSlim)
+Composed of inner, middle, and outer rings:
+
+- Inner ring's polar bar chart separately statistics expenditure and income for each category, each occupying half a ring, showing month-over-month comparison
+- Middle ring's line chart tracks consumption trends for each income category; scatter plot shows specific income transactions
+- Outer ring's line chart tracks consumption trends for each expenditure category; scatter plot shows specific expenditure transactions
+
+The middle ring represents income, suggesting containment; the outer ring represents expenditure, suggesting outward flow.
+
+### Requirement Refinement and Improvements
+
+- Line charts should be stacked to avoid intersecting overlap while showing overall consumption trends
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506181815323.png?imageSlim)
+- Inner ring extremes should use overall period extremes, otherwise month-over-month comparison can't be sensed
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506181822399.png?imageSlim)
+- Inner ring extremes shouldn't include data extremes; although ECharts internally rounds, if data extremes are also integers, ugly semicircles appear and might interfere with adjacent elements
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506181817277.png?imageSlim)
+- Inner ring arrangement should be ordered from small to large, laying out from center outward, highlighting high-consumption frequency while avoiding data distortion
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506181816620.png?imageSlim)
+- Outer ring line chart's smooth parameter should be adjusted to prevent curve intersection
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506181823737.png?imageSlim)
+- Inner ring month-over-month comparison needs to consider both increase and decrease scenarios
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506181830579.png?imageSlim)
+- Some categories (like dining) have too high consumption frequency and should be aggregated on the line chart, with day as the aggregation unit
+  ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506181835535.png?imageSlim)
+- Consumption interval distribution is severely uneven, with luxury goods/real estate expenditure far higher than dining/medical, requiring additional filter components so users can focus on any interval distribution
+- Month-over-month comparison only considers consumption between adjacent months; if a category only appears every few months, month-over-month shouldn't be calculated
+
+### Final Effect
+
+<video width="100%" height="auto" controls>
+  <source src={useBaseUrl('/video/Bill Visual.mp4')} type="video/mp4" />
+  Your browser does not support the video tag.
+</video>
+
+> You can access the source code in my GitHub repository: https://github.com/kitee0325/bill-visual
