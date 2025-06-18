@@ -75,6 +75,14 @@
     "message": "产业链",
     "description": "Project name: Industry Chain"
   },
+  "project.bill_visual": {
+    "message": "账单可视化",
+    "description": "Project name: Bill Visual"
+  },
+  "project.hct_visual": {
+    "message": "HCT 可视化",
+    "description": "Project name: HCT Visual"
+  },
   "theme.ErrorPageContent.title": {
     "message": "页面出错了。",
     "description": "The title of the fallback page when the page crashed"

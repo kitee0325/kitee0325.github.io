@@ -51,6 +51,24 @@ const getProjectItems = (): ProjectItem[] => [
       message: 'Industry Chain',
     }),
   },
+  {
+    width: 992,
+    height: 1266,
+    url: '/video/Bill Visual.mp4',
+    name: translate({
+      id: 'project.bill_visual',
+      message: 'Bill Visual',
+    }),
+  },
+  {
+    width: 2492,
+    height: 1308,
+    url: '/video/HCT Visual.mp4',
+    name: translate({
+      id: 'project.hct_visual',
+      message: 'HCT Visual',
+    }),
+  },
 ];
 
 const ProjectGallery: React.FC = () => {
