@@ -1,0 +1,365 @@
+---
+slug: the-grammar-of-graphic
+title: The Grammar of Graphics
+tags: [DataViz]
+---
+
+import useBaseUrl from '@docusaurus/useBaseUrl';
+import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
+import Link from '@docusaurus/Link';
+
+**TLDR**
+This article explores Leland Wilkinson's _The Grammar of Graphics_ theory in depth, which reduces visualization design from chart-level to more fundamental graphic elements. The article first introduces the core concepts of the grammar of graphics, including its specifications (data, transform, scale, coordinate, element, guide) and the three steps of assembly and display. It then compares the implementations of ECharts and AntV G2 to illustrate the different design philosophies and their trade-offs between chart-type-based and grammar-of-graphics-based approaches. Finally, the article reflects on the current core challenge in the visualization field - design itself rather than tools - and emphasizes the importance of professional visualization design knowledge and critical thinking capabilities through specific cases like extreme value handling and class grade reports in complex scenarios.
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506221838786.png?imageSlim)
+{/* truncate */}
+
+## Preface
+
+_The Grammar of Graphics_ was written by Leland Wilkinson, reducing the granularity of visualization design from charts to graphics, providing a more fundamental, bottom-up design guidance and methodology. The book moves away from the limited scope of chart types and instead focuses on unlimited grammatical statements of graphics. Its emphasis is on guiding people to construct mathematical rules for graphics and then organize them aesthetically into charts.
+
+A passage in the book's preface quickly conveys its design philosophy to readers:
+
+:::info
+For one thing, charts are usually instances of much more general objects. Once we understand that a pie is a divided bar in polar coordinates, we can construct other polar graphics that are less well known. We will also come to realize why a histogram is not a bar chart and why many other graphics that look similar nevertheless have different grammars.
+
+There is also a practical reason for shunning chart typology. If we endeavor to develop a charting instead of a graphing program, we will accomplish two things. First, we inevitably will offer fewer charts than people want. Second, our package will have no deep structure. Our computer program will be unnecessarily complex, because we will fail to reuse objects or routines that function similarly in different charts. And we will have no way to add new charts to our system without generating complex new code.
+:::
+
+**Pie charts are essentially bar charts in polar coordinates; radar charts are essentially line charts in polar coordinates; histograms are not considered bar charts.** Through these examples, the author provokes thinking about existing chart libraries. Leland Wilkinson is a statistician who, while building the chart library SYSTAT, realized that some charts had overlapping functionality. As the chart library expanded, various components and charts became coupled with each other, and duplication existed. Even when the design concepts of many components/charts differed only slightly, developers still had to rewrite code, and similar code snippets could not be effectively reused.
+
+Such chart libraries often use chart types as basic objects and provide limited visualization guidance to users based on chart types. For developers, functions are coupled and difficult to maintain; for users, they cannot meet multidimensional/complex data analysis scenarios.
+
+## Definition
+
+The author divides the entire chart construction process into three steps:
+
+### 1. Specification
+
+Specification essentially describes the relationship between data and charts by determining key elements such as visual channels and coordinate systems in the chart. It is subdivided into six steps:
+
+- **Data**
+  The data provided by the user, commonly an array of objects.
+- **Trans**
+  Data cleaning. User-provided data is often multidimensional, such as a one-dimensional object array, which is essentially two-dimensional data with discrete attributes in one dimension and object collections in the second dimension. Data statistics often involve counting, ranking, summing, averaging, linear regression, and other statistical operations across various dimensions and attributes.
+- **Scale**
+  Determining the scale. Within the range of values for a single attribute in a single dimension, determine the appropriate scale.
+- **Coord**
+  Determining the coordinate system, associating the scale where the data resides with coordinate systems such as Cartesian, polar, or geographic coordinate systems.
+- **Element**
+  Determining graphics and their aesthetic properties, essentially the mapping of visual channels.
+- **Guide**
+  Additional guiding elements such as annotations, legends, and labels.
+
+### 2. Assembly
+
+Based on the above specification, we must determine the capability boundaries and interface specifications of each functional component in the chart component library, then assemble them step by step like building a stage until the chart is constructed. During the assembly process, abstract thinking should be maintained throughout, avoiding confusion between surface features and deep structures.
+
+### 3. Display
+
+The entire chart must rely on display media to appear, such as paper, screens, projectors, etc. Dynamic charts also need to provide interactions such as drill-down, brushing, and linking.
+
+## Examples
+
+### Case from the Book
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506221746492.png?imageSlim)
+
+- **Specification**
+
+```text
+ELEMENT: point(position(birth*death), size(0), label(country))
+ELEMENT: contour(position(
+ smooth.density.kernel.epanechnikov.joint(birth*death)), color.hue())
+
+GUIDE: form.line(position((0,0),(30,30)), label("Zero Population Growth"))
+GUIDE: axis(dim(1), label("Birth Rate"))
+GUIDE: axis(dim(2), label("Death Rate"))
+```
+
+For the above population birth and death rate chart, the author omits the Data and Trans steps, uses linear scales for Scale, adopts Cartesian coordinate system for Coord, draws point plots and contour plots in Element, and draws zero growth lines in Guide.
+Through these definitions, we can obtain a unique chart description.
+
+- **Assembly**
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506221752947.png?imageSlim)
+
+Where triangular arrows represent "is" and diamond arrows represent "has". "Is" implies "inheritance"; "has" implies "composition".
+
+- **Display**
+
+In the structural tree above, any object can describe its own drawing logic without requiring external environments or additional agents to complete drawing operations. These objects, combined with rendering tools and layout designers, provide a structured environment that is overall a highly autonomous and coordinated system. Through this design, for new chart types, we no longer directly add a chart category but perform node-level operations based on existing nodes in the current system.
+
+For example, making small modifications to the above chart:
+
+```text
+ELEMENT: polygon(
+  position(smooth.density.kernel.epanechnikov.joint(birth*death)),
+  color.hue()
+)
+```
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506221757675.png?imageSlim)
+
+Omitting points and shapes, using polygons for drawing and coloring based on density, can create heatmap-like effects.
+
+Or mapping the **military spending** dimension in the data to the point's size attribute:
+
+```text
+ELEMENT: contour(
+  position(smooth.density.kernel.epanechnikov.joint(birth*death),
+           color.hue()
+          ))
+ELEMENT: point(position(birth*death), size(military))
+```
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506221800013.png?imageSlim)
+
+### Practical Cases
+
+The design philosophies of domestic ECharts and AntV can also support this point.
+
+For example, with the **Nightingale Rose Chart**, since we mentioned above that pie charts are essentially bar charts in polar coordinates, ECharts, which is based on chart types, can actually create Nightingale Rose Charts in both pie charts and bar charts:
+
+[ECharts - Pie Chart](https://echarts.apache.org/examples/zh/editor.html?c=pie-roseType-simple&code=PYBwLglsB2AEC8sDeAoWsDOBTAThLGAXLANprrLkWxgCeIWxA5CPkwDRUU4CGAJhACuRUgFYADO1gAmCQF1O1dAGMs0MLmIkmEgKQdYO8foVd0OYNgAq9RoZ44sPDmdgAbHgCMsb4qiUUGAAWwADuxABmPG7YrgC-ikoQGgC2AMp0bnb-AbCewDh8uABK_EIiABzxidR8PGA8Wq7oSLAAbtGCdgAskrDQPCl2TBbYsACMTLAJzcjtnXYAzBVSA0PMo1gyUzO5cx1uXcSL0quDw5uwizs1Sq0HR1d9axeWW903s_cLxNIr_ecNm9YKJPntvoc7NIAGxndaGS7QsG5CGPaSnAHwkbAgDsyICqLs43-LyBYwqO1cci4cXI1LiAG4gA)
+
+```javascript
+option = {
+  series: [
+    {
+      type: 'pie',
+      radius: [50, 250],
+      center: ['50%', '50%'],
+      roseType: 'area',
+      label: {
+        show: false,
+      },
+      itemStyle: {
+        borderRadius: 8,
+      },
+      data: [
+        { value: 40, name: 'rose 1' },
+        { value: 38, name: 'rose 2' },
+        { value: 32, name: 'rose 3' },
+        { value: 30, name: 'rose 4' },
+        { value: 28, name: 'rose 5' },
+        { value: 26, name: 'rose 6' },
+        { value: 22, name: 'rose 7' },
+        { value: 18, name: 'rose 8' },
+      ],
+    },
+  ],
+};
+```
+
+[ECharts - Polar Bar Chart](https://echarts.apache.org/examples/zh/editor.html?c=bar-polar-label-radial&code=PYBwLglsB2AEC8sDeAoWsTADYEMBOAXMmurHjgCYQCuAzkQNoCsADADSwBMrAuiQL5sS5KnQCCADwj1ipWLQAWwAO5EAZjiy0ApgKHoc0AOZZtk6UVRzFK9Zp37SYAJ4htRAOQBjHGG1HgPGcPPRIdPAhtGSsnV3dYDwAjfA9HdApfHEYSOSRYADdNaniAFnZYaBwAW3iPPGAdWABGD1hBHNI8wqxiogBmAA4OSprPesbOVva5dC6i-L7OYera8e1YPqm0zoL5_vKR1Yb1kq2O2d2e-M4hipWx49gmM5nkS96uADZl0YS12E-LxmcyuRE4SzuvzqjwA7EDcu94k1bocHo0BlMOjxtl5gIEqJU_ABlZy0PxVTyYXB4VIdZJ4ADCvn8gWcAHEcCAiOwOrisIEAELOTwZMA4WlyCDkoluUyWc6wRL47R4ABKlBoMgGHX4oQM0AgVV8UGgdi0un4AG4gA)
+
+```javascript
+option = {
+  polar: {
+    radius: [50, 250],
+  },
+  radiusAxis: {
+    show: false,
+  },
+  angleAxis: {
+    show: false,
+    type: 'category',
+  },
+  series: {
+    type: 'bar',
+    data: [
+      { value: 40, name: 'rose 1' },
+      { value: 38, name: 'rose 2' },
+      { value: 32, name: 'rose 3' },
+      { value: 30, name: 'rose 4' },
+      { value: 28, name: 'rose 5' },
+      { value: 26, name: 'rose 6' },
+      { value: 22, name: 'rose 7' },
+      { value: 18, name: 'rose 8' },
+    ],
+    coordinateSystem: 'polar',
+    barCategoryGap: 0,
+    colorBy: 'data',
+    itemStyle: {
+      borderRadius: 8,
+    },
+  },
+  animation: false,
+};
+```
+
+In AntV G2, which is guided by grammar of graphics design philosophy, it is drawn as follows:
+
+```javascript
+import { Chart } from '@antv/g2';
+const data = [
+  { value: 40, name: 'rose 1' },
+  { value: 38, name: 'rose 2' },
+  { value: 32, name: 'rose 3' },
+  { value: 30, name: 'rose 4' },
+  { value: 28, name: 'rose 5' },
+  { value: 26, name: 'rose 6' },
+  { value: 22, name: 'rose 7' },
+  { value: 18, name: 'rose 8' },
+];
+
+const chart = new Chart({
+  container: 'container',
+  autoFit: true,
+  width: 720,
+  height: 720,
+});
+
+chart.coordinate({ type: 'polar', innerRadius: 0.2 });
+
+chart
+  .interval()
+  .data(data)
+  .encode('x', 'name')
+  .encode('y', 'value')
+  .encode('color', 'name')
+  .scale('x', { padding: 0 })
+  .axis(false);
+
+chart.interaction('elementHighlight', true);
+
+chart.render();
+```
+
+From a component design perspective, **ECharts does indeed have the functional duplication problem** that Leland Wilkinson pointed out (we all know what it means in programming when the same functionality can be achieved through different combinations - all subsequent reuse and extension should be controversial). When extending chart types, it will also encounter problems such as similar functions that cannot be extracted and functional coupling. This is essentially a design flaw, but it is also highly related to the design philosophies of both approaches.
+
+**ECharts** essentially provides a **low-threshold, out-of-the-box chart component library**. It does not require chart designers to have professional visualization design capabilities, but rather allows users to quickly build charts by providing a large number of chart types and functions.
+
+**AntV's** design intention is **more aligned with data analysis**. The final presentation effect of charts is closely related to the developer's design capabilities, and it has a certain cognitive threshold, but the theoretical upper limit of chart design that can be achieved will be higher.
+
+## Reflections
+
+Although AntV provides a more abstract and easier-to-use component library design, and for drawing, there's the even more fundamental D3.js, **I believe the core problem in current visualization scenarios still lies in visualization design itself**. In simple scenarios, we can use the diagram below for type guidance and then quickly build charts based on ECharts.
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506221839084.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506221838786.png?imageSlim)
+
+But in reality, we face more complex problem scenarios. **Simple data dashboards are actually more like visually friendly UI components, with visualization contributing little to them.** As Edward Tufte mentioned, excellent visualization cases must allow people to discover hidden information in data based on graphics. When you draw a chart, you exclaim **"So that's how it is!"**
+
+Regarding the design case in the <Link to="/blog/bill-visual">Bill Visualization</Link> article, during the initial design phase, I fed the existing data types to LLM and used the comparison mode in [Flowith](https://flowith.io/blank) to perform solution design through several current leading large models (Gemini 2.5 Pro, Claude Sonnet 4.0, GPT nano 4.1). The results were still unsatisfactory, with most solutions still centered around data dashboards. **Although LLM's current performance is increasingly impressive, it still cannot change the fact that it lacks critical thinking abilities and is merely a text matcher.** In complex and professional problem scenarios, LLM still cannot provide satisfactory answers.
+
+BI tools like **Tableau** and **PowerBI**, by incorporating a large number of best practices, allow non-professionals to skip these design details; [PYGwalker](https://github.com/Kanaries/pygwalker) provides more automated data manipulation and rendering logic; but these tools still remain at the data dashboard level.
+
+**The instance-oriented data analysis I envision should be holistic, without fragmentation**, similar to multidimensional modeling where you can observe model details from various perspectives, even through cross-sections and internal views for more detailed observation, until you completely understand its internal operating principles and construction details. **Data dashboards are like orthographic projections** - although you can see different information from different dimensions, you ultimately find it difficult to construct an overall sense of the model, potentially missing important data connections.
+
+Current internet companies still follow the **[Product] - [UX] - [Development]** chain for collaboration. The foundation of collaboration is actually a generalized object-oriented thinking. Although individual roles may not understand the professional considerations of other related positions, they can understand the final product implementation through concrete, describable objects in actual collaboration. **However, in visualization design, this chain actually faces many problems.** Visualization design is more professional, detailed, and abstract. Consider the following questions:
+
+- **Does the product understand visual channels and coordinate systems in visualization design?** Otherwise, how can they choose the most appropriate visualization practices? If the product doesn't understand layout principles and algorithms, how can they draw product prototypes?
+- **Does UX understand common visualization interactions** such as brushing, drill-down, aggregation, and linking? Can they provide appropriate visual channel solutions?
+- **Can developers use appropriate layout algorithms and perform parameter tuning?**
+
+**Any lack of visualization design capabilities in any link will lead to a decline in the quality of the final product.** Either have one person with professional visualization literacy handle everything, or ensure that everyone in the team has visualization design capabilities.
+
+In previous work experience, due to the lack of visualization design experience, we actually spent a lot of energy thinking and might ultimately arrive at incorrect designs.
+
+Here are some examples:
+
+:::tip **Extreme Value Problem**
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506221922938.png?imageSlim)
+Suppose there is such a dataset with extreme minimum and maximum values. In chart drawing, we also round the coordinate system to facilitate label drawing, and the final actual range might be 0-9500.
+
+The current chart has the following problems:
+
+1. **Extreme values cause the chart's range to be too large**, making it difficult to see the distribution of the most numerous neutral parts
+2. **The neutral parts tend to stack, leading to poor readability and identification**
+
+How to handle extreme values?
+
+Some immediately obvious solutions might be:
+
+1. **Delete extreme values**, but extreme values themselves have very typical data statistical significance
+2. **Use logarithmic axes**, but most users find logarithmic axis drawing very counterintuitive, where the ranges 0-10 and 10-100 are equal, very easily causing user misjudgment
+
+In previous real business scenarios, we adopted a **segmented scale**, namely:
+
+<BlockMath>
+  {`
+f(x) = \\begin{cases} 
+  c_1 \\log(x - x_{\\min} + 1) + d_1 & x \\in [x_{\\min}, p_{10}] \\\\
+  c_2 x + d_2 & x \\in (p_{10}, p_{90}) \\\\ 
+  -c_3 \\log(x_{\\max} - x + 1) + d_3 & x \\in [p_{90}, x_{\\max}]
+\\end{cases}
+`}
+</BlockMath>
+
+Using logarithmic scales at both ends of the range and linear scales in the middle majority area.
+
+**Although the visual effect was good, there was a very serious design error in visualization design.** In the absence of annotations, the mapping relationship in the Y-axis direction changed significantly, but users could hardly obtain this information.
+
+If you have some visualization design experience, you would know that you can consider using **axis breaking** solutions, namely:
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506221932185.png?imageSlim)
+
+**Using linear mapping throughout, filtering out large blank range intervals by breaking the coordinate axis.**
+
+On this basis, if the data itself is irregularly distributed, such as a normal distribution, you can also add coordinate axis folding/scaling effects at both ends of the range to show/hide chart areas with low ink ratios.
+
+The Stanford visualization course actually had an overview of best practice solutions for this scenario:
+
+<Link to="/blog/stanford-cs448b-05-space2D">Stanford CS448B 05 2D Space</Link>
+:::
+
+:::tip **Class Grade Report**
+Consider this scenario: you are a high school homeroom teacher, your class has 45 students, and after this monthly exam, how do you quickly display their grades and distribution?
+
+As a homeroom teacher, you might be concerned with the following issues:
+
+- **1. Grade distribution for each subject**
+
+> You might consider whether there is poor teaching quality in a particular subject, or whether the difficulty of the questions is too high. Based on the analysis results, you might need to find the corresponding subject teacher to understand more detailed situations.
+
+- **2. Individual student's total score extremes and subject extremes**
+
+> What level has the highest-scoring student reached, are there any students with uneven performance across subjects?
+
+- **3. Individual student's single subject grade decline/improvement, total grade decline/improvement**
+
+> Are there students whose grades have significantly declined/improved due to personal reasons? You need to provide timely rewards or comfort.
+
+- **4. There may be key students who need attention, and you need to quickly locate them**
+
+Although we can still use data dashboards to statistically analyze and draw these data using simple charts, as I mentioned before, you still find it difficult to see the correlations between data. For example, you find it difficult to obtain the following information:
+
+- **1. Is there a student who maintains excellent grades despite obviously increased question difficulty?**
+
+> Is there cheating? Or can you identify students with olympiad talent?
+
+- **2. Are there two (or more) students whose grades show the same upward or downward trend?**
+
+> Is there early romance? Are there small groups of students studying together?
+
+The above requirements involve multiple dimensions and various statistical methods, so obviously this requires a dynamic chart. **But visual channels and coordinate systems are still heavily designed areas.**
+
+Some intuitive designs might look like these:
+
+Based on basic Cartesian coordinate systems, we can design basic stacked bar charts to represent individual student grade situations.
+
+Or we can build custom coordinate systems based on classroom seating and use pie charts or ring charts to represent individual student grade situations.
+
+Or use parallel coordinate systems to draw subject score distribution situations.
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506222024963.png?imageSlim)
+
+Or these:
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506222035416.png?imageSlim)
+
+**In fact, all the chart designs above are useful and meaningful in specific scenarios, but as a chart designer, you need to understand what users care about most, and it needs to be suitable for various groups**, such as subject teachers who focus on individual subjects, and parents who focus on their own children. Although it's difficult to please everyone, meaning it's difficult to ensure all local optima, there must be a global optimal solution that ensures the chart quality obtained by each local area is at or above average.
+:::
+
+The industry also has some in-depth thinking and exploration of chart case studies, such as the following examples that explain the shortcomings of box plots and word clouds in specific scenarios:
+
+> [I've Stopped Using Box Plots. Should You?](https://nightingaledvs.com/ive-stopped-using-box-plots-should-you/)
+
+> [Word Clouds Considered Harmful](http://www.niemanlab.org/2011/10/word-clouds-considered-harmful/)
+
+After these cases and reflections, I think you should now be able to understand somewhat what I mean by **"visualization design"**.
+
+**How to design effective data visualization based on actual scenarios is still a very lacking aspect in the current industry.**

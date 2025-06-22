@@ -1,0 +1,360 @@
+---
+slug: the-grammar-of-graphic
+title: 图形语法学
+tags: [数据可视化]
+---
+
+import useBaseUrl from '@docusaurus/useBaseUrl';
+import 'katex/dist/katex.min.css';
+import { InlineMath, BlockMath } from 'react-katex';
+import Link from '@docusaurus/Link';
+
+**TLDR**
+本文深入探讨了 Leland Wilkinson 的《图形语法》理论，该理论将可视化设计从图表降维到更底层的图形元素。文章首先介绍了图形语法的核心思想、及其规范（数据、变换、度量、坐标、元素、引导）、组装和展示三个步骤。接着，通过对比 ECharts 和 AntV G2 的实现，阐释了基于图表类型和基于图形语法的不同设计哲学及其优劣。最后，文章进一步反思了当前可视化领域的核心挑战在于设计本身，而非工具，并通过极值处理、班级成绩单等具体案例，强调了在复杂场景下专业可视化设计知识和思辨能力的重要性。
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506221838786.png?imageSlim)
+{/* truncate */}
+
+## 前言
+
+图形语法学是 Leland Wilkinson 编写的，将可视化的设计粒度从图表降维到图形，提供了一种更加底层的，由下向上的设计指导及方法论。该书脱离有限的图表类型范围，转而面向无限的图形语法陈述。其重点在于指导人们构建图形的数学规则，然后以美学的方式将其组织为图表。
+
+在书中的前言中有一段描述可以快速的让读者获取到其设计思想：
+:::info
+
+For one thing, charts are usually instances of much more general objects. Once we understand that a pie is a divided bar in polar coordinates, we can construct other polar graphics that are less well known. We will also come to realize why a histogram is not a bar chart and why many other graphics that look similar nevertheless have different grammars.
+
+There is also a practical reason for shunning chart typology. If we endeavor to develop a charting instead of a graphing program, we will accomplish two things. First, we inevitably will offer fewer charts than people want. Second, our package will have no deep structure. Our computer program will be unnecessarily complex, because we will fail to reuse objects or routines that function similarly in different charts. And we will have no way to add new charts to our system without generating complex new code.
+:::
+
+饼图本质上是极坐标系下的柱状图；雷达图本质上是极坐标系下的折线图；直方图并不算作柱状图。作者通过这些案例引发人们对于现有图表库的思考。 Leland Wilkinson 是一位统计学家，他在构建图表库 SYSTAT 的过程中意识到，部分图表的功能存在重复，随着图表库的扩张，各个组件和图表之间的功能相互耦合，且存在重复，即使很多组件/图表的设计思想仅存在细微差别，但开发者仍然不得不重新编写代码，相似的代码片段无法得到有效复用。
+
+这类图表库往往以图表类型为基本对象，同样基于图表类型为用户提供有限的可视化指导。对于开发者，功能耦合且难以维护，对于用户，无法满足多维/复杂的数据分析场景。
+
+## 定义
+
+作者将整个图表构建过程分为三步：
+
+1. Specification 描述
+   描述本质上是通过确定视觉通道、坐标系等图表中的关键元素，来唯一的描述数据与图表的关系。整体细分为六个步骤：
+
+- Data
+  用户提供的数据本身，常见的可能是对象数组。
+- Trans
+  数据清洗。用户提供的数据往往是多维的，比如一维对象数组，本质上是一维为离散属性，二维为对象集合的二维数据。数据统计往往在各个维度的各个属性中做出计数、排名、求和、均值、线性回归等统计操作。
+- Scale
+  确定比例尺。在单维的单个属性的值域中，确认恰当的比例尺。
+- Coord
+  确认坐标系，将数据所在的比例尺与坐标系做关联，比如笛卡尔坐标系、极坐标系、地理坐标系等。
+- Element
+  确认图形及其美学属性，本质上是视觉通道的映射。
+- Guide
+  额外的引导元素，比如注释、图例、标注等。
+
+2. Assembly 组装
+
+基于上述的描述，我们必须确认在图表组件库中各个职能组件的能力边界以及接口规范，然后像搭建舞台一样，逐步组装，直到构建图表，在组装过程中，应该始终保持抽象思维，避免表面特征和深层结构的混淆。
+
+3. Display 展示
+
+整个图表必须借助显示载体才能够显现，比如纸张、屏幕、投影仪等。且动态图表中还需要提供下钻、刷选、联动等交互。
+
+## 示例
+
+### 书中案例
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506221746492.png?imageSlim)
+
+- Specification 描述
+
+```text
+ELEMENT: point(position(birth*death), size(0), label(country))
+ELEMENT: contour(position(
+ smooth.density.kernel.epanechnikov.joint(birth*death)), color.hue())
+
+GUIDE: form.line(position((0,0),(30,30)), label("Zero Population Growth"))
+GUIDE: axis(dim(1), label("Birth Rate"))
+GUIDE: axis(dim(2), label("Death Rate"))
+```
+
+比如上述的人口出生死亡率的图表，作者省略 Data、Trans 俩个步骤，Scale 采用线性比例尺，Coord 采用笛卡尔坐标系，Element 中绘制了点图，以及等高线图，Guide 中绘制了零增长线。
+通过这些定义，我们可以获取到唯一的图表描述。
+
+- Assembly 组装
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506221752947.png?imageSlim)
+其中三角箭头代表："是"；菱形箭头代表："拥有"。"是"意味着"继承"；"拥有"意味着"组合"。
+
+- Display 展示
+
+上图中的结构树中，任意对象都可以描述自身的绘制逻辑，不需要外部环境和额外代理来完成绘制操作。这些对象结合渲染工具、布局设计器，提供了一个结构化的环境，整体是一个高度自治且协调的系统。通过这种设计，对于新的图表类型，我们不再是直接添加一类图表，而是基于目前系统中已有的节点进行节点粒度的操作。
+
+比如对于上面的图表做一些微小的改动：
+
+```text
+ELEMENT: polygon(
+  position(smooth.density.kernel.epanechnikov.joint(birth*death)),
+  color.hue()
+)
+```
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506221757675.png?imageSlim)
+省略点和形状，而是使用多边形绘制，并根据密度上色，即可绘制出类似于热图的效果。
+
+再或者将数据中的【军费】维度映射到点的 size 属性上
+
+```text
+ELEMENT: contour(
+  position(smooth.density.kernel.epanechnikov.joint(birth*death),
+           color.hue()
+          ))
+ELEMENT: point(position(birth*death), size(military))
+```
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506221800013.png?imageSlim)
+
+### 实际案例
+
+国内的 ECharts 和 AntV 的设计思想也可以佐证这一点。
+
+比如南丁格尔玫瑰图，由于上面我们提到，饼图本质上是极坐标系下的柱状图，所以以图表类型为设计基础的 ECharts，实际上在饼图和柱状图中都可以绘制出南丁格尔玫瑰图：
+
+[ECharts - 饼图](https://echarts.apache.org/examples/zh/editor.html?c=pie-roseType-simple&code=PYBwLglsB2AEC8sDeAoWsDOBTAThLGAXLANprrLkWxgCeIWxA5CPkwDRUU4CGAJhACuRUgFYADO1gAmCQF1O1dAGMs0MLmIkmEgKQdYO8foVd0OYNgAq9RoZ44sPDmdgAbHgCMsb4qiUUGAAWwADuxABmPG7YrgC-ikoQGgC2AMp0bnb-AbCewDh8uABK_EIiABzxidR8PGA8Wq7oSLAAbtGCdgAskrDQPCl2TBbYsACMTLAJzcjtnXYAzBVSA0PMo1gyUzO5cx1uXcSL0quDw5uwizs1Sq0HR1d9axeWW903s_cLxNIr_ecNm9YKJPntvoc7NIAGxndaGS7QsG5CGPaSnAHwkbAgDsyICqLs43-LyBYwqO1cci4cXI1LiAG4gA)
+
+```javascript
+option = {
+  series: [
+    {
+      type: 'pie',
+      radius: [50, 250],
+      center: ['50%', '50%'],
+      roseType: 'area',
+      label: {
+        show: false,
+      },
+      itemStyle: {
+        borderRadius: 8,
+      },
+      data: [
+        { value: 40, name: 'rose 1' },
+        { value: 38, name: 'rose 2' },
+        { value: 32, name: 'rose 3' },
+        { value: 30, name: 'rose 4' },
+        { value: 28, name: 'rose 5' },
+        { value: 26, name: 'rose 6' },
+        { value: 22, name: 'rose 7' },
+        { value: 18, name: 'rose 8' },
+      ],
+    },
+  ],
+};
+```
+
+[ECharts - 极坐标柱状图](https://echarts.apache.org/examples/zh/editor.html?c=bar-polar-label-radial&code=PYBwLglsB2AEC8sDeAoWsTADYEMBOAXMmurHjgCYQCuAzkQNoCsADADSwBMrAuiQL5sS5KnQCCADwj1ipWLQAWwAO5EAZjiy0ApgKHoc0AOZZtk6UVRzFK9Zp37SYAJ4htRAOQBjHGG1HgPGcPPRIdPAhtGSsnV3dYDwAjfA9HdApfHEYSOSRYADdNaniAFnZYaBwAW3iPPGAdWABGD1hBHNI8wqxiogBmAA4OSprPesbOVva5dC6i-L7OYera8e1YPqm0zoL5_vKR1Yb1kq2O2d2e-M4hipWx49gmM5nkS96uADZl0YS12E-LxmcyuRE4SzuvzqjwA7EDcu94k1bocHo0BlMOjxtl5gIEqJU_ABlZy0PxVTyYXB4VIdZJ4ADCvn8gWcAHEcCAiOwOrisIEAELOTwZMA4WlyCDkokuUyWc6wRL47R4ABKlBoMgGHX4oQM0AgVV8UGgdi0un4AG4gA)
+
+```javascript
+option = {
+  polar: {
+    radius: [50, 250],
+  },
+  radiusAxis: {
+    show: false,
+  },
+  angleAxis: {
+    show: false,
+    type: 'category',
+  },
+  series: {
+    type: 'bar',
+    data: [
+      { value: 40, name: 'rose 1' },
+      { value: 38, name: 'rose 2' },
+      { value: 32, name: 'rose 3' },
+      { value: 30, name: 'rose 4' },
+      { value: 28, name: 'rose 5' },
+      { value: 26, name: 'rose 6' },
+      { value: 22, name: 'rose 7' },
+      { value: 18, name: 'rose 8' },
+    ],
+    coordinateSystem: 'polar',
+    barCategoryGap: 0,
+    colorBy: 'data',
+    itemStyle: {
+      borderRadius: 8,
+    },
+  },
+  animation: false,
+};
+```
+
+而在以图形语法学为设计指导思想的 AntV G2 中，则通过以下方式绘制：
+
+```javascript
+import { Chart } from '@antv/g2';
+const data = [
+  { value: 40, name: 'rose 1' },
+  { value: 38, name: 'rose 2' },
+  { value: 32, name: 'rose 3' },
+  { value: 30, name: 'rose 4' },
+  { value: 28, name: 'rose 5' },
+  { value: 26, name: 'rose 6' },
+  { value: 22, name: 'rose 7' },
+  { value: 18, name: 'rose 8' },
+];
+
+const chart = new Chart({
+  container: 'container',
+  autoFit: true,
+  width: 720,
+  height: 720,
+});
+
+chart.coordinate({ type: 'polar', innerRadius: 0.2 });
+
+chart
+  .interval()
+  .data(data)
+  .encode('x', 'name')
+  .encode('y', 'value')
+  .encode('color', 'name')
+  .scale('x', { padding: 0 })
+  .axis(false);
+
+chart.interaction('elementHighlight', true);
+
+chart.render();
+```
+
+单从组件设计上来说，ECharts 确实存在 Leland Wilkinson 指出的功能重复的问题(我们都知道如果相同的功能可以通过不同的组合实现在程序中意味着什么，后续的所有相关的复用、扩展，都应该是存在争议的)，扩展图表类型时也会遇到功能类似无法抽取、功能耦合等问题，这本质上是一种设计缺陷，但也和俩者的设计思想高度相关。
+
+ECharts 本质上是提供了一种低门槛的开箱即用的图表组件库，他并不要求图表设计者本身具备专业的可视化设计能力，而是通过提供大量的图表类型和功能，让用户可以快速搭建出图表。
+
+而 AntV 的设计初衷则更加贴近于数据分析，图表最终的呈现效果与开发者的设计能力息息相关，且本身有一定的认知门槛，但能达到的图表设计上限理论上会更高。
+
+## 思考
+
+尽管 AntV 提供了更加抽象，更加易用的组件库设计，且论绘图，还有更加底层的 D3.js。但我认为当前可视化场景中的核心问题还是在于可视化设计，在简单的场景中，姑且可以使用下图做类型指导，然后基于 ECharts 快速构建图表。
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506221839084.png?imageSlim)
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506221838786.png?imageSlim)
+
+但实际上我们现实中更多的是复杂的问题场景，简单的数据报表其实更像是一种视觉友好的 UI 组件，可视化相关在其中助力甚少。正如爱德华塔夫特提到的，优秀的可视化案例，一定是可以让人们基于图形发现数据中隐藏的信息。当你绘制出图表时，你会惊呼"原来是这样"。
+
+关于<Link to="/blog/bill-visual">账单可视化</Link>一文中的设计案例，在设计之初，我将现有的数据类型喂给 LLM 并使用[Flowith](https://flowith.io/blank)中的比较模式，通过目前的几个头部大模型(Gemini 2.5 Pro、Claude Sonnet 4.0、GPT nano 4.1)进行方案设计，得到的结果仍然欠佳，大部分方案仍然是围绕数据报表进行的。尽管 LLM 目前的表现越来越令人惊艳，但仍然无法改变他没有思辨能力，仅仅是一个文字匹配器的事实，在复杂且专业的问题场景中，LLM 仍然无法给出令人满意的答案。
+
+Tableau、PowerBI 之类的 BI 工具，通过内置大量最佳实践，可以让非专业者跳过这些设计细节；[PYGwalker](https://github.com/Kanaries/pygwalker)则提供了更加自动化的数据操作和渲染逻辑；但这类工具仍然在数据报表的层面。
+
+我期望的面向单个实例的数据分析，理应是整体的，没有割裂感的，类似于多维建模一样，你可以从各个视角观察模型细节，甚至通过切面、内视等方案进行更加细致的观察，直到完全搞清楚其内部运行原理和构筑细节。而数据报表就像三视图一样，尽管你可以在不同的维度上看到不同的信息，但你终归难以构建模型的整体既视感，从而可能错过重要的数据联系。
+
+当前的互联网企业中，仍然以【产品】-【UX】-【开发】这样的链路进行合作，合作的基础实际上是一种广义上的面向对象的思想，尽管单个角色可能并不了解其他相关职位上的专业考量，但可以从实际协作中对于有形的、可描述的对象中了解到最终的产品实现。但在可视化设计上，这一链路实际上面临很多问题，可视化设计是更加专业、细化、抽象的，考虑下面这些问题：
+
+- 产品在设计之初，是否了解可视化的视觉通道以及坐标系？否则如何选用最合适的可视化实践？产品不了解布局原理和算法，如何绘制产品原型？
+- UX 是否了解常见的刷选、下钻、聚合、联动等可视化典型交互？能否给出合适的视觉通道方案？
+- 开发是否可以使用合适的布局算法并进行参数调优？
+
+任何一环对于可视化设计的欠缺，都会导致最终的产物质量下降。要么，有一个具备专业可视化素养的人员兼顾这一切；要么，保证团队内的所有人均具备可视化设计能力。
+
+之前的工作经历中，由于欠缺可视化设计经验，实际上我们采用了非常多的精力去思考，且最终可能会得到错误的设计。
+
+这里有一些案例：
+
+:::tip 极值问题
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506221922938.png?imageSlim)
+假设有这样一组数据，存在极小极值和极大极值，在图表绘制中，我们还会对坐标系进行取整，便于 label 等绘制，最后的实际值域可能是 0-9500。
+
+现在的图表中存在以下问题:
+
+1. 极值导致图表的值域跨度过大，数量最多的中立部分范围难以看出分布
+2. 中立部分容易出现堆叠，导致可读性和识别性变差
+
+如何处理极值？
+
+一些立马可以想到的方案可能是：
+
+1. 删除极值，但极值本身具有非常典型的数据统计意义
+2. 采用对数轴，但大部分用户对于对数轴的绘制是非常反直觉的，此时 0-10 和 10-100 的范围相等，非常容易导致用户错判
+
+之前的真实业务场景中，我们采取了分段式的比例尺，即:
+
+<BlockMath>
+  {`
+f(x) = \\begin{cases} 
+  c_1 \\log(x - x_{\\min} + 1) + d_1 & x \\in [x_{\\min}, p_{10}] \\\\
+  c_2 x + d_2 & x \\in (p_{10}, p_{90}) \\\\ 
+  -c_3 \\log(x_{\\max} - x + 1) + d_3 & x \\in [p_{90}, x_{\\max}]
+\\end{cases}
+`}
+</BlockMath>
+
+在值域俩端采用对数比例尺，在中间的大部分地带采用线性比例尺。
+
+尽管视觉效果良好，但在可视化设计上却存在非常严重的设计错误，在缺失标注的情况下，Y 轴方向的映射关系发生了显著变化，但用户很难获取这一信息。
+
+如果具备一些可视化设计经验，就可以知道，此时可以考虑采用【轴分割】的方案，即：
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506221932185.png?imageSlim)
+
+整体采用线性映射，通过分割坐标轴，过滤掉大片的空白值域区间。
+
+在此基础上，如果数据本身不规则分散，比如类似正态分布，还可以在值域俩端添加类似坐标轴折叠/缩放的效果，用于显隐此类墨水比较低的图表区域。
+
+之前的斯坦福可视化课程中实际上就有该场景的最佳实践方案概述：
+
+<Link to="/blog/stanford-cs448b-05-space2D">斯坦福 CS448B 05 二维空间</Link>
+:::
+
+:::tip 班级成绩表
+思考这样一个场景，你是一名高中班主任，你所在的班级共有 45 名同学，此次月考结束，如何快速展示他们的成绩，以及分布？
+关于一名班主任，你可能关注以下问题：
+
+- 1.各科的成绩分布
+
+> 你可能会考虑是否存在某一个学科教学质量不好，或者题目难度过高，根据分析结果你可能需要找对应科目的老师了解更加详细的情况
+
+- 2.单个同学的总分极值，以及各科极值
+
+> 成绩最高的同学达到了什么样的地步，有没有偏科的同学
+
+- 3.单个同学的单科成绩下降/上升，总成绩的下降上升
+
+> 是否存在某个同学由于个人原因造成成绩显著下降/上升，你需要即使给出奖励或者安慰
+
+- 4.可能存在重点需要关注的学生，你需要快速定位到他
+
+尽管我们仍然可以使用数据报表来统计并使用简单图表来绘制这些数据，但仍然按照我之前所说，你难以看到数据之间的关联性，比如你难以获取以下信息:
+
+- 1.有没有一个同学，在题目难度明显上升的情况下仍然保持成绩优异？
+
+> 是否存在作弊？或者是否可以挖掘出存在奥赛天赋的同学？
+
+- 2.是否存在俩（多）个同学，成绩呈现同样的上升或下降
+
+> 是否存在早恋？是否存在励志学习的小团体？
+
+上面的需求存在多个维度，多种统计方案，所以显然这需要一个动态图表。但视觉通道、坐标系仍然是重度设计区域。
+
+一些直观的设计可能会像下面这些？
+
+基于基础的笛卡尔坐标系，我们可以设计基础的堆叠柱状图，用来表示单个学生的成绩状况。
+
+或者也可以基于教室的座位来构建自定义坐标系，使用饼图或者环图来表示单个学生的成绩状况。
+
+或者使用平行坐标系，绘制学科的分数分布情况。
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506222024963.png?imageSlim)
+
+或者下面这些？
+
+![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506222035416.png?imageSlim)
+
+事实上上面的所有图表设计在特定场景下都是好用且具有意义的，但作为图表设计者，你需要了解用户最关心的是什么，且需要适用于各类群体，比如专注于个人科目的科目老师，专注于自己孩子的学生家长。尽管众口难调，即难以保证所有局部最优，但一定存在一种全局最优解。保证各个局部获取到的图表质量都在均线甚至以上。
+:::
+
+业内也存在一些图表案例的深入思考和探索，比如下面这些例子，阐述了箱线图和词云在特定场景下的缺陷：
+
+> [I've Stopped Using Box Plots. Should You?](https://nightingaledvs.com/ive-stopped-using-box-plots-should-you/)
+
+> [Word Clouds Considered Harmful](http://www.niemanlab.org/2011/10/word-clouds-considered-harmful/)
+
+经过上面的这些案例和思考，我想，现在你应该可以稍微理解一点我所阐述的【可视化设计】的含义。
+
+如何根据实际场景，设计有效的数据可视化设计，仍然是目前业内非常欠缺的一环。
