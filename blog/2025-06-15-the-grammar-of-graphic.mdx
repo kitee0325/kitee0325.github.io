@@ -241,6 +241,15 @@ Although AntV provides a more abstract and easier-to-use component library desig
 ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506221839084.png?imageSlim)
 ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506221838786.png?imageSlim)
 
+<object
+  data={useBaseUrl('/paper/Visual Vocabulary.pdf')}
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href={useBaseUrl('/paper/Visual Vocabulary.pdf')}>Download PDF</a>.
+</object>
+
 But in reality, we face more complex problem scenarios. **Simple data dashboards are actually more like visually friendly UI components, with visualization contributing little to them.** As Edward Tufte mentioned, excellent visualization cases must allow people to discover hidden information in data based on graphics. When you draw a chart, you exclaim **"So that's how it is!"**
 
 Regarding the design case in the <Link to="/blog/bill-visual">Bill Visualization</Link> article, during the initial design phase, I fed the existing data types to LLM and used the comparison mode in [Flowith](https://flowith.io/blank) to perform solution design through several current leading large models (Gemini 2.5 Pro, Claude Sonnet 4.0, GPT nano 4.1). The results were still unsatisfactory, with most solutions still centered around data dashboards. **Although LLM's current performance is increasingly impressive, it still cannot change the fact that it lacks critical thinking abilities and is merely a text matcher.** In complex and professional problem scenarios, LLM still cannot provide satisfactory answers.

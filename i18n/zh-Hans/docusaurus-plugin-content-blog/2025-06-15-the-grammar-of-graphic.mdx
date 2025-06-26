@@ -237,6 +237,15 @@ ECharts 本质上是提供了一种低门槛的开箱即用的图表组件库，
 ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506221839084.png?imageSlim)
 ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202506221838786.png?imageSlim)
 
+<object
+  data={useBaseUrl('/paper/Visual Vocabulary.pdf')}
+  type="application/pdf"
+  width="100%"
+  height="800px"
+>
+  <a href={useBaseUrl('/paper/Visual Vocabulary.pdf')}>Download PDF</a>.
+</object>
+
 但实际上我们现实中更多的是复杂的问题场景，简单的数据报表其实更像是一种视觉友好的 UI 组件，可视化相关在其中助力甚少。正如爱德华塔夫特提到的，优秀的可视化案例，一定是可以让人们基于图形发现数据中隐藏的信息。当你绘制出图表时，你会惊呼"原来是这样"。
 
 关于<Link to="/blog/bill-visual">账单可视化</Link>一文中的设计案例，在设计之初，我将现有的数据类型喂给 LLM 并使用[Flowith](https://flowith.io/blank)中的比较模式，通过目前的几个头部大模型(Gemini 2.5 Pro、Claude Sonnet 4.0、GPT nano 4.1)进行方案设计，得到的结果仍然欠佳，大部分方案仍然是围绕数据报表进行的。尽管 LLM 目前的表现越来越令人惊艳，但仍然无法改变他没有思辨能力，仅仅是一个文字匹配器的事实，在复杂且专业的问题场景中，LLM 仍然无法给出令人满意的答案。
