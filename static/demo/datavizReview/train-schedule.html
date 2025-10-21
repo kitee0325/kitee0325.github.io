@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en" style="height: 100%">
+  <head>
+    <meta charset="utf-8" />
+  </head>
+  <body style="height: 100%; margin: 0">
+    <div id="container" style="height: 600px; width: 100%"></div>
+
+    <script
+      type="text/javascript"
+      src="https://fastly.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"
+    ></script>
+
+    <script type="text/javascript">
+      // Initialize the chart
+      const dom = document.getElementById('container');
+      const myChart = echarts.init(dom, null, {
+        renderer: 'canvas',
+        useDirtyRect: false,
+      });
+
+      // data
+      const valueLocationMap = {
+        0: 'NewYork',
+        5: 'LosAngeles',
+        7: 'Chicago',
+        11: 'Houston',
+        12: 'Miami',
+        17: 'SanFrancisco',
+        20: 'Seattle',
+      };
+
+      const trains = [];
+
+      // 生成火车时刻表数据
+      function generateTrainSchedule() {
+        const locations = Object.keys(valueLocationMap)
+          .map(Number)
+          .sort((a, b) => a - b);
+        const numTrains = 15 + Math.floor(Math.random() * 6); // 15-20辆火车
+        for (let i = 0; i < numTrains; i++) {
+          // 随机选择方向
+          const isForward = Math.random() > 0.5;
+          const orderedLocations = isForward
+            ? [...locations]
+            : [...locations].reverse();
+
+          // 随机选择起点和终点（不一定走完全程）
+          const startIdx = Math.floor(
+            Math.random() * (orderedLocations.length - 2)
+          );
+          const endIdx =
+            startIdx +
+            2 +
+            Math.floor(
+              Math.random() * (orderedLocations.length - startIdx - 2)
+            );
+          const routeLocations = orderedLocations.slice(startIdx, endIdx + 1);
+
+          // 随机起始时间 (0-20小时，留出时间完成行程)
+          let currentTime = Math.random() * 20;
+
+          // 随机速度 (每个位置单位需要的小时数)
+          const speed = 0.3 + Math.random() * 0.5; // 0.3-0.8小时/单位
+
+          const schedule = [];
+
+          for (let j = 0; j < routeLocations.length; j++) {
+            const currentLocation = routeLocations[j];
+
+            // 添加到达时间点
+            schedule.push([currentTime, currentLocation]);
+
+            // 如果不是最后一站，决定是否停靠
+            if (j < routeLocations.length - 1) {
+              const shouldStop = Math.random() > 0.3; // 70%概率停靠
+
+              if (shouldStop) {
+                // 随机停靠时长 (0.2-1.5小时)
+                const stopDuration = 0.2 + Math.random() * 1.3;
+                currentTime += stopDuration;
+
+                // 添加停靠点（时间增加，位置不变）
+                schedule.push([currentTime, currentLocation]);
+              }
+
+              // 计算到下一站的行驶时间
+              const nextLocation = routeLocations[j + 1];
+              const distance = Math.abs(nextLocation - currentLocation);
+              const travelTime = distance * speed;
+              currentTime += travelTime;
+
+              // 确保不超过24小时
+              if (currentTime > 24) {
+                break;
+              }
+            }
+          }
+
+          // 只添加至少有2个点的有效路线
+          if (schedule.length >= 2) {
+            trains.push({
+              name: `Train ${i + 1}`,
+              data: schedule,
+            });
+          }
+        }
+      }
+
+      // 生成数据
+      generateTrainSchedule();
+
+      const option = {
+        xAxis: {
+          min: 0,
+          max: 24,
+          axisLabel: {
+            formatter: (value) => {
+              // 将小时转换为小时:分钟格式
+              const hours = Math.floor(value);
+              const minutes = Math.round((value - hours) * 60);
+              const paddedHours = hours.toString().padStart(2, '0');
+              const paddedMinutes = minutes.toString().padStart(2, '0');
+              return `${paddedHours}:${paddedMinutes}`;
+            },
+          },
+        },
+        yAxis: {
+          min: 0,
+          max: 20,
+          type: 'value',
+          axisTick: {
+            customValues: Object.keys(valueLocationMap),
+          },
+          axisLabel: {
+            customValues: Object.keys(valueLocationMap),
+            formatter: (value) => {
+              return valueLocationMap[value];
+            },
+          },
+        },
+        brush: {},
+        series: trains.map((train) => ({
+          name: train.name,
+          type: 'line',
+          data: train.data,
+          lineStyle: {
+            width: 2,
+          },
+          symbol: 'circle',
+          symbolSize: 4,
+          smooth: false,
+          emphasis: {
+            focus: 'series',
+          },
+        })),
+      };
+
+      if (option && typeof option === 'object') {
+        myChart.setOption(option);
+      }
+
+      window.addEventListener('resize', myChart.resize);
+    </script>
+  </body>
+</html>
