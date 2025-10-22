@@ -51,3 +51,27 @@
 .markdown p {
   margin-bottom: 0.4rem;
 }
+
+/* 沉浸式阅读模式样式 */
+.immersive-mode {
+  /* 隐藏顶部导航栏 */
+  .navbar {
+    display: none !important;
+  }
+
+  /* 隐藏左侧侧边栏 */
+  aside.col {
+    display: none !important;
+  }
+
+  /* 隐藏底部信息 */
+  .footer {
+    display: none !important;
+  }
+
+  /* 调整main元素宽度：从col--7改为col--9 */
+  main.col--7 {
+    flex: 0 0 75% !important;
+    max-width: 75% !important;
+  }
+}

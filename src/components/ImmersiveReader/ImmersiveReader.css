@@ -1,0 +1,82 @@
+/* 沉浸式阅读切换按钮样式 */
+.immersive-reader-toggle {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 1001;
+}
+
+.immersive-button {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  border: none;
+  background: var(--ifm-color-primary);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+  font-size: 1.2rem;
+}
+
+.immersive-button:hover {
+  background: var(--ifm-color-primary-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.immersive-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(var(--ifm-color-primary-rgb), 0.3);
+}
+
+.immersive-button:active {
+  transform: translateY(0);
+}
+
+/* 深色主题适配 */
+[data-theme='dark'] .immersive-button {
+  background: var(--ifm-color-primary-light);
+  color: var(--ifm-color-primary-darkest);
+}
+
+[data-theme='dark'] .immersive-button:hover {
+  background: var(--ifm-color-primary-lighter);
+}
+
+/* 沉浸模式下的按钮样式变化 */
+.immersive-reader-toggle.immersive .immersive-button {
+  background: var(--ifm-color-secondary);
+  color: var(--ifm-color-primary-darkest);
+}
+
+.immersive-reader-toggle.immersive .immersive-button:hover {
+  background: var(--ifm-color-secondary-dark);
+}
+
+/* 深色主题下的沉浸模式按钮 */
+[data-theme='dark'] .immersive-reader-toggle.immersive .immersive-button {
+  background: var(--ifm-color-secondary-light);
+  color: var(--ifm-color-secondary-darkest);
+}
+
+[data-theme='dark'] .immersive-reader-toggle.immersive .immersive-button:hover {
+  background: var(--ifm-color-secondary-lighter);
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+  .immersive-reader-toggle {
+    bottom: 1rem;
+    right: 1rem;
+  }
+
+  .immersive-button {
+    width: 2.5rem;
+    height: 2.5rem;
+    font-size: 1rem;
+  }
+}
