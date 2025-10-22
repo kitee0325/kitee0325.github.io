@@ -181,30 +181,77 @@ X 轴，表示单周期内的时间刻度，最小到分钟单位
 :::info
 从国内前端图表库的变迁来看可视化的发展缩影：
 
-1. ECharts
+<div style={{ display: 'flex', alignItems: 'center' }}>
+  <span>1.</span>
+  <img
+    src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202510211820436.png?imageSlim"
+    height="20"
+    style={{ marginLeft: '8px' }}
+  />
+</div>
+ECharts 更加聚焦功能，但缺乏抽象，类似业务组件库，扩展难度大，新增图表无法低成本快速适配所有功能。
 
-   <img
-     src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202510211820436.png?imageSlim"
-     height="20"
-   />
-   ECharts 更加聚焦功能，但缺乏抽象，类似业务组件库，扩展难度大，新增图表无法低成本快速适配所有功能。
+<div style={{ display: 'flex', alignItems: 'center' }}>
+  <span>2.</span>
+  <img
+    src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202510211826249.png?imageSlim"
+    height="20"
+    style={{ marginLeft: '8px' }}
+  />
+</div>
 
-2. AntV
+AntV 基于《图形语法学》设计，提供了更加抽象的 API 设计，以及更加合理的功能分层，但是也提高了普通前端的接入门槛，需要使用者对可视化设计和可视化术语有一定的掌握能力。细化可视化分类，产出多类型的可视化组件库。
 
-   <img
-     src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202510211826249.png?imageSlim"
-     height="20"
-   />
-   AntV 基于《图形语法学》设计，提供了更加抽象的 API 设计，以及更加合理的功能分层，但是也提高了普通前端的接入门槛，需要使用者对可视化设计和可视化术语有一定的掌握能力。细化可视化分类，产出多类型的可视化组件库。
+AntV 基于图形语法学的示例：
 
-3. VCharts
-   <img
-     src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202510211827366.svg?imageSlim"
-     height="20"
-   />
-   同时结合 ECharts 和 AntV 的优点，提供更加抽象的 API 设计，以及更加合理的功能分层，内置多种最佳实践，以统一的语法层涵盖
-   2D 和 3D，注重可视化叙事表达。
+<div
+  style={{
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '12px',
+    margin: '16px 0',
+  }}
+>
+  <img
+    src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202510221355196.png?imageSlim"
+    style={{ width: '100%', height: '200px', objectFit: 'cover' }}
+    alt="AntV 图形语法 示例1"
+  />
+  <img
+    src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202510221355408.png?imageSlim"
+    style={{ width: '100%', height: '200px', objectFit: 'cover' }}
+    alt="AntV 图形语法 示例2"
+  />
+  <img
+    src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202510221356066.png?imageSlim"
+    style={{ width: '100%', height: '200px', objectFit: 'cover' }}
+    alt="AntV 图形语法 示例3"
+  />
+  <img
+    src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202510221356890.png?imageSlim"
+    style={{ width: '100%', height: '200px', objectFit: 'cover' }}
+    alt="AntV 图形语法 示例4"
+  />
+</div>
 
+<div style={{ display: 'flex', alignItems: 'center' }}>
+  <span>3.</span>
+  <img
+    src="https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202510211827366.svg?imageSlim"
+    height="20"
+    style={{ marginLeft: '8px' }}
+  />
+</div>
+
+同时结合 ECharts 和 AntV 的优点，提供更加抽象的 API 设计，以及更加合理的功能分层，内置多种最佳实践，以统一的语法层涵盖
+2D 和 3D，注重可视化叙事表达。
+
+VCharts 中的一些优质交互：
+
+<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+  <img src={useBaseUrl('/img/VChart Example1.gif')} alt="VChart Example1" />
+  <img src={useBaseUrl('/img/VChart Example2.gif')} alt="VChart Example2" />
+</div>
 :::
 
 :::tip
