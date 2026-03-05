@@ -3,15 +3,21 @@ import styles from './FloatingPanel.module.css';
 
 const DESKTOP_BREAKPOINT = 1024;
 
+function toCssSize(value: number | string): string {
+  return typeof value === 'number' ? `${value}px` : value;
+}
+
 export interface FloatingPanelProps {
-  width: number;
-  height: number;
+  width: number | string;
+  height: number | string;
   content: React.ReactNode;
 }
 
 export function FloatingPanel({ width, height, content }: FloatingPanelProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
+
+  const size = { width: toCssSize(width), height: toCssSize(height) };
 
   useEffect(() => {
     const checkDesktop = () => {
@@ -46,22 +52,13 @@ export function FloatingPanel({ width, height, content }: FloatingPanelProps) {
 
   return (
     <div className={styles.root} style={{ right: 24 }}>
-      <div
-        className={styles.panelWrapper}
-        style={{ width: width + 16, height: height + 16 }}
-      >
-        <div
-          className={styles.panel}
-          style={{
-            width: width + 16,
-            height: height + 16,
-          }}
-        >
+      <div className={styles.panelWrapper} style={size}>
+        <div className={styles.panel} style={size}>
           <div
             className={styles.contentWrap}
             style={{
-              width,
-              height,
+              width: 'calc(100% - 16px)',
+              height: 'calc(100% - 16px)',
               margin: 8,
               overflow: 'auto',
             }}
