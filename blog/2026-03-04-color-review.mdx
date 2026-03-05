@@ -11,7 +11,7 @@ import Link from '@docusaurus/Link';
 import { FloatingPanel } from '@site/src/components/FloatingPanel';
 
 **TLDR**
-Starting from human perception, this post systematically unpacks the physical and physiological basis of “color”: visible-light spectrum, the L/M/S cone cells in the retina, and the separation of luminance and chroma, so readers can see why three dimensions suffice to describe color. It then covers metamerism and the difference between additive and subtractive mixing, clarifying how displays (emitted light) and print (pigment) impose different constraints in practice, and how the continuous spectrum is geometricized into a color wheel to support intuitive picking and palette strategies. On color spaces, it contrasts perception-oriented CIE-family spaces with implementation-oriented RGB-family spaces and the problems each solves. Finally it introduces perception-friendly workspaces such as HCT and LPS, and how they deliver more natural gradients, more consistent palettes, and better alignment with accessibility standards in front-end and visualization work.
+Starting from human perception, this post systematically unpacks the physical and physiological basis of “color”: visible-light spectrum, the L/M/S cone cells in the retina, and the separation of luminance and chroma, so readers can see why three dimensions suffice to describe color. It then covers metamerism and the difference between additive and subtractive mixing, clarifying how displays (emitted light) and print (pigment) impose different constraints in practice, and how the continuous spectrum is geometricized into a color wheel to support intuitive picking and palette strategies. On color spaces, it contrasts perception-oriented CIE-family spaces with implementation-oriented RGB-family spaces and the problems each solves. Finally it introduces a perception-friendly workspace, HCT, and how it delivers more natural gradients, more consistent palettes, and better alignment with accessibility standards in front-end and visualization work.
 
 ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202603051035143.png?imageSlim)
 {/* truncate */}
@@ -303,18 +303,18 @@ HSL/HSV geometrically remap the RGB cube into cylindrical or conical coordinates
 | **sRGB**                   | Standardizes gamut and gamma across devices and image files to reduce display inconsistency.                 |
 | **HSL / HSV**              | Provides more intuitive hue/saturation/lightness knobs than raw RGB for UI and design workflows.            |
 
-HCT and LPS build on CIE’s perceptual modeling while serving front‑end and visualization engineering.
+HCT builds on CIE’s perceptual modeling while serving front‑end and visualization engineering.
 
-## HCT and LPS: how they work and how to use them in practice
+## HCT: how it works and how to use it in practice
 
 ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202603051100281.png?imageSlim)
 ![](https://kitee-1301346990.cos.ap-nanjing.myqcloud.com/Obsidian/202603051100185.jpg?imageSlim)
 
-### From HSL/CIELAB to HCT/LPS: pain points and goals
+### From HSL/CIELAB to HCT: pain points and goals
 
-HSL/HSV often produce muddy midpoints and uneven lightness in interpolations and palette design. CIELAB/OKLab have much better behavior for color differences and perceptual uniformity, but there is still a gap between them and **contrast guidelines, device gamuts and day‑to‑day engineering needs**. HCT and LPS aim to provide a workspace tightly aligned with accessibility (contrast ratios), front‑end implementation and visualization workflows.
+HSL/HSV often produce muddy midpoints and uneven lightness in interpolations and palette design. CIELAB/OKLab have much better behavior for color differences and perceptual uniformity, but there is still a gap between them and **contrast guidelines, device gamuts and day‑to‑day engineering needs**. HCT aims to provide a workspace tightly aligned with accessibility (contrast ratios), front‑end implementation and visualization workflows.
 
-> Comparing gradients in OKLCH or LCH(ab) versus gradients in RGB/HSL is a good way to build intuition for why HCT/LPS were designed.
+> Comparing gradients in OKLCH or LCH(ab) versus gradients in RGB/HSL is a good way to build intuition for why perceptually friendly workspaces like HCT are designed.
 
 ### HCT: definitions and semantics of Hue / Chroma / Tone
 
@@ -330,21 +330,9 @@ At fixed Tone, **Hue** controls “which color family” it is, and **Chroma** c
 
 **HCT → ARGB**: given (H, C, T), search within the sRGB gamut for a color whose CAM16 hue ≈ H, tone ≈ T, and chroma as close as possible to C, while keeping RGB channels in [0, 255]. The HCT solver (HctSolver) uses Newton iteration plus bisection to perform this search. This lets us drive UI/visualization in perceptually friendly (H, C, T) while still landing robustly in ARGB/HEX.
 
-### LPS: a linear perceptual space designed for interpolation
-
-- **L axis**: inherits HCT Tone (≈ L\*), approximately linear in perceived lightness.
-- **P axis**: re‑parametrizes hue along the CAM16‑UCS hue circle by arc length, so equal steps in P correspond more closely to equal perceptual hue differences.
-- **S axis**: applies a compressive mapping to HCT chroma; the commonly used range is roughly linear, with very high chroma compressed to reduce gamut‑clipping issues.
-
-### LPS computation overview (hctToLps / lpsToHct)
-
-For a reference tone/chroma ring, LPS builds an arc‑length table around the CAM16‑UCS hue circle, enabling a reversible mapping between Hue and P. A monotone compression function and its inverse map between Chroma and S. Combining L/P/S with H/C/T then hooks back into the HCT toolchain to get ARGB/HEX.
-
-> Compare a straight‑line interpolation in HSL/RGB with one that holds P/S fixed in LPS and varies only L: the latter yields much smoother transitions in both lightness and hue. This is a textbook example of “do geometry in a perceptual space, then map back to RGB”.
-
 ### Advantages and limitations versus traditional spaces
 
-**Advantages**: compared with HSL/RGB, interpolations in HCT/LPS follow paths closer to perceptual intuition, producing more natural gradients and palettes. Compared with using HCT alone, LPS’s coordinate structure is better suited for unified interpolation, sampling and distance calculations. Conceptually it aligns with OKLab: **go to a perceptual space first, do geometry there, then return to RGB**.
+**Advantages**: compared with HSL/RGB, doing interpolation and palette construction in HCT follows paths that better match perceptual intuition, producing more natural gradients and palettes. The H/C/T axes also map well to everyday design needs, making it easier to build systematic theme scales while maintaining contrast targets. Conceptually HCT fits the same philosophy as OKLab: **go to a perceptual space first, do geometry there, then return to RGB**.
 
-**Limitations**: the arc‑length tables depend on chosen reference Tone/Chroma rings and remain approximations in extreme regions; the construction is tied to sRGB. For wide‑gamut devices or very different viewing conditions, new LPS variants or updated models may be needed.
+**Limitations**: the numerical solver depends on specific viewing‑condition assumptions and an sRGB‑gamut constraint, so very high‑chroma colors or wide‑gamut devices can still expose approximation errors or clipping. Different devices and environments may ultimately call for updated perceptual models or new derived spaces to complement HCT.
 
