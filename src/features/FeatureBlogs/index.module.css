@@ -8,14 +8,19 @@
   margin-bottom: 28px;
 }
 .header h2 {
-  font-size: 1.65rem;
+  font-family: var(--site-font-pixel);
+  font-weight: 400;
+  font-synthesis: none;
+  font-size: 2.25rem;
   margin-bottom: 8px;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
 }
 .header p {
+  font-family: var(--site-font-pixel);
+  font-synthesis: none;
   color: var(--site-muted);
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 1.125rem;
 }
 .blog-cards {
   display: grid;
@@ -103,14 +108,19 @@
   min-width: 0;
 }
 .blog-card-content h3 {
+  font-family: var(--site-font-pixel);
+  font-weight: 400;
+  font-synthesis: none;
   margin: 0 0 10px;
-  font-size: 1.3rem;
-  letter-spacing: -0.02em;
+  font-size: 1.5rem;
+  letter-spacing: 0;
 }
 .blog-card-content p {
+  font-family: var(--site-font-pixel);
+  font-synthesis: none;
   color: var(--site-muted);
   margin: 0;
-  font-size: 0.9rem;
+  font-size: 1.125rem;
   line-height: 1.75;
 }
 .tags {
@@ -169,10 +179,10 @@
     padding: 32px 0;
   }
   .header h2 {
-    font-size: 1.4rem;
+    font-size: 1.5rem;
   }
   .header p {
-    font-size: 0.85rem;
+    font-size: 1rem;
   }
   .blog-cards {
     gap: 16px 12px;
@@ -199,10 +209,10 @@
     align-self: start;
   }
   .blog-card-content h3 {
-    font-size: 1rem;
+    font-size: 1.125rem;
   }
   .blog-card-content p {
-    font-size: 0.8rem;
+    font-size: 1rem;
   }
   .tags {
     margin-top: 14px;

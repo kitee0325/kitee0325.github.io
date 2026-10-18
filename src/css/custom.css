@@ -1,5 +1,14 @@
+@font-face {
+  font-family: 'Fusion Pixel';
+  src: url('/fonts/fusion-pixel-12px-proportional-zh_hans.woff2') format('woff2');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
 /* Aquarium theme: shared tokens for the hero, reading surfaces and navigation. */
 :root {
+  --site-font-pixel: 'Fusion Pixel', var(--ifm-font-family-base);
   --site-ink: #17305d;
   --site-muted: #506787;
   --site-bg: #e6f2ff;

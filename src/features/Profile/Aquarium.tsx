@@ -6,6 +6,7 @@ import useDocusaurusContext from '@docusaurus/useDocusaurusContext';
 import { copy } from './aquarium/copy';
 import { useAquarium } from './aquarium/useAquarium';
 import styles from './index.module.css';
+import PixelText from './PixelText';
 
 export default function Aquarium({ debug = false }: { debug?: boolean }) {
   const base = useBaseUrl('/img/hero/'),
@@ -97,9 +98,13 @@ export default function Aquarium({ debug = false }: { debug?: boolean }) {
     >
       <div ref={intro} className={styles.intro}>
         <h1>
-          {text.hi}
+          <PixelText>{text.hi}</PixelText>
           {toy('wave')}
-          {text.name} {siteConfig.title} {toy('intp')}
+          <PixelText delay={90}>{text.name}</PixelText>{' '}
+          <span className={styles.name}>
+            <PixelText delay={220}>{siteConfig.title}</PixelText>
+            {toy('intp')}
+          </span>
         </h1>
         <div
           className={styles.roles}
@@ -123,7 +128,7 @@ export default function Aquarium({ debug = false }: { debug?: boolean }) {
           >
             {toy('gpt')}
             <span className={styles.phrase}>
-              {text.an} {text.agent}
+              <PixelText delay={280}>{`${text.an} ${text.agent}`}</PixelText>
             </span>
             {toy('claude')}
           </div>
@@ -133,7 +138,7 @@ export default function Aquarium({ debug = false }: { debug?: boolean }) {
             aria-hidden={role !== 1}
             className={styles.role}
           >
-            {!reduced && toy('chart')} {text.visual}
+            {!reduced && toy('chart')} <PixelText>{text.visual}</PixelText>
           </div>
           <div
             data-role
@@ -141,7 +146,7 @@ export default function Aquarium({ debug = false }: { debug?: boolean }) {
             aria-hidden={role !== 2}
             className={styles.role}
           >
-            {!reduced && toy('palette')} {text.design}
+            {!reduced && toy('palette')} <PixelText>{text.design}</PixelText>
           </div>
         </div>
         {reduced && (
