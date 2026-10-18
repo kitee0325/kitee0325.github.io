@@ -67,7 +67,9 @@ export default function Aquarium({ debug = false }: { debug?: boolean }) {
       </button>
     );
   }
-  const pointerStart = useRef({ x: 0, y: 0 });
+  const pointerStart = useRef<{ x: number; y: number; moved: boolean } | null>(
+    null
+  );
   const selectedFish = data.find((f) => f.id === selected);
   useEffect(() => {
     const close = (event: PointerEvent) => {
@@ -253,6 +255,7 @@ export default function Aquarium({ debug = false }: { debug?: boolean }) {
               if (e.code === 'Space') {
                 e.preventDefault();
                 if (!e.repeat && scene.current) {
+                  scene.current.movePointer();
                   scene.current.paused = !scene.current.paused;
                   setPaused(scene.current.paused);
                   redraw.current();
@@ -272,10 +275,21 @@ export default function Aquarium({ debug = false }: { debug?: boolean }) {
                 redraw.current();
               }
             }}
-            onPointerDown={(e) =>
-              (pointerStart.current = { x: e.clientX, y: e.clientY })
-            }
+            onPointerDown={(e) => {
+              if (e.button === 0 && e.isPrimary)
+                pointerStart.current = {
+                  x: e.clientX,
+                  y: e.clientY,
+                  moved: false,
+                };
+            }}
             onPointerMove={(e) => {
+              const start = pointerStart.current;
+              if (
+                start &&
+                Math.hypot(e.clientX - start.x, e.clientY - start.y) > 8
+              )
+                start.moved = true;
               if (e.pointerType === 'touch') return;
               const s = scene.current,
                 r = e.currentTarget.getBoundingClientRect();
@@ -284,18 +298,30 @@ export default function Aquarium({ debug = false }: { debug?: boolean }) {
                   x: ((e.clientX - r.x) * s.width) / r.width,
                   y: ((e.clientY - r.y) * 288) / r.height,
                 };
-                s.pointer = p.y >= 32 && p.y <= 260 ? p : undefined;
+                if (p.y >= 32 && p.y <= 260) cancelDemo();
+                s.movePointer(
+                  p.y >= 32 && p.y <= 260 ? p : undefined,
+                  e.timeStamp
+                );
               }
             }}
             onPointerLeave={() => {
-              if (scene.current) scene.current.pointer = undefined;
+              pointerStart.current = null;
+              scene.current?.movePointer();
+            }}
+            onPointerCancel={() => {
+              pointerStart.current = null;
+              scene.current?.movePointer();
             }}
             onPointerUp={(e) => {
+              const start = pointerStart.current;
+              pointerStart.current = null;
               if (
-                Math.hypot(
-                  e.clientX - pointerStart.current.x,
-                  e.clientY - pointerStart.current.y
-                ) > 8
+                !start ||
+                start.moved ||
+                e.button !== 0 ||
+                !e.isPrimary ||
+                Math.hypot(e.clientX - start.x, e.clientY - start.y) > 8
               )
                 return;
               const s = scene.current,

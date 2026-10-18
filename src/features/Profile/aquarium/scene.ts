@@ -6,9 +6,10 @@ import {
   toys,
   ToyId,
   config,
+  clamp,
 } from './data';
 import { beeswarm } from './beeswarm';
-import { stepSchool } from './school';
+import { stepSchool, SchoolScare } from './school';
 import { Physics, WaterImpulse } from './physics';
 import { bubbles, surfaceY } from './water-decoration';
 
@@ -25,7 +26,10 @@ export class Scene {
   sanded = new Set<ToyId>();
   role = 0;
   roleElapsed = 0;
-  pointer: Point | undefined;
+  pointer:
+    | (Point & { speed: number; calm: number; interest: number; at: number })
+    | undefined;
+  scares: SchoolScare[] = [];
   transition: { start: Point[]; elapsed: number } | null = null;
   impulses: WaterImpulse[] = [];
   effects: (Point & {
@@ -41,6 +45,9 @@ export class Scene {
   setMode(mode: ViewMode) {
     if (this.mode === mode) return;
     this.mode = mode;
+    this.pointer = undefined;
+    this.scares = [];
+    this.fish.forEach((f) => (f.fright = 0));
     if (mode === 'school') this.schoolAge = 0;
     this.transition =
       mode === 'beeswarm'
@@ -64,6 +71,13 @@ export class Scene {
   }
   tap(point: Point) {
     if (this.paused || this.reduced) return;
+    if (this.mode === 'school') {
+      this.scare(point, point);
+      if (this.pointer) {
+        this.pointer.calm = -0.8;
+        this.pointer.interest = 0;
+      }
+    }
     this.physics.surface.impulse(point.x, 45);
     this.impulses.push({
       ...point,
@@ -73,6 +87,33 @@ export class Scene {
       strength: 0.3,
       kind: 'tap',
     });
+  }
+  movePointer(point?: Point, at = 0) {
+    if (!point || this.paused || this.reduced || this.mode !== 'school') {
+      this.pointer = undefined;
+      return;
+    }
+    const previous = this.pointer,
+      elapsed = previous ? (at - previous.at) / 1000 : 0,
+      distance = previous
+        ? Math.hypot(point.x - previous.x, point.y - previous.y)
+        : 0,
+      speed =
+        elapsed > 0 && elapsed < 0.25
+          ? distance / Math.max(1 / 120, elapsed)
+          : 0;
+    if (previous && speed > 220) this.scare(previous, point);
+    this.pointer = {
+      ...point,
+      at,
+      speed,
+      calm: speed > 100 ? 0 : (previous?.calm ?? 0),
+      interest: speed > 100 ? 0 : (previous?.interest ?? 0),
+    };
+  }
+  private scare(from: Point, to: Point) {
+    this.scares.push({ from: { x: from.x, y: from.y }, to: { ...to }, age: 0 });
+    this.scares = this.scares.slice(-12);
   }
   stepIdentity(dt: number, held = false) {
     if (this.paused || this.reduced || held) return;
@@ -89,7 +130,13 @@ export class Scene {
     if (this.mode === 'school') {
       this.ecoTime += dt;
       this.schoolAge += dt;
+      if (this.pointer) {
+        this.pointer.speed *= Math.exp(-dt * 8);
+        if (this.pointer.speed < 100) this.pointer.calm += dt;
+        this.pointer.interest = clamp((this.pointer.calm - 0.45) / 0.7, 0, 1);
+      }
     }
+    this.scares = this.scares.filter((s) => (s.age += dt) < 0.65);
     const entries = this.physics.step(dt);
     this.impulses.push(...entries);
     this.effects = this.effects.filter(
@@ -163,7 +210,8 @@ export class Scene {
             .map((t) => t.body.position),
           ...this.effects,
         ],
-        this.pointer
+        this.pointer,
+        this.scares
       );
     else if (this.transition) {
       const t = this.transition;
@@ -207,7 +255,8 @@ export class Scene {
       Object.assign(f, map(f));
       f.vx *= ratio;
     });
-    if (this.pointer) this.pointer = map(this.pointer);
+    this.pointer = undefined;
+    this.scares = [];
     this.effects.forEach((e) => Object.assign(e, map(e)));
     this.physics.resize(width);
     this.width = width;
@@ -237,6 +286,7 @@ export class Scene {
     this.effects = [];
     this.impulses = [];
     this.pointer = undefined;
+    this.scares = [];
   }
   snapshot() {
     return {
@@ -246,6 +296,12 @@ export class Scene {
       reduced: this.reduced,
       time: this.time,
       ecoTime: this.ecoTime,
+      pointer: this.pointer ? { ...this.pointer } : undefined,
+      scares: this.scares.map((s) => ({
+        ...s,
+        from: { ...s.from },
+        to: { ...s.to },
+      })),
       effects: this.effects.map((e) => ({ ...e })),
       role: this.role,
       fish: this.fish.map((f) => ({ ...f })),

@@ -14,6 +14,7 @@ export interface Fish extends FishDatum, Point {
   vy: number;
   facing: number;
   size: number;
+  fright: number;
 }
 export const values = [
   [10, 14, 35, 59, 63, 90, 25, 46, 76, 98],
@@ -154,6 +155,7 @@ export function initialFish(width: number): Fish[] {
     vx: (random() - 0.5) * 28,
     vy: (random() - 0.5) * 18,
     facing: 1,
+    fright: 0,
     size: [0.9, 1.02, 1.12, 0.96, 1.08, 1][i % 6],
   }));
 }

@@ -339,6 +339,7 @@ export function useAquarium(
     resize.observe(cv);
     function visibility() {
       if (document.hidden) {
+        s.movePointer();
         cancelAnimationFrame(raf);
         raf = 0;
         last = 0;
@@ -347,6 +348,7 @@ export function useAquarium(
     }
     function onMotion() {
       s.reduced = motion.matches;
+      s.movePointer();
       cancelDemo();
       setReduced(s.reduced);
       s.physics.setReduced(s.reduced);
@@ -363,6 +365,8 @@ export function useAquarium(
       wake();
     }
     document.addEventListener('visibilitychange', visibility);
+    const clearPointer = () => s.movePointer();
+    window.addEventListener('blur', clearPointer);
     motion.addEventListener('change', onMotion);
     window.addEventListener('resize', measure);
     const theme = new MutationObserver(() => {
@@ -402,6 +406,7 @@ export function useAquarium(
       motion.removeEventListener('change', onMotion);
       window.removeEventListener('resize', measure);
       document.removeEventListener('visibilitychange', visibility);
+      window.removeEventListener('blur', clearPointer);
       fluid?.dispose();
       s.dispose();
       flying.current?.replaceChildren();

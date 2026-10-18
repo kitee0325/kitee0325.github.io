@@ -57,6 +57,7 @@ for (const width of [512, 384]) {
     stepSchool(fish, width, config.dt, i * config.dt, [{ x: 100, y: 100 }], {
       x: 200,
       y: 150,
+      interest: 1,
     });
     for (const f of fish) {
       assert.ok([f.x, f.y, f.vx, f.vy].every(Number.isFinite));
@@ -460,4 +461,125 @@ for (const name of ['fish-0', 'fish-1', 'fish-2', 'fish-3']) {
 }
 console.log(
   'PASS: fine sprite tail bends stay bounded and preserve head position'
+);
+
+// Exercise the same pointer/tap entry points as the canvas, with isolated fish.
+for (const width of [384, 512]) {
+  const make = () => {
+    const scene = new Scene(width);
+    scene.fish = [{ ...scene.fish[0], x: 160, y: 140, vx: 0, vy: 0 }];
+    return scene;
+  };
+  const rest = make(),
+    hover = make(),
+    follow = make();
+  hover.movePointer({ x: 90, y: 140 }, 1000);
+  follow.movePointer({ x: 230, y: 140 }, 1000);
+  assert.equal(
+    hover.pointer?.interest,
+    0,
+    'Entering the tank is not a scare or instant attraction'
+  );
+  assert.equal(hover.scares.length, 0);
+  for (let i = 1; i <= 180; i++) {
+    follow.movePointer({ x: 230 + i / 6, y: 140 }, 1000 + (i * 1000) / 60);
+    for (const s of [rest, hover, follow]) s.step(config.dt);
+  }
+  assert.ok(
+    hover.fish[0].x < rest.fish[0].x - 20,
+    'Dwell draws a nearby fish closer'
+  );
+  assert.ok(
+    follow.fish[0].x > rest.fish[0].x + 20,
+    'A slowly moving pointer draws a follower'
+  );
+  assert.equal(follow.scares.length, 0, 'Slow movement never startles');
+  assert.ok(
+    hover.fish[0].x > 102,
+    'Curious fish leave room around the pointer'
+  );
+  hover.movePointer();
+  assert.equal(hover.pointer, undefined);
+
+  const click = make(),
+    swipe = make(),
+    control = make();
+  click.tap({ x: 130, y: 140 });
+  swipe.movePointer({ x: 40, y: 115 }, 1000);
+  swipe.movePointer({ x: width - 40, y: 115 }, 1016);
+  assert.equal(swipe.scares.length, 1);
+  let peak = 0;
+  for (let i = 0; i < 30; i++) {
+    for (const s of [click, swipe, control]) s.step(config.dt);
+    peak = Math.max(peak, Math.hypot(swipe.fish[0].vx, swipe.fish[0].vy));
+  }
+  assert.ok(
+    click.fish[0].x > control.fish[0].x + 5,
+    'Click drives nearby fish away'
+  );
+  assert.ok(
+    swipe.fish[0].y > control.fish[0].y + 5,
+    'A fast sweep reaches fish between event endpoints'
+  );
+  assert.ok(
+    peak > 26,
+    'Startled fish briefly swim faster than their cruising limit'
+  );
+  swipe.movePointer();
+  for (let i = 0; i < 180; i++) swipe.step(config.dt);
+  assert.equal(swipe.scares.length, 0);
+  assert.equal(swipe.fish[0].fright, 0);
+  assert.ok(Math.hypot(swipe.fish[0].vx, swipe.fish[0].vy) <= 26 + 1e-8);
+  for (const s of [rest, hover, follow, click, swipe, control]) s.dispose();
+}
+const crowd = initialFish(512)
+  .slice(0, 4)
+  .map((f, i) => ({
+    ...f,
+    x: [160, 200, 300, 365][i],
+    y: 140,
+    vx: 0,
+    vy: 0,
+  }));
+const unobserved = crowd.map((f) => ({ ...f }));
+stepSchool(crowd, 512, config.dt, 0, [], { x: 250, y: 140, interest: 1 });
+stepSchool(unobserved, 512, config.dt, 0);
+assert.ok(crowd[0].vx > unobserved[0].vx && crowd[1].vx > unobserved[1].vx);
+assert.ok(crowd[2].vx < unobserved[2].vx);
+assert.deepEqual(
+  crowd[3],
+  unobserved[3],
+  'Only the three nearest fish become curious'
+);
+
+const interaction = new Scene(512);
+for (const state of ['paused', 'reduced', 'beeswarm'] as const) {
+  interaction.paused = state === 'paused';
+  interaction.reduced = state === 'reduced';
+  interaction.setMode(state === 'beeswarm' ? 'beeswarm' : 'school');
+  const fish = interaction.fish.map((f) => ({ ...f }));
+  interaction.movePointer({ x: 100, y: 140 }, 1000);
+  interaction.movePointer({ x: 400, y: 140 }, 1016);
+  interaction.tap({ x: 200, y: 140 });
+  assert.equal(interaction.pointer, undefined);
+  assert.equal(interaction.scares.length, 0);
+  assert.deepEqual(interaction.fish, fish);
+}
+interaction.setMode('school');
+for (let i = 0; i < 200; i++) interaction.tap({ x: 200, y: 140 });
+assert.ok(
+  interaction.scares.length <= 12,
+  'Rapid input has a bounded scare budget'
+);
+interaction.movePointer({ x: 200, y: 140 }, 1000);
+interaction.resize(384);
+assert.equal(interaction.pointer, undefined);
+assert.equal(interaction.scares.length, 0);
+interaction.tap({ x: 180, y: 140 });
+interaction.reset();
+assert.equal(interaction.scares.length, 0);
+assert.ok(interaction.fish.every((f) => f.fright === 0));
+interaction.dispose();
+console.log(
+  'PASS: dwell, slow following, three-fish curiosity, click escape, swept-path startle, recovery, input budget, pause/chart/reduced-motion isolation and reset/resize'
 );

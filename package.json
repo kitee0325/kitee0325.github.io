@@ -17,7 +17,7 @@
     "check:production": "node scripts/check-production.mjs",
     "build:preview": "HERO_PREVIEW=true docusaurus build --out-dir build-preview",
     "serve:preview": "docusaurus serve --dir build-preview --port 3101 --host 127.0.0.1 --no-open",
-    "check:browser": "node scripts/capture-hero-a.mjs && node scripts/verify-learning-cards.mjs && node scripts/verify-blog-layout.mjs && node scripts/verify-hero-refinement.mjs && node scripts/verify-hero-role-icons.mjs && node scripts/verify-hero-theme.mjs && node scripts/verify-hero-final.mjs && node scripts/verify-hero-integration.mjs && node scripts/verify-hero-water.mjs && node scripts/verify-water-effects.mjs && node scripts/verify-pixel-type.mjs"
+    "check:browser": "node scripts/capture-hero-a.mjs && node scripts/verify-learning-cards.mjs && node scripts/verify-blog-layout.mjs && node scripts/verify-hero-refinement.mjs && node scripts/verify-hero-role-icons.mjs && node scripts/verify-hero-theme.mjs && node scripts/verify-hero-final.mjs && node scripts/verify-hero-integration.mjs && node scripts/verify-hero-water.mjs && node scripts/verify-water-effects.mjs && node scripts/verify-pixel-type.mjs && node scripts/verify-fish-interaction.mjs"
   },
   "dependencies": {
     "@docusaurus/core": "^3.10.1",
