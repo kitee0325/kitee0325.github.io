@@ -6,14 +6,18 @@
     "docusaurus": "docusaurus",
     "start": "docusaurus start",
     "start:zh": "npm run start -- --locale zh-Hans",
-    "build": "docusaurus build",
+    "build": "docusaurus build && npm run check:production",
     "swizzle": "docusaurus swizzle",
-    "deploy": "docusaurus deploy",
     "clear": "docusaurus clear",
     "serve": "docusaurus serve",
     "write-translations": "docusaurus write-translations",
     "write-heading-ids": "docusaurus write-heading-ids",
-    "typecheck": "tsc"
+    "typecheck": "tsc",
+    "check:aquarium": "tsx scripts/check-aquarium.ts",
+    "check:production": "node scripts/check-production.mjs",
+    "build:preview": "HERO_PREVIEW=true docusaurus build --out-dir build-preview",
+    "serve:preview": "docusaurus serve --dir build-preview --port 3101 --host 127.0.0.1 --no-open",
+    "check:browser": "node scripts/capture-hero-a.mjs && node scripts/verify-learning-cards.mjs && node scripts/verify-blog-layout.mjs && node scripts/verify-hero-refinement.mjs && node scripts/verify-hero-role-icons.mjs && node scripts/verify-hero-theme.mjs && node scripts/verify-hero-final.mjs && node scripts/verify-hero-integration.mjs && node scripts/verify-hero-water.mjs && node scripts/verify-water-effects.mjs"
   },
   "dependencies": {
     "@docusaurus/core": "^3.10.1",
@@ -24,21 +28,24 @@
     "@react-three/fiber": "^8.17.10",
     "@types/d3": "^7.4.3",
     "@types/gsap": "^3.0.0",
-    "@types/react-responsive-masonry": "^2.6.0",
     "@types/three": "^0.169.0",
     "clsx": "^2.0.0",
     "katex": "^0.16.11",
+    "matter-js": "0.20.0",
     "prism-react-renderer": "^2.3.0",
     "react": "^18.0.0",
     "react-dom": "^18.0.0",
     "react-katex": "^3.0.1",
-    "react-responsive-masonry": "^2.7.1",
     "three": "^0.169.0"
   },
   "devDependencies": {
     "@docusaurus/module-type-aliases": "^3.10.1",
     "@docusaurus/tsconfig": "^3.10.1",
     "@docusaurus/types": "^3.10.1",
+    "@docusaurus/utils": "3.10.1",
+    "@types/matter-js": "^0.20.2",
+    "playwright": "1.64.1",
+    "tsx": "4.23.15",
     "typescript": "~5.5.2"
   },
   "browserslist": {

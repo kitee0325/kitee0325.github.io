@@ -17,7 +17,8 @@
 
 .panel {
   background: var(--ifm-background-surface-color);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--site-line);
+  box-shadow: 4px 4px 0 var(--site-shadow);
   border-radius: 12px;
   overflow: auto;
   display: flex;

@@ -9,7 +9,7 @@
 .immersive-button {
   width: 3rem;
   height: 3rem;
-  border-radius: 50%;
+  border-radius: 10px;
   border: none;
   background: var(--ifm-color-primary);
   color: white;
@@ -29,7 +29,8 @@
 }
 
 .immersive-button:focus {
-  outline: none;
+  outline: 3px solid #b678a6;
+  outline-offset: 4px;
   box-shadow: 0 0 0 3px rgba(var(--ifm-color-primary-rgb), 0.3);
 }
 

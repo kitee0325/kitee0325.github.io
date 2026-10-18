@@ -3,10 +3,13 @@
 
 # Production
 /build
+/build-preview
 
 # Generated files
 .docusaurus
 .cache-loader
+/artifacts/
+/plans/
 
 # Misc
 .DS_Store

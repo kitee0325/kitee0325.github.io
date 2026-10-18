@@ -28,7 +28,7 @@
     "description": "Title for data visualization blog feature"
   },
   "blog.feature.datavis.description": {
-    "message": "我喜欢与数据可视化相关的算法、设计和课程",
+    "message": "学习视觉编码、布局算法，发现藏在数据里的规律与故事。",
     "description": "Description for data visualization blog feature"
   },
   "blog.feature.ai.title": {
@@ -36,7 +36,7 @@
     "description": "Title for AI blog feature"
   },
   "blog.feature.ai.description": {
-    "message": "是的，众所周知，这是人工智能的时代",
+    "message": "从早期思想到今天的模型，逐步理解智能系统背后的原理。",
     "description": "Description for AI blog feature"
   },
   "blog.feature.math.title": {
@@ -44,7 +44,7 @@
     "description": "Title for Mathematics blog feature"
   },
   "blog.feature.math.description": {
-    "message": "复杂的数学让我头疼，但我仍然很高兴能理解它们",
+    "message": "在概率与推理中拆解直觉，弄懂那些看似矛盾的问题。",
     "description": "Description for Mathematics blog feature"
   },
   "blog.feature.design.title": {
@@ -52,36 +52,8 @@
     "description": "Title for Design blog feature"
   },
   "blog.feature.design.description": {
-    "message": "美丽的视觉表达吸引着我",
+    "message": "观察色彩、构图与视觉表达，让想法变得清晰、好看。",
     "description": "Description for Design blog feature"
-  },
-  "project.section.title": {
-    "message": "我做过的项目（脱敏部分）",
-    "description": "Title for the project gallery section"
-  },
-  "project.dynamic_beeswarm": {
-    "message": "动态蜂群图",
-    "description": "Project name: Dynamic Beeswarm"
-  },
-  "project.dynamic_wordcloud": {
-    "message": "动态词云",
-    "description": "Project name: Dynamic Wordcloud"
-  },
-  "project.dynamic_bubble": {
-    "message": "动态气泡图",
-    "description": "Project name: Dynamic Bubble"
-  },
-  "project.industry_chain": {
-    "message": "产业链",
-    "description": "Project name: Industry Chain"
-  },
-  "project.bill_visual": {
-    "message": "账单可视化",
-    "description": "Project name: Bill Visual"
-  },
-  "project.hct_visual": {
-    "message": "HCT 可视化",
-    "description": "Project name: HCT Visual"
   },
   "theme.ErrorPageContent.title": {
     "message": "页面出错了。",
@@ -394,5 +366,176 @@
   "theme.tags.tagsPageTitle": {
     "message": "标签",
     "description": "The title of the tag list page"
+  },
+  "hero.loading": {
+    "message": "正在准备鱼缸"
+  },
+  "hero.poster": {
+    "message": "静态鱼缸 · 动画暂不可用"
+  },
+  "hero.posterAlt": {
+    "message": "四个系列、40 条像素鱼的静态鱼缸"
+  },
+  "hero.flow": {
+    "message": "水流强度：静 → 缓 → 中 → 强（相对模拟值）"
+  },
+  "hero.fallback": {
+    "message": "简化水体 · 流速着色暂不可用"
+  },
+  "hero.hi": {
+    "message": "嗨"
+  },
+  "hero.name": {
+    "message": "！这里是"
+  },
+  "hero.roles": {
+    "message": "Agent 工程师、可视化工程师、设计新手"
+  },
+  "hero.an": {
+    "message": "一名"
+  },
+  "hero.agent": {
+    "message": "Agent 工程师"
+  },
+  "hero.visual": {
+    "message": "一名可视化工程师"
+  },
+  "hero.design": {
+    "message": "一名设计新手"
+  },
+  "hero.stack": {
+    "message": "技术栈："
+  },
+  "hero.life": {
+    "message": "生活里，我很像技术宅，喜欢"
+  },
+  "hero.math": {
+    "message": "数学"
+  },
+  "hero.and": {
+    "message": "和"
+  },
+  "hero.games": {
+    "message": "电子游戏"
+  },
+  "hero.comma": {
+    "message": "，"
+  },
+  "hero.enjoy": {
+    "message": "喜欢做"
+  },
+  "hero.demos": {
+    "message": "可视化创意 demo"
+  },
+  "hero.try": {
+    "message": "偶尔也会尝试制作自己喜欢的类型的"
+  },
+  "hero.game": {
+    "message": "游戏"
+  },
+  "hero.period": {
+    "message": "。"
+  },
+  "hero.dropped": {
+    "message": "已投放"
+  },
+  "hero.resumeDrop": {
+    "message": "继续后可投放"
+  },
+  "hero.drop": {
+    "message": "投进水里"
+  },
+  "hero.school": {
+    "message": "自由鱼群"
+  },
+  "hero.beeswarm": {
+    "message": "蜂群图"
+  },
+  "hero.value": {
+    "message": "示例值"
+  },
+  "hero.seriesLabel": {
+    "message": "系列"
+  },
+  "hero.caption": {
+    "message": "演示数据 · 鱼形与颜色代表系列"
+  },
+  "hero.chartCaption": {
+    "message": " · 纵向位置表示示例值"
+  },
+  "hero.pause": {
+    "message": "暂停"
+  },
+  "hero.round": {
+    "message": "圆身"
+  },
+  "hero.long": {
+    "message": "长尾"
+  },
+  "hero.diamond": {
+    "message": "菱形"
+  },
+  "hero.short": {
+    "message": "短鳍"
+  },
+  "hero.wave": {
+    "message": "挥手"
+  },
+  "hero.controller": {
+    "message": "手柄"
+  },
+  "hero.geometry": {
+    "message": "可视化"
+  },
+  "hero.canvasKeys": {
+    "message": "鱼缸。左右方向键选择鱼，空格暂停或继续动画。"
+  },
+  "hero.chart": {
+    "message": "数据图表"
+  },
+  "hero.palette": {
+    "message": "调色盘"
+  },
+  "blog.feature.section.description": {
+    "message": "把好奇心变成图表、实验和设计笔记。"
+  },
+  "blog.feature.datavis.tag.encoding": {
+    "message": "视觉编码"
+  },
+  "blog.feature.datavis.tag.course": {
+    "message": "课程笔记"
+  },
+  "blog.feature.ai.tag.models": {
+    "message": "模型原理"
+  },
+  "blog.feature.ai.tag.review": {
+    "message": "学习综述"
+  },
+  "blog.feature.math.tag.probability": {
+    "message": "概率论"
+  },
+  "blog.feature.math.tag.intuition": {
+    "message": "反直觉"
+  },
+  "blog.feature.design.tag.color": {
+    "message": "色彩空间"
+  },
+  "blog.feature.design.tag.visual": {
+    "message": "视觉表达"
+  },
+  "blog.feature.datavis.note": {
+    "message": "斯坦福 CS448B · 可视化的目的"
+  },
+  "blog.feature.ai.note": {
+    "message": "人工智能综述"
+  },
+  "blog.feature.math.note": {
+    "message": "概率论悖论"
+  },
+  "blog.feature.design.note": {
+    "message": "探索色彩空间"
+  },
+  "blog.feature.noteLabel": {
+    "message": "从这篇笔记开始"
   }
 }

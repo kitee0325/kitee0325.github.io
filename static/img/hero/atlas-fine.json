@@ -1,0 +1,353 @@
+{
+  "fish-0": [
+    {
+      "x": 48,
+      "y": 97,
+      "w": 177,
+      "h": 145,
+      "drawW": 20,
+      "drawH": 16,
+      "anchorX": 10,
+      "anchorY": 8,
+      "duration": 0
+    }
+  ],
+  "fish-1": [
+    {
+      "x": 284,
+      "y": 95,
+      "w": 216,
+      "h": 146,
+      "drawW": 23,
+      "drawH": 16,
+      "anchorX": 11.5,
+      "anchorY": 8,
+      "duration": 0
+    }
+  ],
+  "fish-2": [
+    {
+      "x": 535,
+      "y": 81,
+      "w": 182,
+      "h": 169,
+      "drawW": 20,
+      "drawH": 19,
+      "anchorX": 10,
+      "anchorY": 9.5,
+      "duration": 0
+    }
+  ],
+  "fish-3": [
+    {
+      "x": 768,
+      "y": 94,
+      "w": 184,
+      "h": 150,
+      "drawW": 21,
+      "drawH": 17,
+      "anchorX": 10.5,
+      "anchorY": 8.5,
+      "duration": 0
+    }
+  ],
+  "wave": [
+    {
+      "x": 1032,
+      "y": 72,
+      "w": 167,
+      "h": 182,
+      "drawW": 28,
+      "drawH": 28,
+      "anchorX": 14,
+      "anchorY": 14,
+      "duration": 0
+    }
+  ],
+  "intp": [
+    {
+      "x": 39,
+      "y": 369,
+      "w": 332,
+      "h": 103,
+      "drawW": 36,
+      "drawH": 12,
+      "anchorX": 18,
+      "anchorY": 6,
+      "duration": 0
+    }
+  ],
+  "gpt": [
+    {
+      "x": 389,
+      "y": 322,
+      "w": 182,
+      "h": 182,
+      "drawW": 28,
+      "drawH": 28,
+      "anchorX": 14,
+      "anchorY": 14,
+      "duration": 0
+    }
+  ],
+  "claude": [
+    {
+      "x": 605,
+      "y": 319,
+      "w": 188,
+      "h": 194,
+      "drawW": 28,
+      "drawH": 28,
+      "anchorX": 14,
+      "anchorY": 14,
+      "duration": 0
+    }
+  ],
+  "react": [
+    {
+      "x": 814,
+      "y": 324,
+      "w": 203,
+      "h": 180,
+      "drawW": 28,
+      "drawH": 28,
+      "anchorX": 14,
+      "anchorY": 14,
+      "duration": 0
+    }
+  ],
+  "vue": [
+    {
+      "x": 1027,
+      "y": 337,
+      "w": 196,
+      "h": 170,
+      "drawW": 28,
+      "drawH": 27,
+      "anchorX": 14,
+      "anchorY": 13.5,
+      "duration": 0
+    }
+  ],
+  "node": [
+    {
+      "x": 58,
+      "y": 547,
+      "w": 172,
+      "h": 183,
+      "drawW": 26,
+      "drawH": 28,
+      "anchorX": 13,
+      "anchorY": 14,
+      "duration": 0
+    }
+  ],
+  "ts": [
+    {
+      "x": 299,
+      "y": 557,
+      "w": 173,
+      "h": 166,
+      "drawW": 28,
+      "drawH": 28,
+      "anchorX": 14,
+      "anchorY": 14,
+      "duration": 0
+    }
+  ],
+  "math": [
+    {
+      "x": 527,
+      "y": 564,
+      "w": 159,
+      "h": 150,
+      "drawW": 27,
+      "drawH": 27,
+      "anchorX": 13.5,
+      "anchorY": 13.5,
+      "duration": 0
+    }
+  ],
+  "controller": [
+    {
+      "x": 713,
+      "y": 565,
+      "w": 249,
+      "h": 154,
+      "drawW": 32,
+      "drawH": 23,
+      "anchorX": 16,
+      "anchorY": 11.5,
+      "duration": 0
+    }
+  ],
+  "geometry": [
+    {
+      "x": 972,
+      "y": 596,
+      "w": 254,
+      "h": 96,
+      "drawW": 34,
+      "drawH": 17,
+      "anchorX": 17,
+      "anchorY": 8.5,
+      "duration": 0
+    }
+  ],
+  "godot": [
+    {
+      "x": 39,
+      "y": 798,
+      "w": 207,
+      "h": 179,
+      "drawW": 28,
+      "drawH": 25,
+      "anchorX": 14,
+      "anchorY": 12.5,
+      "duration": 0
+    }
+  ],
+  "plant-0": [
+    {
+      "x": 294,
+      "y": 753,
+      "w": 197,
+      "h": 269,
+      "drawW": 30,
+      "drawH": 48,
+      "anchorX": 15,
+      "anchorY": 48,
+      "duration": 0
+    }
+  ],
+  "plant-1": [
+    {
+      "x": 532,
+      "y": 752,
+      "w": 196,
+      "h": 271,
+      "drawW": 32,
+      "drawH": 50,
+      "anchorX": 16,
+      "anchorY": 50,
+      "duration": 0
+    }
+  ],
+  "plant-2": [
+    {
+      "x": 771,
+      "y": 764,
+      "w": 180,
+      "h": 259,
+      "drawW": 30,
+      "drawH": 48,
+      "anchorX": 15,
+      "anchorY": 48,
+      "duration": 0
+    }
+  ],
+  "rock-0": [
+    {
+      "x": 984,
+      "y": 825,
+      "w": 231,
+      "h": 151,
+      "drawW": 30,
+      "drawH": 22,
+      "anchorX": 15,
+      "anchorY": 11,
+      "duration": 0
+    }
+  ],
+  "rock-1": [
+    {
+      "x": 42,
+      "y": 1057,
+      "w": 230,
+      "h": 148,
+      "drawW": 30,
+      "drawH": 21,
+      "anchorX": 15,
+      "anchorY": 10.5,
+      "duration": 0
+    }
+  ],
+  "rock-2": [
+    {
+      "x": 299,
+      "y": 1055,
+      "w": 226,
+      "h": 158,
+      "drawW": 30,
+      "drawH": 22,
+      "anchorX": 15,
+      "anchorY": 11,
+      "duration": 0
+    }
+  ],
+  "shell-0": [
+    {
+      "x": 553,
+      "y": 1059,
+      "w": 182,
+      "h": 154,
+      "drawW": 16,
+      "drawH": 15,
+      "anchorX": 8,
+      "anchorY": 7.5,
+      "duration": 0
+    }
+  ],
+  "shell-1": [
+    {
+      "x": 793,
+      "y": 1059,
+      "w": 175,
+      "h": 155,
+      "drawW": 16,
+      "drawH": 16,
+      "anchorX": 8,
+      "anchorY": 8,
+      "duration": 0
+    }
+  ],
+  "sand": [
+    {
+      "x": 1057,
+      "y": 1067,
+      "w": 132,
+      "h": 126,
+      "drawW": 16,
+      "drawH": 16,
+      "anchorX": 0,
+      "anchorY": 0,
+      "duration": 0
+    }
+  ],
+  "chart": [
+    {
+      "x": 32,
+      "y": 1274,
+      "w": 200,
+      "h": 200,
+      "drawW": 28,
+      "drawH": 28,
+      "anchorX": 14,
+      "anchorY": 14,
+      "duration": 0
+    }
+  ],
+  "palette": [
+    {
+      "x": 282,
+      "y": 1274,
+      "w": 200,
+      "h": 200,
+      "drawW": 28,
+      "drawH": 28,
+      "anchorX": 14,
+      "anchorY": 14,
+      "duration": 0
+    }
+  ]
+}

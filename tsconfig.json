@@ -1,6 +1,7 @@
 {
-  // This file is not used in compilation. It is here just for a nice editor experience.
+  // Type checking is separate from Docusaurus compilation.
   "extends": "@docusaurus/tsconfig",
+  "exclude": ["node_modules", "build", "build-preview", ".docusaurus", "artifacts"],
   "compilerOptions": {
     "baseUrl": "."
   }

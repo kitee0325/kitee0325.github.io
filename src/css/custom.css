@@ -1,55 +1,281 @@
-/**
- * Any CSS included here will be global. The classic template
- * bundles Infima by default. Infima is a CSS framework designed to
- * work well for content-centric websites.
- */
+/* Aquarium theme: shared tokens for the hero, reading surfaces and navigation. */
+:root {
+  --site-ink: #17305d;
+  --site-muted: #506787;
+  --site-bg: #e6f2ff;
+  --site-paper: #f9fbff;
+  --site-line: #b6c9e2;
+  --site-pink: #f9dbea;
+  --site-lilac: #e9e4f6;
+  --site-shadow: #cbdcf0;
+  --site-radius: 12px;
+  --ifm-color-primary: #365da0;
+  --ifm-color-primary-dark: #30538f;
+  --ifm-color-primary-darker: #2d4e86;
+  --ifm-color-primary-darkest: #25406f;
+  --ifm-color-primary-light: #426bb0;
+  --ifm-color-primary-lighter: #4d75b6;
+  --ifm-color-primary-lightest: #698bc2;
+  --ifm-color-primary-rgb: 54, 93, 160;
+  --ifm-background-color: var(--site-bg);
+  --ifm-background-surface-color: var(--site-paper);
+  --ifm-font-color-base: var(--site-ink);
+  --ifm-heading-color: var(--site-ink);
+  --ifm-font-family-base:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+    'Microsoft YaHei', sans-serif;
+  --ifm-font-family-monospace:
+    'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  --ifm-line-height-base: 1.8;
+  --ifm-heading-line-height: 1.4;
+  --ifm-navbar-background-color: var(--site-paper);
+  --ifm-navbar-shadow: 0 2px 0 var(--site-line);
+  --ifm-menu-color: var(--site-muted);
+  --ifm-menu-color-background-active: var(--site-lilac);
+  --ifm-menu-color-background-hover: var(--site-lilac);
+  --ifm-toc-border-color: var(--site-line);
+  --ifm-hr-background-color: var(--site-line);
+  --ifm-code-background: var(--site-lilac);
+  --ifm-card-background-color: var(--site-paper);
+  --ifm-global-radius: 8px;
+  --ifm-container-width-xl: 1320px;
+  --ifm-link-hover-decoration: underline;
+  --ifm-footer-background-color: var(--site-paper);
+  --ifm-footer-color: var(--site-muted);
+  --ifm-footer-link-color: var(--site-ink);
+}
+[data-theme='dark'] {
+  --site-ink: #e5edff;
+  --site-muted: #a7b9d6;
+  --site-bg: #111b32;
+  --site-paper: #1b2943;
+  --site-line: #3e577a;
+  --site-pink: #533850;
+  --site-lilac: #303953;
+  --site-shadow: #0a1326;
+  --ifm-color-primary: #9cc9f5;
+  --ifm-color-primary-dark: #80b9f1;
+  --ifm-color-primary-darker: #72b1ef;
+  --ifm-color-primary-darkest: #4899e9;
+  --ifm-color-primary-light: #b8d9f9;
+  --ifm-color-primary-lighter: #c6e1fb;
+  --ifm-color-primary-lightest: #eaf5ff;
+  --ifm-color-primary-rgb: 156, 201, 245;
+  --ifm-background-color: var(--site-bg);
+  --ifm-background-surface-color: var(--site-paper);
+  --ifm-font-color-base: var(--site-ink);
+  --ifm-heading-color: var(--site-ink);
+  --ifm-color-emphasis-300: var(--site-line);
+  --ifm-color-emphasis-600: var(--site-muted);
+}
 * {
-  padding: 0px;
-  margin: 0px;
   box-sizing: border-box;
 }
-
-/* You can override the default Infima variables here. */
-:root {
-  --ifm-color-primary: #00646b;
-  --ifm-color-primary-dark: #005a60;
-  --ifm-color-primary-darker: #00555b;
-  --ifm-color-primary-darkest: #00464b;
-  --ifm-color-primary-light: #006e76;
-  --ifm-color-primary-lighter: #00737b;
-  --ifm-color-primary-lightest: #00828b;
-  --ifm-container-width-xl: 1440px;
+body {
+  color: var(--site-ink);
+  background: var(--site-bg);
 }
-
-/* For readability concerns, you should choose a lighter palette in dark mode. */
-[data-theme='dark'] {
-  --ifm-color-primary: #13c2c2;
-  --ifm-color-primary-dark: #11afaf;
-  --ifm-color-primary-darker: #10a5a5;
-  --ifm-color-primary-darkest: #0d8888;
-  --ifm-color-primary-light: #15d5d5;
-  --ifm-color-primary-lighter: #16dfdf;
-  --ifm-color-primary-lightest: #2beaea;
-  --ifm-background-color: #000000;
+::selection {
+  background: var(--site-pink);
+  color: var(--site-ink);
 }
-
+:focus-visible {
+  outline: 3px solid #b678a6;
+  outline-offset: 4px;
+}
+.navbar {
+  padding-inline: max(24px, calc((100vw - 1280px) / 2));
+}
+.navbar__title {
+  font-family: var(--ifm-font-family-monospace);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.navbar__link {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.navbar__link--active {
+  background: var(--site-pink);
+  border-radius: 6px;
+}
+.navbar-sidebar,
+.dropdown__menu {
+  background: var(--site-paper);
+}
+.dropdown__menu {
+  border: 1px solid var(--site-line);
+  box-shadow: 3px 3px 0 var(--site-shadow);
+}
+.footer {
+  border-top: 2px solid var(--site-line);
+  background: var(--site-paper);
+  color: var(--site-muted);
+  padding: 2rem;
+  font-size: 0.85rem;
+}
+/* Reading pages keep a quiet paper surface and comfortable line length. */
+main[class*='col--7'],
+main[class*='col--9'] {
+  min-width: 0;
+}
+/* Keep navigation bounded so the article gets the remaining space. */
+.container.blog-layout {
+  width: calc(100% - 48px);
+  max-width: 1440px;
+}
+.blog-layout > .row > aside {
+  flex: 0 0 200px;
+  max-width: 200px;
+  overflow-wrap: anywhere;
+}
+.blog-layout > .row > main {
+  flex: 1;
+  max-width: 100%;
+}
+.blog-layout .blog-toc-desktop {
+  flex: 0 0 216px;
+  max-width: 216px;
+}
+.blog-toc-compact {
+  display: none;
+  margin-bottom: 1rem;
+  border: 1px solid var(--site-line);
+  border-radius: var(--site-radius);
+  background: var(--site-paper);
+}
+.blog-toc-compact summary {
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+.blog-toc-compact > div {
+  display: block;
+  position: static;
+  max-height: 50vh;
+  overflow-y: auto;
+  border-top: 1px solid var(--site-line);
+}
+@media (max-width: 1279px) {
+  .blog-layout .blog-toc-desktop {
+    display: none;
+  }
+  .blog-toc-compact {
+    display: block;
+  }
+}
+@media (max-width: 996px) {
+  .container.blog-layout {
+    width: 100%;
+  }
+  .blog-layout > .row > aside {
+    display: none;
+  }
+}
+article {
+  background: var(--site-paper);
+  border: 1px solid var(--site-line);
+  border-radius: var(--site-radius);
+  padding: clamp(20px, 3vw, 40px);
+  box-shadow: 4px 4px 0 var(--site-shadow);
+}
+article + article {
+  margin-top: 36px;
+}
+article header h1 {
+  font-size: clamp(1.8rem, 3vw, 2.6rem);
+  letter-spacing: -0.03em;
+}
+article header h2 {
+  font-size: 1.8rem;
+}
+.markdown {
+  overflow-wrap: anywhere;
+}
+.markdown p {
+  margin-bottom: 1.15rem;
+}
+.markdown h2 {
+  margin-top: 2.5rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--site-line);
+}
+.markdown h3 {
+  margin-top: 2rem;
+}
 .markdown img {
   display: block;
-  margin-left: auto;
-  margin-right: auto;
-  margin-top: 0.8rem;
-  margin-bottom: 1.2rem;
+  max-width: 100%;
+  height: auto;
+  margin: 1.4rem auto;
+  border-radius: 6px;
 }
-
+.markdown iframe,
+.markdown video {
+  max-width: 100%;
+}
+.markdown a {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.markdown blockquote {
+  background: var(--site-lilac);
+  border-left: 3px solid #b6a4de;
+  color: var(--site-ink);
+  border-radius: 0 8px 8px 0;
+  padding: 1rem 1.2rem;
+}
+.markdown pre {
+  border: 1px solid var(--site-line);
+  box-shadow: none;
+}
+.markdown table {
+  font-size: 0.92rem;
+}
+.markdown th {
+  background: var(--site-lilac);
+}
+.table-of-contents {
+  font-size: 0.8rem;
+}
 .table-of-contents a {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   display: block;
+  white-space: normal;
+  line-height: 1.6;
 }
-
-.markdown p {
-  margin-bottom: 0.4rem;
+.pagination-nav__link {
+  background: var(--site-paper);
+  border: 1px solid var(--site-line);
+  box-shadow: 3px 3px 0 var(--site-shadow);
+}
+.pagination-nav__link:hover {
+  border-color: var(--ifm-color-primary);
+}
+.pagination-nav__sublabel {
+  color: var(--site-muted);
+}
+a[class*='tag_'] {
+  border-color: var(--site-line);
+  background: var(--site-lilac);
+}
+@media (max-width: 767px) {
+  .navbar {
+    padding-inline: 16px;
+  }
+  article {
+    padding: 20px 16px;
+    box-shadow: 2px 2px 0 var(--site-shadow);
+  }
+  article header h2 {
+    font-size: 1.5rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+  }
 }
 
 /* 沉浸式阅读模式样式 */
@@ -67,11 +293,5 @@
   /* 隐藏底部信息 */
   .footer {
     display: none !important;
-  }
-
-  /* 调整main元素宽度：从col--7改为col--9 */
-  main.col--7 {
-    flex: 0 0 75% !important;
-    max-width: 75% !important;
   }
 }
